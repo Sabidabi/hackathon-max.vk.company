@@ -4,6 +4,12 @@ from pydantic import ValidationError
 from app.sites.schemas import SiteBlock, SiteConfig
 
 
+def test_default_site_puts_menu_before_editorial_blocks() -> None:
+    config = SiteConfig()
+
+    assert [block.kind for block in config.blocks[:3]] == ["hero", "menu", "about"]
+
+
 def test_site_config_normalizes_content_and_colors() -> None:
     config = SiteConfig(
         primary_color="#aabbcc",

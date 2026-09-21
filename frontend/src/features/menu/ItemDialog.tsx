@@ -19,8 +19,12 @@ export function ItemDialog({ item, onChange, onClose, onUpload, uploading, uploa
     <nav className="detail-tabs" aria-label="Настройки позиции">{[["main", "Основное"], ["sizes", "Размеры"], ["modifiers", "Добавки"]].map(([id, title]) => <button type="button" aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)} key={id}>{title}</button>)}</nav>
     <div className="dialog-body">
       {tab === "main" && <div className="item-main-form">
-        <div className="item-photo-field">{item.image_url ? <img src={item.image_url} alt={item.name} /> : <Coffee size={36} strokeWidth={1.4} />}
-          <label className="image-select"><ImagePlus size={16} /><span>{uploading ? "Загрузка…" : "Фото"}</span><input type="file" accept="image/jpeg,image/png" disabled={uploading} onChange={(event) => { if (event.target.files?.[0]) onUpload(event.target.files[0]); event.target.value = ""; }} /></label>
+        <div className="item-photo-field">
+          <label className="item-photo-uploader">
+            {item.image_url ? <img src={item.image_url} alt={item.name} /> : <span className="item-photo-placeholder"><ImagePlus size={28} /></span>}
+            <span><strong>{uploading ? "Загружаем…" : item.image_url ? "Заменить фото" : "Добавить фото"}</strong><small>JPG или PNG · до 8 МБ</small></span>
+            <input aria-label={item.image_url ? "Заменить фотографию блюда" : "Добавить фотографию блюда"} type="file" accept="image/jpeg,image/png" disabled={uploading} onChange={(event) => { if (event.target.files?.[0]) onUpload(event.target.files[0]); event.target.value = ""; }} />
+          </label>
           {item.image_url && <button type="button" className="icon-button" aria-label="Убрать фото" onClick={() => onChange({ image_url: null })}><Trash2 size={16} /></button>}
         </div>
         {uploadError && <p className="form-error" role="alert">{uploadError}</p>}

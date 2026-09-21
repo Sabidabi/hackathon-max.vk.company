@@ -139,8 +139,8 @@ DEMO_SITE_CONFIG: dict[str, Any] = {
     "gallery_urls": [],
     "blocks": [
         {"kind": "hero", "visible": True, "title": None},
-        {"kind": "about", "visible": True, "title": "Наша история"},
         {"kind": "menu", "visible": True, "title": "Меню"},
+        {"kind": "about", "visible": True, "title": "Наша история"},
         {"kind": "gallery", "visible": True, "title": "Атмосфера"},
         {"kind": "contacts", "visible": True, "title": "Ждём вас"},
     ],

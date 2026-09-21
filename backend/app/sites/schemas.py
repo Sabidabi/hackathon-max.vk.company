@@ -24,8 +24,8 @@ class SiteBlock(BaseModel):
 def default_blocks() -> list[SiteBlock]:
     return [
         SiteBlock(kind="hero"),
-        SiteBlock(kind="about", title="О ресторане"),
         SiteBlock(kind="menu", title="Меню"),
+        SiteBlock(kind="about", title="О ресторане"),
         SiteBlock(kind="gallery", title="Галерея"),
         SiteBlock(kind="contacts", title="Контакты"),
     ]

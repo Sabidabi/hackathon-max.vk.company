@@ -56,6 +56,7 @@ async function waitForFixture() {
     await page.getByRole("button", { name: "Редактировать Капучино с ИИ" }).waitFor();
 
     await page.getByRole("button", { name: "Редактировать Латте" }).click();
+    assert.equal(await page.getByLabel("Добавить фотографию блюда").count(), 1);
 
     await page.getByRole("button", { name: "Размеры", exact: true }).click();
     await page.getByRole("heading", { name: "Размеры 2" }).waitFor();
@@ -95,8 +96,16 @@ async function waitForFixture() {
     await page.screenshot({ path: path.join(output, "qr-mobile.png"), fullPage: true });
 
     await page.goto(`${baseUrl}/r/test-point`);
-    const latte = page.locator("article").filter({ has: page.getByRole("heading", { name: "Латте" }) });
-    await latte.getByRole("button", { name: "Подробнее" }).click();
+    await page.screenshot({ path: path.join(output, "guest-catalog-mobile.png"), fullPage: true });
+    const categories = page.getByRole("navigation", { name: "Категории меню" });
+    await categories.getByRole("button", { name: "Выпечка" }).click();
+    await page.waitForTimeout(450);
+    assert.ok(
+      await page.getByRole("heading", { name: "Выпечка", exact: true }).evaluate((element) => element.getBoundingClientRect().top < 150),
+      "Category rail did not scroll to the selected section",
+    );
+    const latte = page.locator("article").filter({ hasText: "Латте" });
+    await latte.getByRole("button", { name: "Открыть Латте" }).click();
     assert.equal(await page.getByLabel("Обычное").isChecked(), true);
     assert.equal(await page.getByLabel("Обычное").isDisabled(), true);
     await page.getByLabel("Овсяное").check();
@@ -121,7 +130,7 @@ async function waitForFixture() {
 
     assert.deepEqual(pageErrors, []);
     assert.equal(fixtureError, "");
-    console.log("PASS: AI draft, compact editor, modifiers, server quote, theme, publication, QR, favorites, opt-in campaigns and 390px layout (fixture API)");
+    console.log("PASS: photos, AI draft, compact editor, modifiers, server quote, theme, publication, QR, favorites, opt-in campaigns, category rail and 390px layout (fixture API)");
   } finally {
     await browser.close();
     fixture.kill();

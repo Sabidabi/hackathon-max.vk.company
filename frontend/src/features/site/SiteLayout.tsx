@@ -43,7 +43,7 @@ export function SiteLayout({
 
   return (
     <div
-      className={`site-layout site-template--${config.template} site-theme--${config.theme_mode}${preview ? " site-layout--preview" : ""}`}
+      className={`site-layout site-template--${config.template} site-theme--${config.theme_mode}${preview ? " site-layout--preview" : " site-layout--guest"}`}
       style={style}
     >
       {config.blocks
