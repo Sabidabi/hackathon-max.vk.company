@@ -77,7 +77,27 @@ async function waitForFixture() {
     await page.screenshot({ path: path.join(output, "menu-desktop.png"), fullPage: true });
 
     await page.getByRole("button", { name: "Оформление", exact: true }).click();
+    assert.equal(await page.locator(".site-template-swatch").count(), 4);
+    await page.getByRole("button", { name: /Бистро/ }).click();
+    const sitePreview = page.locator(".site-layout--preview.site-template--classic");
+    await sitePreview.waitFor();
+    assert.equal(
+      await sitePreview.locator(".site-hero h1").evaluate((element) => getComputedStyle(element).color),
+      "rgb(255, 255, 255)",
+    );
+    assert.equal(
+      await sitePreview.locator(".menu-card-button").first().evaluate((element) => getComputedStyle(element).backgroundColor),
+      "rgba(0, 0, 0, 0)",
+    );
     await page.getByRole("button", { name: "Тёмная", exact: true }).click();
+    assert.equal(
+      await sitePreview.evaluate((element) => getComputedStyle(element).backgroundColor),
+      "rgb(14, 16, 17)",
+    );
+    assert.equal(
+      await sitePreview.locator(".menu-card-content > strong").first().evaluate((element) => getComputedStyle(element).color),
+      "rgb(244, 245, 239)",
+    );
     await page.getByRole("button", { name: "Сохранить черновик", exact: true }).click();
     await page.locator(".site-builder").getByText("Сохранено", { exact: true }).waitFor();
 
@@ -97,6 +117,15 @@ async function waitForFixture() {
 
     await page.goto(`${baseUrl}/r/test-point`);
     await page.screenshot({ path: path.join(output, "guest-catalog-mobile.png"), fullPage: true });
+    assert.equal(await page.getByRole("button", { name: /Американо/ }).count(), 0);
+    await page.getByLabel("В наличии").uncheck();
+    const unavailable = page.getByRole("button", { name: "Американо — временно нет" });
+    await unavailable.waitFor();
+    assert.equal(await unavailable.isDisabled(), true);
+    await page.getByLabel("В наличии").check();
+    await page.getByLabel("Поиск по меню").fill("такого блюда нет");
+    await page.getByText("По вашему запросу ничего не найдено.", { exact: true }).waitFor();
+    await page.getByLabel("Поиск по меню").fill("");
     const categories = page.getByRole("navigation", { name: "Категории меню" });
     await categories.getByRole("button", { name: "Выпечка" }).click();
     await page.waitForTimeout(450);
@@ -130,7 +159,7 @@ async function waitForFixture() {
 
     assert.deepEqual(pageErrors, []);
     assert.equal(fixtureError, "");
-    console.log("PASS: photos, AI draft, compact editor, modifiers, server quote, theme, publication, QR, favorites, opt-in campaigns, category rail and 390px layout (fixture API)");
+    console.log("PASS: templates, preview isolation, photos, AI draft, modifiers, server quote, dark palette, publication, QR, favorites, unavailable items, category rail and 390px layout (fixture API)");
   } finally {
     await browser.close();
     fixture.kill();

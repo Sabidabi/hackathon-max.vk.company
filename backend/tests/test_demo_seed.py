@@ -67,7 +67,7 @@ async def test_demo_seed_is_idempotent_and_public() -> None:
         assert response.status_code == 200
         payload = response.json()
         assert payload["restaurant"]["name"] == "Север — городское бистро"
-        assert payload["site"]["template"] == "cafe"
+        assert payload["site"]["template"] == "classic"
         assert len(payload["sections"]) == 4
         assert sum(len(section["items"]) for section in payload["sections"]) == 10
         assert any(

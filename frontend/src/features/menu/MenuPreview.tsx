@@ -1,4 +1,4 @@
-import { ChevronRight, Image as ImageIcon } from "lucide-react";
+import { ChevronRight, Utensils } from "lucide-react";
 import { useState } from "react";
 
 import type { MenuItem, MenuSection } from "../../api/menu";
@@ -23,11 +23,11 @@ export function MenuPreview({ sections }: { sections: MenuSection[] }) {
           <section key={section.id}>
             <header className="menu-section-heading"><h2>{section.name}</h2><span>{section.items.length}</span></header>
             <div className="public-items">
-              {section.items.map((item) => (
+              {section.items.map((item, itemIndex) => (
                 <article key={item.id}>
-                  <button type="button" className={`menu-card-button${item.image_url ? "" : " menu-card-button--no-image"}`} aria-label={`Открыть ${item.name}`} onClick={() => setSelected(item)}>
+                  <button type="button" className={`menu-card-button menu-card-tone--${itemIndex % 4}${item.image_url ? "" : " menu-card-button--no-image"}`} aria-label={`Открыть ${item.name}`} onClick={() => setSelected(item)}>
                     <span className="menu-card-media">
-                      {item.image_url ? <img src={item.image_url} alt={item.name} /> : <span className="menu-card-placeholder"><ImageIcon size={24} /></span>}
+                      {item.image_url ? <img src={item.image_url} alt={item.name} /> : <span className="menu-card-placeholder"><Utensils size={22} /><i aria-hidden="true" /></span>}
                     </span>
                     <span className="menu-card-content">
                       <strong>{item.name}</strong>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image as ImageIcon, Moon, Sun } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
 import { fetchDraftMenu } from "../../api/menu";
 import { MenuPreview } from "../menu/MenuPreview";
@@ -20,6 +21,7 @@ import { SiteLayout } from "./SiteLayout";
 const templates: Array<{
   id: SiteTemplate;
   name: string;
+  description: string;
   theme: "light" | "dark";
   primary: string;
   background: string;
@@ -29,43 +31,47 @@ const templates: Array<{
 }> = [
   {
     id: "modern",
-    name: "Современный",
+    name: "Минимал",
+    description: "Чистый и нейтральный",
     theme: "light",
-    primary: "#5F2BCE",
-    background: "#F7F4FB",
+    primary: "#171717",
+    background: "#F3F3EF",
     surface: "#FFFFFF",
-    text: "#28222F",
-    icon: "#5F2BCE",
+    text: "#171717",
+    icon: "#FF5C35",
   },
   {
     id: "classic",
-    name: "Классический",
+    name: "Бистро",
+    description: "Тёплый и редакционный",
     theme: "light",
-    primary: "#69492E",
-    background: "#F7F1E7",
-    surface: "#FFFCF6",
-    text: "#302820",
-    icon: "#69492E",
+    primary: "#234738",
+    background: "#ECEFE6",
+    surface: "#FFFEF8",
+    text: "#17231E",
+    icon: "#C66A3D",
   },
   {
     id: "cafe",
-    name: "Кафе и бар",
+    name: "Поп",
+    description: "Яркий и энергичный",
     theme: "light",
-    primary: "#C84F2F",
-    background: "#FFF2E2",
-    surface: "#FFFDF8",
-    text: "#302117",
-    icon: "#C84F2F",
+    primary: "#F04B2F",
+    background: "#FFF3E7",
+    surface: "#FFFCF7",
+    text: "#241B17",
+    icon: "#F04B2F",
   },
   {
     id: "noir",
-    name: "Нуар",
+    name: "Ночь",
+    description: "Контрастный тёмный",
     theme: "dark",
-    primary: "#D7B56D",
-    background: "#121316",
-    surface: "#1E2025",
-    text: "#F2EEE6",
-    icon: "#D7B56D",
+    primary: "#D8FF52",
+    background: "#0E1011",
+    surface: "#191C1D",
+    text: "#F4F5EF",
+    icon: "#D8FF52",
   },
 ];
 
@@ -170,6 +176,35 @@ export function SiteBuilder({ restaurant }: { restaurant: Restaurant }) {
     });
   }
 
+  function chooseTheme(theme: "light" | "dark") {
+    const template = templates.find((item) => item.id === config?.template) ?? templates[0];
+    if (theme === "light") {
+      patchConfig({
+        theme_mode: "light",
+        primary_color: template.id === "noir" ? "#171717" : template.primary,
+        background_color: template.id === "noir" ? "#F3F3EF" : template.background,
+        surface_color: template.id === "noir" ? "#FFFFFF" : template.surface,
+        text_color: template.id === "noir" ? "#171717" : template.text,
+        icon_color: template.id === "noir" ? "#FF5C35" : template.icon,
+      });
+      return;
+    }
+    const darkAccents: Record<SiteTemplate, string> = {
+      modern: "#FF6B47",
+      classic: "#E0B56C",
+      cafe: "#FF8064",
+      noir: "#D8FF52",
+    };
+    patchConfig({
+      theme_mode: "dark",
+      primary_color: darkAccents[template.id],
+      background_color: "#0E1011",
+      surface_color: "#191C1D",
+      text_color: "#F4F5EF",
+      icon_color: darkAccents[template.id],
+    });
+  }
+
   function moveBlock(index: number, direction: -1 | 1) {
     if (!config) return;
     const target = index + direction;
@@ -213,15 +248,26 @@ export function SiteBuilder({ restaurant }: { restaurant: Restaurant }) {
                   className={config.template === template.id ? "is-active" : ""}
                   onClick={() => chooseTemplate(template)}
                 >
-                  <span>{template.name}</span>
+                  <span
+                    className="site-template-swatch"
+                    style={{
+                      "--swatch-primary": template.primary,
+                      "--swatch-background": template.background,
+                      "--swatch-surface": template.surface,
+                    } as CSSProperties}
+                    aria-hidden="true"
+                  >
+                    <i /><i /><i />
+                  </span>
+                  <span className="site-template-copy"><strong>{template.name}</strong><small>{template.description}</small></span>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="site-theme-switch" role="group" aria-label="Тема меню">
-            <button type="button" className={config.theme_mode === "light" ? "is-active" : ""} onClick={() => patchConfig({ theme_mode: "light" })}><Sun size={16} />Светлая</button>
-            <button type="button" className={config.theme_mode === "dark" ? "is-active" : ""} onClick={() => patchConfig({ theme_mode: "dark" })}><Moon size={16} />Тёмная</button>
+            <button type="button" className={config.theme_mode === "light" ? "is-active" : ""} onClick={() => chooseTheme("light")}><Sun size={16} />Светлая</button>
+            <button type="button" className={config.theme_mode === "dark" ? "is-active" : ""} onClick={() => chooseTheme("dark")}><Moon size={16} />Тёмная</button>
           </div>
 
           <div className="site-color-fields">

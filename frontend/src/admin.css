@@ -65,3 +65,21 @@ body { background:var(--admin-bg); }
 .item-photo-uploader input {position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;}
 .item-photo-uploader:focus-within {outline:2px solid #687d9a;outline-offset:2px;}
 @media(max-width:520px){.item-photo-uploader{grid-template-columns:72px minmax(0,1fr)}.item-photo-uploader>img,.item-photo-placeholder{width:72px;height:64px}}
+
+/* Visual template picker: show the composition instead of asking owners to guess by name. */
+.admin-shell .site-template-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.admin-shell .site-template-picker button{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:11px;min-height:68px;padding:8px;text-align:left;border-radius:12px}
+.admin-shell .site-template-picker button.is-active{border-color:#202327;box-shadow:0 0 0 1px #202327}
+.site-template-swatch{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;width:64px;height:50px;padding:6px;overflow:hidden;background:var(--swatch-background);border-radius:9px}
+.site-template-swatch:before{content:"";grid-column:1/-1;height:14px;background:var(--swatch-primary);border-radius:5px}
+.site-template-swatch i{display:block;background:var(--swatch-surface);border-radius:4px}
+.site-template-swatch i:first-of-type{grid-column:1/-1;height:6px;opacity:.75}
+.site-template-copy{display:grid;gap:3px;min-width:0}
+.site-template-copy strong{color:var(--admin-ink);font-size:12px}
+.site-template-copy small{color:var(--admin-muted);font-size:10px;line-height:1.25}
+@media(max-width:480px){.admin-shell .site-template-picker{grid-template-columns:1fr}}
+
+/* Keep guest theme tokens isolated from generic cabinet button and heading styles. */
+.admin-shell .site-layout .site-hero h1{color:inherit}
+.admin-shell .site-layout .menu-card-button{color:var(--site-text);background:transparent}
+.admin-shell .site-layout .menu-card-button:hover{color:var(--site-text);background:transparent}

@@ -123,9 +123,12 @@ DEMO_SECTIONS: list[dict[str, Any]] = [
 
 
 DEMO_SITE_CONFIG: dict[str, Any] = {
-    "template": "cafe",
-    "primary_color": "#A4472B",
-    "background_color": "#F7EEDC",
+    "template": "classic",
+    "primary_color": "#234738",
+    "background_color": "#ECEFE6",
+    "surface_color": "#FFFEF8",
+    "text_color": "#17231E",
+    "icon_color": "#C66A3D",
     "tagline": "Завтраки весь день и сезонная кухня",
     "about": (
         "Север — спокойное городское бистро для утреннего кофе, долгого обеда "

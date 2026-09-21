@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, BellOff, ChevronRight, Image as ImageIcon, Search, Star } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Bell, BellOff, ChevronRight, Search, Star, Utensils } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchCurrentUser, loginWithMax } from "../../api/auth";
 import { fetchPublicMenu, type MenuItem } from "../../api/menu";
@@ -22,6 +22,7 @@ export function PublicMenu({ publicId }: { publicId: string }) {
   const [search, setSearch] = useState("");
   const [onlyAvailable, setOnlyAvailable] = useState(true);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const categoryRailRef = useRef<HTMLElement | null>(null);
   const menu = useQuery({
     queryKey: ["public-menu", publicId],
     queryFn: () => fetchPublicMenu(publicId),
@@ -106,6 +107,13 @@ export function PublicMenu({ publicId }: { publicId: string }) {
     return () => observer.disconnect();
   }, [sectionKey, sections]);
 
+  useEffect(() => {
+    if (!activeSectionId) return;
+    categoryRailRef.current
+      ?.querySelector<HTMLElement>(`[data-category-id="${activeSectionId}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeSectionId]);
+
   if (menu.isPending) return <main className="public-shell public-state">Открываем меню…</main>;
   if (menu.isError) {
     return (
@@ -176,12 +184,13 @@ export function PublicMenu({ publicId }: { publicId: string }) {
       </div>
 
       {sections.length > 1 && (
-        <nav className="menu-category-rail" aria-label="Категории меню">
+        <nav className="menu-category-rail" aria-label="Категории меню" ref={categoryRailRef}>
           <div>
             {sections.map((section) => (
               <button
                 type="button"
                 key={section.id}
+                data-category-id={section.id}
                 aria-current={activeSectionId === section.id ? "true" : undefined}
                 onClick={() => scrollToSection(section.id)}
               >
@@ -207,7 +216,7 @@ export function PublicMenu({ publicId }: { publicId: string }) {
                 <span>{section.items.length}</span>
               </header>
               <div className="public-items">
-                {section.items.map((item) => {
+                {section.items.map((item, itemIndex) => {
                   const configurable = Boolean(
                     item.configuration?.variants.length
                     || item.configuration?.modifier_groups.length,
@@ -219,16 +228,16 @@ export function PublicMenu({ publicId }: { publicId: string }) {
                     >
                       <button
                         type="button"
-                        className={`menu-card-button${item.image_url ? "" : " menu-card-button--no-image"}`}
+                        className={`menu-card-button menu-card-tone--${itemIndex % 4}${item.image_url ? "" : " menu-card-button--no-image"}`}
                         disabled={!item.is_available}
-                        aria-label={`Открыть ${item.name}`}
+                        aria-label={item.is_available ? `Открыть ${item.name}` : `${item.name} — временно нет`}
                         onClick={() => setSelected(item)}
                       >
                         <span className="menu-card-media">
                           {item.image_url ? (
                             <img src={item.image_url} alt={item.name} loading="lazy" decoding="async" />
                           ) : (
-                            <span className="menu-card-placeholder"><ImageIcon size={26} /></span>
+                            <span className="menu-card-placeholder"><Utensils size={23} /><i aria-hidden="true" /></span>
                           )}
                         </span>
                         <span className="menu-card-content">
@@ -237,6 +246,7 @@ export function PublicMenu({ publicId }: { publicId: string }) {
                           <span className="menu-card-meta">
                             {item.weight_text && <small>{item.weight_text}</small>}
                             {configurable && <small>Есть выбор</small>}
+                            {!item.is_available && <small className="unavailable-badge">Временно нет</small>}
                           </span>
                           <span className="menu-card-footer">
                             <b>{displayPrice(item)}</b>

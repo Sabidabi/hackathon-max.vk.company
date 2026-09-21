@@ -1,3 +1,4 @@
+import { Clock3, MapPin } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
 import type { SiteConfig } from "../../api/site";
@@ -65,6 +66,12 @@ export function SiteLayout({
                 <h1>{restaurant.name}</h1>
                 {(config.tagline || restaurant.description) && (
                   <p>{config.tagline || restaurant.description}</p>
+                )}
+                {(restaurant.address || config.hours) && (
+                  <div className="site-hero-meta">
+                    {restaurant.address && <span><MapPin size={14} />{restaurant.address}</span>}
+                    {config.hours && <span><Clock3 size={14} />{config.hours}</span>}
+                  </div>
                 )}
               </header>
             );
