@@ -1,0 +1,162 @@
+name: max-menu
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-menu}
+      POSTGRES_USER: ${POSTGRES_USER:-menu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-menu}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://menu:menu@postgres:5432/menu}
+      DATA_ROOT: ${DATA_ROOT:-/data}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-20971520}
+      MAX_PDF_PAGES: ${MAX_PDF_PAGES:-30}
+      MAX_SITE_IMAGE_BYTES: ${MAX_SITE_IMAGE_BYTES:-8388608}
+      WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-2}
+      OCR_LANGUAGES: ${OCR_LANGUAGES:-rus+eng}
+      OCR_DPI: ${OCR_DPI:-220}
+      OCR_MAX_PIXELS: ${OCR_MAX_PIXELS:-30000000}
+      OCR_TIMEOUT_SECONDS: ${OCR_TIMEOUT_SECONDS:-120}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-}
+      MAX_WEBHOOK_SECRET: ${MAX_WEBHOOK_SECRET:-}
+      MAX_WEBHOOK_URL: ${MAX_WEBHOOK_URL:-}
+      MAX_API_BASE_URL: ${MAX_API_BASE_URL:-https://platform-api2.max.ru}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:8080}
+      MAX_INIT_DATA_MAX_AGE_SECONDS: ${MAX_INIT_DATA_MAX_AGE_SECONDS:-900}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-menu_session}
+      DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
+      DEV_MAX_USER_ID: ${DEV_MAX_USER_ID:-900000001}
+      GIGACHAT_AUTH_KEY: ${GIGACHAT_AUTH_KEY:-}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_B2B}
+      GIGACHAT_MODEL: ${GIGACHAT_MODEL:-GigaChat}
+      GIGACHAT_BASE_URL: ${GIGACHAT_BASE_URL:-https://api.giga.chat}
+      GIGACHAT_OAUTH_URL: ${GIGACHAT_OAUTH_URL:-https://ngw.devices.sberbank.ru:9443/api/v2/oauth}
+      GIGACHAT_TIMEOUT_SECONDS: ${GIGACHAT_TIMEOUT_SECONDS:-30}
+      AI_PROPOSAL_TTL_SECONDS: ${AI_PROPOSAL_TTL_SECONDS:-600}
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_RESOURCE_URL: ${MCP_RESOURCE_URL:-http://127.0.0.1:8010/mcp}
+      MCP_ISSUER_URL: ${MCP_ISSUER_URL:-http://127.0.0.1:8010}
+      MCP_CONFIRMATION_TTL_SECONDS: ${MCP_CONFIRMATION_TTL_SECONDS:-600}
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "8000:8000"
+    volumes:
+      - menu_data:/data
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://menu:menu@postgres:5432/menu}
+      DATA_ROOT: ${DATA_ROOT:-/data}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-20971520}
+      MAX_PDF_PAGES: ${MAX_PDF_PAGES:-30}
+      MAX_SITE_IMAGE_BYTES: ${MAX_SITE_IMAGE_BYTES:-8388608}
+      WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-2}
+      OCR_LANGUAGES: ${OCR_LANGUAGES:-rus+eng}
+      OCR_DPI: ${OCR_DPI:-220}
+      OCR_MAX_PIXELS: ${OCR_MAX_PIXELS:-30000000}
+      OCR_TIMEOUT_SECONDS: ${OCR_TIMEOUT_SECONDS:-120}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-}
+      MAX_WEBHOOK_SECRET: ${MAX_WEBHOOK_SECRET:-}
+      MAX_WEBHOOK_URL: ${MAX_WEBHOOK_URL:-}
+      MAX_API_BASE_URL: ${MAX_API_BASE_URL:-https://platform-api2.max.ru}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:8080}
+      MAX_INIT_DATA_MAX_AGE_SECONDS: ${MAX_INIT_DATA_MAX_AGE_SECONDS:-900}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-menu_session}
+      DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
+      DEV_MAX_USER_ID: ${DEV_MAX_USER_ID:-900000001}
+      GIGACHAT_AUTH_KEY: ${GIGACHAT_AUTH_KEY:-}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_B2B}
+      GIGACHAT_MODEL: ${GIGACHAT_MODEL:-GigaChat}
+      GIGACHAT_BASE_URL: ${GIGACHAT_BASE_URL:-https://api.giga.chat}
+      GIGACHAT_OAUTH_URL: ${GIGACHAT_OAUTH_URL:-https://ngw.devices.sberbank.ru:9443/api/v2/oauth}
+      GIGACHAT_TIMEOUT_SECONDS: ${GIGACHAT_TIMEOUT_SECONDS:-30}
+      AI_PROPOSAL_TTL_SECONDS: ${AI_PROPOSAL_TTL_SECONDS:-600}
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_RESOURCE_URL: ${MCP_RESOURCE_URL:-http://127.0.0.1:8010/mcp}
+      MCP_ISSUER_URL: ${MCP_ISSUER_URL:-http://127.0.0.1:8010}
+      MCP_CONFIRMATION_TTL_SECONDS: ${MCP_CONFIRMATION_TTL_SECONDS:-600}
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - menu_data:/data
+    restart: unless-stopped
+
+  mcp:
+    profiles: ["mcp"]
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://menu:menu@postgres:5432/menu}
+      DATA_ROOT: ${DATA_ROOT:-/data}
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_RESOURCE_URL: ${MCP_RESOURCE_URL:-http://127.0.0.1:8010/mcp}
+      MCP_ISSUER_URL: ${MCP_ISSUER_URL:-http://127.0.0.1:8010}
+      MCP_CONFIRMATION_TTL_SECONDS: ${MCP_CONFIRMATION_TTL_SECONDS:-600}
+    command: ["uvicorn", "app.mcp_server.server:app", "--host", "0.0.0.0", "--port", "8010"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8010:8010"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: test
+    environment:
+      APP_ENV: testing
+      DATA_ROOT: /data
+      DATABASE_URL: postgresql+asyncpg://menu:menu@postgres:5432/menu
+    command: ["sh", "-c", "ruff check app tests && pytest -q"]
+
+volumes:
+  postgres_data:
+  menu_data:
