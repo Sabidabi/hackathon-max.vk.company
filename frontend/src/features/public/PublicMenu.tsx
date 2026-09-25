@@ -116,9 +116,12 @@ export function PublicMenu({ publicId, maxContext }: { publicId: string; maxCont
   if (menu.isPending) return <main className="public-shell public-state">Открываем меню…</main>;
   if (menu.isError) {
     return (
-      <main className="public-shell public-state">
+      <main className="public-shell public-state public-menu-unavailable">
         <h1>Меню пока недоступно</h1>
-        <p>{menu.error.message}</p>
+        <p role="alert">{menu.error.message}</p>
+        <button type="button" disabled={menu.isFetching} onClick={() => void menu.refetch()}>
+          {menu.isFetching ? "Проверяем…" : "Обновить меню"}
+        </button>
       </main>
     );
   }

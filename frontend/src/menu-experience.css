@@ -1,4 +1,10 @@
 /* Restaurant menu: photography where the merchant has it, editorial type elsewhere. */
+.public-shell.public-menu-unavailable { min-height: 100dvh; padding: 32px 24px; justify-items: center; }
+.public-menu-unavailable h1 { max-width: 20ch; margin: 0 0 12px; font-size: clamp(24px, 5vw, 32px); line-height: 1.15; text-wrap: balance; }
+.public-menu-unavailable p { max-width: 36ch; line-height: 1.5; }
+.public-menu-unavailable button { min-height: 44px; margin-top: 16px; padding: 12px 22px; color: #fff; background: #171717; border: 0; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.public-menu-unavailable button:focus-visible { outline: 3px solid #767676; outline-offset: 4px; }
+.public-menu-unavailable button:disabled { opacity: .65; cursor: wait; }
 .site-layout--guest .site-hero {
   min-height: clamp(260px, 32vw, 420px);
   padding: clamp(36px, 7vw, 88px);

@@ -63,6 +63,11 @@ docker compose --profile mcp up --build
 
 ## Проверки
 
+Для проверки интерфейса без Docker и базы запустите `cd frontend`, затем `npm run demo`.
+Готовое демоменю: `http://127.0.0.1:5173/r/test-point`, кабинет: `http://127.0.0.1:5173/`.
+Это локальная in-memory демонстрация: начальное меню уже опубликовано, изменения исчезают при перезапуске. MAX, ИИ и уведомления имитируются; реальных платежей нет.
+Прямой запуск `tests/fixture-server.cjs` нужен для тестов редактора: он намеренно начинает с неопубликованного черновика.
+
 ```bash
 cd backend
 ruff check app tests migrations
@@ -73,7 +78,7 @@ npm run build
 npm run test:browser
 ```
 
-Browser smoke использует отдельный in-memory fixture server и не совершает реальные вызовы MAX, GigaChat или платежей.
+Browser smoke использует отдельный in-memory fixture server и не совершает реальные вызовы MAX, GigaChat или платежей. Он проверяет редактор и отдельный чистый запуск демо: прямую гостевую ссылку до входа в кабинет, выбор добавок, перезагрузку и восстановление после ошибки API на ширинах 320/390/1280 px.
 
 Порядок обновления Docker-сервера и проверки входа в реальном MAX описан в [docs/max-production-check.md](docs/max-production-check.md). Сверка с официальным API — в [docs/max-api-audit.md](docs/max-api-audit.md).
 

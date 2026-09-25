@@ -117,7 +117,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
 (async () => {
   const fixture = spawn(process.execPath, [path.join(__dirname, "fixture-server.cjs")], {
     cwd: path.resolve(__dirname, ".."),
-    env: { ...process.env, FIXTURE_PORT: String(port) },
+    env: { ...process.env, FIXTURE_PORT: String(port), FIXTURE_PUBLISHED: "0" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let fixtureError = "";
@@ -129,6 +129,8 @@ async function verifyPublicStartParam(browser, baseUrl) {
 
   try {
     await waitForFixture();
+    const unpublished = await fetch(`${baseUrl}/api/v1/public/restaurants/test-point/menu`);
+    assert.equal(unpublished.status, 404, "Editor fixture must not expose an unpublished draft");
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
     const pageErrors = [];
