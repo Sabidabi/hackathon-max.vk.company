@@ -32,6 +32,46 @@ export interface DraftMenu {
   sections: MenuSection[];
 }
 
+export interface MenuLibraryEntry {
+  version_id: string;
+  restaurant_id: string;
+  restaurant_name: string;
+  version: number;
+  published_at: string | null;
+}
+
+export async function fetchMenuLibrary(): Promise<MenuLibraryEntry[]> {
+  return parseJson(await fetch("/api/v1/menu/library", { credentials: "include" }), "Не удалось загрузить библиотеку меню");
+}
+
+export async function copyMenuToDraft(restaurantId: string, sourceVersionId: string, expectedRevision: string): Promise<DraftMenu> {
+  return parseJson(await fetch(`/api/v1/restaurants/${restaurantId}/menu/copy`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source_version_id: sourceVersionId, expected_revision: expectedRevision }),
+  }), "Не удалось скопировать меню");
+}
+
+export async function setBulkAvailability(
+  sourceRestaurantId: string,
+  sourceItemId: string,
+  sourceExpectedRevision: string,
+  isAvailable: boolean,
+  targetRestaurantIds: string[],
+): Promise<{ restaurant_id: string; revision: string }[]> {
+  const targets = await Promise.all(targetRestaurantIds.map(async (pointId) => ({
+    restaurant_id: pointId,
+    expected_revision: pointId === sourceRestaurantId
+      ? sourceExpectedRevision
+      : (await fetchDraftMenu(pointId)).revision,
+  })));
+  return parseJson(await fetch(`/api/v1/restaurants/${sourceRestaurantId}/menu/availability/bulk`, {
+    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source_item_id: sourceItemId, source_expected_revision: sourceExpectedRevision, is_available: isAvailable, targets }),
+  }), "Не удалось изменить наличие");
+}
+
 export interface PublishResult {
   published_version_id: string;
   version: number;

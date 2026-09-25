@@ -7,6 +7,7 @@ let aiProposal = null;
 let favorite = {is_favorite:false,notifications_enabled:false};
 let campaigns = [];
 let restaurant = { id: randomUUID(), public_id: "test-point", name: "Кофейня Север", address: "Москва, Покровка, 12", description: "Кофе и свежая выпечка", role: "owner", menu_id: randomUUID(), draft_version_id: randomUUID(), current_published_version_id: null };
+let restaurants = [restaurant]; let invites = [];
 const size1 = randomUUID(), size2 = randomUUID();
 const defaultConfig = () => ({ variants: [], default_variant_id: null, modifier_groups: [] });
 const item = (name, price, weight) => ({ id: randomUUID(), name, description: null, image_url: null, price_minor: price, currency: "RUB", weight_text: weight, ingredients: null, allergens: [], is_available: true, source_confidence: null, configuration: defaultConfig() });
@@ -24,8 +25,12 @@ const server = http.createServer(async (req,res)=>{
     if(p.startsWith("/api/")) {
       if(p.endsWith("/auth/me"))return json({id:"test-user",max_user_id:1,display_name:"Демо · без базы"});
       if(p.includes("/health/"))return json({status:"ok",service:"In-memory visual fixture"});
-      if(p==="/api/v1/restaurants") { if(req.method==="POST"){restaurant={...restaurant,...body};return json(restaurant,201);}return json([restaurant]); }
-      if(p.endsWith("/restaurants/"+restaurant.id)&&req.method==="PATCH"){restaurant={...restaurant,...body};return json(restaurant);}
+      if(p==="/api/v1/restaurants") { if(req.method==="POST"){restaurant={id:randomUUID(),public_id:randomUUID().replace(/-/g,"").slice(0,12),role:"owner",menu_id:randomUUID(),draft_version_id:randomUUID(),current_published_version_id:null,...body};restaurants.push(restaurant);return json(restaurant,201);}return json(restaurants); }
+      if(p.endsWith("/restaurants/"+restaurant.id)&&req.method==="PATCH"){restaurant={...restaurant,...body};restaurants=restaurants.map(r=>r.id===restaurant.id?restaurant:r);return json(restaurant);}
+      if(p==="/api/v1/menu/library")return json(published.length?[{version_id:"fixture-version",restaurant_id:restaurants[0].id,restaurant_name:restaurants[0].name,version:2,published_at:new Date().toISOString()}]:[]);
+      if(p.endsWith("/menu/copy")&&req.method==="POST"){if(body.expected_revision!==rev(revision))return json({detail:"Меню изменилось"},409);revision++;sections=structuredClone(published).map(s=>({...s,id:randomUUID(),items:s.items.map(i=>({...i,id:randomUUID()}))}));return json({menu_id:restaurant.menu_id,draft_version_id:restaurant.draft_version_id,revision:rev(revision),sections});}
+      if(p.endsWith("/members")&&req.method==="GET")return json([{user_id:"test-user",max_user_id:1,display_name:"Демо",role:"owner"}]);
+      if(p.endsWith("/invites")){if(req.method==="POST"){const invite={id:randomUUID(),max_user_id:body.max_user_id,role:body.role,expires_at:new Date(Date.now()+86400000).toISOString(),accepted_at:null,revoked_at:null,invite_url:"https://max.ru/test_bot?startapp=inv_fixturetoken"};invites.push(invite);return json(invite,201);}return json(invites);}
       if(p.endsWith("/menu/quote")) {
         const product=published.flatMap(s=>s.items).find(i=>i.id===body.item_id); if(!product)return json({detail:"Меню обновилось"},409);
         const c=product.configuration, selected=new Map(body.modifiers.map(s=>[s.option_id,s.quantity])); let price=product.price_minor;

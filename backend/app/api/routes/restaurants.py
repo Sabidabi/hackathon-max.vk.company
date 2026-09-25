@@ -170,17 +170,6 @@ async def create_restaurant(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> RestaurantResponse:
-    # Serialize creation for the same owner, including concurrent first requests.
-    await session.scalar(select(User).where(User.id == current_user.id).with_for_update())
-    existing_id = await session.scalar(
-        select(Restaurant.id).where(Restaurant.owner_id == current_user.id).limit(1)
-    )
-    if existing_id is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="The MVP supports one owned restaurant per user",
-        )
-
     restaurant = Restaurant(
         public_id=uuid.uuid4().hex[:12],
         owner_id=current_user.id,

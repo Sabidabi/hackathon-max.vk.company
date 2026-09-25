@@ -12,7 +12,7 @@ from app.api.routes.menus import (
     validate_menu_image_ownership,
 )
 from app.imports.storage import UploadValidationError
-from app.media.images import media_url_restaurant_id, store_restaurant_image
+from app.media.images import clone_restaurant_image, media_url_restaurant_id, store_restaurant_image
 
 
 def make_png(size: tuple[int, int] = (2400, 1800)) -> bytes:
@@ -79,3 +79,25 @@ def test_menu_item_image_url_must_be_local_and_belong_to_restaurant() -> None:
     assert error.value.status_code == 422
     assert media_url_restaurant_id("https://example.com/dish.webp", "menu-items") is None
     assert media_url_restaurant_id(foreign_url, "sites") is None
+
+
+@pytest.mark.asyncio
+async def test_menu_photo_copy_gets_target_point_storage(tmp_path) -> None:
+    source_id, target_id = uuid.uuid4(), uuid.uuid4()
+    stored = await store_restaurant_image(
+        make_upload(make_png((200, 120)), "image/png"),
+        tmp_path,
+        source_id,
+        "menu-item",
+        1024 * 1024,
+    )
+    copied_url, copied_path = clone_restaurant_image(
+        stored.url, tmp_path, source_id, target_id,
+    )
+    assert media_url_restaurant_id(copied_url, "menu-items") == target_id
+    assert copied_path.is_file()
+    assert copied_path.read_bytes() == (
+        tmp_path / "menu-images" / stored.url.removeprefix("/media/")
+    ).read_bytes()
+    with pytest.raises(ValueError, match="another restaurant"):
+        clone_restaurant_image(stored.url, tmp_path, target_id, source_id)

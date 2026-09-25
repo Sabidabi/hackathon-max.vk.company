@@ -84,6 +84,22 @@ async def receive_max_webhook(
         )
 
     message_text = extract_message_text(update)
+    if (
+        update.update_type == "message_created"
+        and message_text is not None
+        and message_text.lower().split(maxsplit=1)[0] == "/id"
+        and update.chat_id is not None
+        and isinstance(update.user, dict)
+        and isinstance(update.user.get("user_id"), int)
+    ):
+        background_tasks.add_task(
+            send_max_message,
+            settings,
+            text=f"Ваш MAX ID: {update.user['user_id']}. Передайте его владельцу точки.",
+            chat_id=update.chat_id,
+        )
+        return WebhookAccepted()
+
     should_greet = update.update_type == "bot_started" or (
         update.update_type == "message_created"
         and message_text is not None

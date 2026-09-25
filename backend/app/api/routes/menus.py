@@ -19,7 +19,7 @@ from app.config import Settings, get_settings
 from app.database import get_session
 from app.imports.storage import UploadValidationError
 from app.max_api.client import build_max_deep_link
-from app.media.images import media_url_restaurant_id, store_restaurant_image
+from app.media.images import clone_restaurant_image, media_url_restaurant_id, store_restaurant_image
 from app.menu_configuration import (
     ItemConfiguration,
     QuotePayload,
@@ -133,6 +133,36 @@ class DraftMenuResponse(BaseModel):
 
 class PublishPayload(BaseModel):
     expected_revision: str = Field(pattern="^[a-f0-9]{64}$")
+
+
+class CopyMenuPayload(BaseModel):
+    source_version_id: uuid.UUID
+    expected_revision: str = Field(pattern="^[a-f0-9]{64}$")
+
+
+class MenuLibraryEntry(BaseModel):
+    version_id: uuid.UUID
+    restaurant_id: uuid.UUID
+    restaurant_name: str
+    version: int
+    published_at: datetime | None
+
+
+class AvailabilityTarget(BaseModel):
+    restaurant_id: uuid.UUID
+    expected_revision: str = Field(pattern="^[a-f0-9]{64}$")
+
+
+class BulkAvailabilityPayload(BaseModel):
+    source_item_id: uuid.UUID
+    source_expected_revision: str = Field(pattern="^[a-f0-9]{64}$")
+    is_available: bool
+    targets: list[AvailabilityTarget] = Field(min_length=1, max_length=30)
+
+
+class AvailabilityResult(BaseModel):
+    restaurant_id: uuid.UUID
+    revision: str
 
 
 def menu_revision(sections: list[MenuSectionResponse]) -> str:
@@ -331,6 +361,178 @@ async def write_version_sections(
                     sort_order=item_index,
                 )
             )
+
+
+@router.get("/menu/library", response_model=list[MenuLibraryEntry])
+async def list_menu_library(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[MenuLibraryEntry]:
+    """Published snapshots owned by this user, reusable as menu templates."""
+    rows = (await session.execute(
+        select(MenuVersion, Restaurant)
+        .join(Menu, MenuVersion.menu_id == Menu.id)
+        .join(Restaurant, Menu.restaurant_id == Restaurant.id)
+        .where(
+            Restaurant.owner_id == current_user.id,
+            MenuVersion.status.in_(("published", "archived")),
+        )
+        .order_by(MenuVersion.published_at.desc(), MenuVersion.version.desc())
+        .limit(100)
+    )).all()
+    return [MenuLibraryEntry(
+        version_id=version.id,
+        restaurant_id=restaurant.id,
+        restaurant_name=restaurant.name,
+        version=version.version,
+        published_at=version.published_at,
+    ) for version, restaurant in rows]
+
+
+@router.post("/restaurants/{restaurant_id}/menu/copy", response_model=DraftMenuResponse)
+async def copy_menu_to_draft(
+    restaurant_id: uuid.UUID,
+    payload: CopyMenuPayload,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DraftMenuResponse:
+    target = await session.get(Restaurant, restaurant_id)
+    if target is None or target.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    menu, draft = await get_menu_and_draft(session, restaurant_id, lock=True)
+    await check_revision(session, draft.id, payload.expected_revision)
+    source_row = (await session.execute(
+        select(MenuVersion, Restaurant)
+        .join(Menu, MenuVersion.menu_id == Menu.id)
+        .join(Restaurant, Menu.restaurant_id == Restaurant.id)
+        .where(
+            MenuVersion.id == payload.source_version_id,
+            MenuVersion.status.in_(("published", "archived")),
+            Restaurant.owner_id == current_user.id,
+        )
+    )).one_or_none()
+    if source_row is None:
+        raise HTTPException(status_code=404, detail="Menu version not found")
+    source_version, source_restaurant = source_row
+    sections = await read_version_sections(session, source_version.id)
+    copied_files = []
+    try:
+        copied_sections = []
+        for section in sections:
+            items = []
+            for item in section.items:
+                item_data = item.model_dump(mode="json", exclude={"id"})
+                if item.image_url and source_restaurant.id != target.id:
+                    item_data["image_url"], path = clone_restaurant_image(
+                        item.image_url,
+                        settings.data_root,
+                        source_restaurant.id,
+                        target.id,
+                    )
+                    copied_files.append(path)
+                items.append(item_data)
+            copied_sections.append(MenuSectionPayload.model_validate({
+                "name": section.name, "items": items,
+            }))
+        validate_menu_image_ownership(restaurant_id, copied_sections)
+        await write_version_sections(session, draft.id, copied_sections)
+        menu.updated_at = datetime.now().astimezone()
+        await session.flush()
+        result_sections = await read_version_sections(session, draft.id)
+        await session.commit()
+    except (FileNotFoundError, ValueError) as error:
+        await session.rollback()
+        for path in copied_files:
+            path.unlink(missing_ok=True)
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except Exception:
+        await session.rollback()
+        for path in copied_files:
+            path.unlink(missing_ok=True)
+        raise
+    return DraftMenuResponse(
+        menu_id=menu.id,
+        draft_version_id=draft.id,
+        sections=result_sections,
+        revision=menu_revision(result_sections),
+    )
+
+
+@router.post(
+    "/restaurants/{restaurant_id}/menu/availability/bulk",
+    response_model=list[AvailabilityResult],
+)
+async def set_bulk_availability(
+    restaurant_id: uuid.UUID,
+    payload: BulkAvailabilityPayload,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[AvailabilityResult]:
+    """Change matching items in selected draft menus as one transaction."""
+    target_map = {target.restaurant_id: target for target in payload.targets}
+    if len(target_map) != len(payload.targets):
+        raise HTTPException(status_code=422, detail="Точка выбрана несколько раз")
+    point_ids = set(target_map) | {restaurant_id}
+    owned = (await session.scalars(select(Restaurant.id).where(
+        Restaurant.id.in_(point_ids), Restaurant.owner_id == current_user.id,
+    ))).all()
+    if set(owned) != point_ids:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+
+    locked: dict[uuid.UUID, tuple[Menu, MenuVersion, list[MenuSectionResponse]]] = {}
+    for point_id in sorted(point_ids):
+        menu, draft = await get_menu_and_draft(session, point_id, lock=True)
+        sections = await read_version_sections(session, draft.id)
+        expected = (
+            target_map[point_id].expected_revision
+            if point_id in target_map else payload.source_expected_revision
+        )
+        if point_id == restaurant_id and expected != payload.source_expected_revision:
+            raise HTTPException(status_code=409, detail="Черновик исходной точки изменился")
+        if menu_revision(sections) != expected:
+            raise HTTPException(
+                status_code=409, detail="Черновик изменился. Обновите меню и повторите."
+            )
+        locked[point_id] = menu, draft, sections
+
+    source_sections = locked[restaurant_id][2]
+    source_key = next((
+        (section.name.strip().casefold(), item.name.strip().casefold())
+        for section in source_sections for item in section.items
+        if item.id == payload.source_item_id
+    ), None)
+    if source_key is None:
+        raise HTTPException(status_code=404, detail="Позиция не найдена")
+
+    matching_ids: dict[uuid.UUID, uuid.UUID] = {}
+    for point_id in target_map:
+        matches = [item.id for section in locked[point_id][2]
+                   for item in section.items
+                   if (section.name.strip().casefold(), item.name.strip().casefold()) == source_key]
+        if len(matches) != 1:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "В каждой выбранной точке должна быть ровно одна позиция "
+                    "с этим названием и разделом"
+                ),
+            )
+        matching_ids[point_id] = matches[0]
+
+    for point_id, item_id in matching_ids.items():
+        item = await session.get(MenuItem, item_id)
+        if item is None:
+            raise HTTPException(status_code=409, detail="Позиция изменилась. Обновите меню.")
+        item.is_available = payload.is_available
+        locked[point_id][0].updated_at = datetime.now().astimezone()
+    await session.flush()
+    results = [AvailabilityResult(
+        restaurant_id=point_id,
+        revision=menu_revision(await read_version_sections(session, locked[point_id][1].id)),
+    ) for point_id in target_map]
+    await session.commit()
+    return results
 
 
 @router.post(

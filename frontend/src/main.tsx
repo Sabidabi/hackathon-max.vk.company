@@ -8,6 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./styles.css";
 import "./admin.css";
+import "./team.css";
 
 const queryClient = new QueryClient();
 

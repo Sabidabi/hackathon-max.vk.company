@@ -1,5 +1,6 @@
 import io
 import re
+import shutil
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -131,3 +132,26 @@ def media_url_restaurant_id(url: str, namespace: MediaNamespace) -> uuid.UUID | 
     except ValueError:
         return None
     return restaurant_id if str(restaurant_id) == match.group("restaurant_id") else None
+
+
+def clone_restaurant_image(
+    url: str,
+    data_root: Path,
+    source_restaurant_id: uuid.UUID,
+    target_restaurant_id: uuid.UUID,
+) -> tuple[str, Path]:
+    """Give the target point its own file; menu image URLs never cross tenants."""
+    match = MEDIA_URL_PATTERN.fullmatch(url)
+    if match is None or match.group("namespace") != "menu-items":
+        raise ValueError("Invalid menu image URL")
+    if match.group("restaurant_id") != str(source_restaurant_id):
+        raise ValueError("Menu image belongs to another restaurant")
+    root = data_root / "menu-images" / "menu-items"
+    source = root / str(source_restaurant_id) / f"{match.group('image_id')}.webp"
+    if not source.is_file():
+        raise FileNotFoundError("Source menu image is missing")
+    target_name = f"{uuid.uuid4().hex}.webp"
+    target = root / str(target_restaurant_id) / target_name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, target)
+    return f"/media/menu-items/{target_restaurant_id}/{target_name}", target

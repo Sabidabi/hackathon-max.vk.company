@@ -266,6 +266,26 @@ async function verifyPublicStartParam(browser, baseUrl) {
     await page.getByRole("button", { name: "Отправить · 1", exact: true }).click();
     await page.getByText("Рассылка в очереди", { exact: true }).waitFor();
 
+    await page.getByRole("button", { name: "Новая точка" }).click();
+    const newPoint = page.locator(".cabinet-content > div:not([hidden])");
+    await newPoint.getByLabel("Название").fill("Пекарня Юг");
+    await newPoint.getByLabel("Адрес").fill("Москва, улица 2");
+    await newPoint.getByRole("button", { name: "Создать точку" }).click();
+    await page.getByRole("combobox", { name: "Выбрать точку" }).locator("option").nth(1).waitFor({ state: "attached" });
+    assert.equal(await page.getByRole("combobox", { name: "Выбрать точку" }).locator("option").count(), 2);
+    assert.match(page.url(), /\/manage\//);
+    await page.getByRole("button", { name: "Библиотека меню" }).click();
+    await page.getByText("Кофейня Север", { exact: true }).last().waitFor();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Скопировать" }).click();
+    await page.getByRole("button", { name: "Команда", exact: true }).click();
+    await page.getByLabel("MAX ID сотрудника").fill("12345");
+    await page.getByRole("button", { name: "Пригласить", exact: true }).click();
+    await page.getByText("Передайте ссылку сотруднику:").waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    await page.screenshot({ path: path.join(output, "team-mobile.png"), fullPage: true });
+
     await verifyMaxLaunch(browser, baseUrl, "", "fragment");
     await verifyMaxLaunch(
       browser,
@@ -277,7 +297,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
 
     assert.deepEqual(pageErrors, []);
     assert.equal(fixtureError, "");
-    console.log("PASS: MAX launch and public start parameter, templates, editor, modifiers, publication, QR, favorites and responsive layout (fixture API)");
+    console.log("PASS: MAX launch, menu, multi-point copy, team invite and responsive layout (fixture API)");
   } finally {
     await browser.close();
     fixture.kill();

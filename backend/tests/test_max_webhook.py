@@ -110,6 +110,34 @@ def test_message_text_extraction() -> None:
     assert max_webhook.extract_message_text(update) == "/menu"
 
 
+def test_id_command_replies_with_sender_max_id(monkeypatch: Any) -> None:
+    calls: list[dict[str, object]] = []
+
+    async def fake_send_max_message(settings: Settings, **kwargs: object) -> bool:
+        calls.append(kwargs)
+        return True
+
+    monkeypatch.setattr(max_webhook, "send_max_message", fake_send_max_message)
+    app.dependency_overrides[get_settings] = webhook_settings
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/webhooks/max",
+                headers={"X-Max-Bot-Api-Secret": "test-secret"},
+                json={
+                    "update_type": "message_created",
+                    "chat_id": 123456,
+                    "user": {"user_id": 42},
+                    "message": {"body": {"text": "/id"}},
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert calls == [{"text": "Ваш MAX ID: 42. Передайте его владельцу точки.", "chat_id": 123456}]
+
+
 async def test_webhook_registration_requires_https() -> None:
     settings = webhook_settings()
     settings.max_webhook_url = "http://example.com/webhooks/max"
