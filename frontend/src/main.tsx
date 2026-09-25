@@ -9,6 +9,7 @@ import App from "./App";
 import "./styles.css";
 import "./admin.css";
 import "./team.css";
+import "./menu-experience.css";
 
 const queryClient = new QueryClient();
 

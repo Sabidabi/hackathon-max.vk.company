@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, BellOff, ChevronRight, Search, Star, Utensils } from "lucide-react";
+import { Bell, BellOff, ChevronRight, Search, Star } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchCurrentUser, loginWithMax } from "../../api/auth";
@@ -126,7 +126,7 @@ export function PublicMenu({ publicId, maxContext }: { publicId: string; maxCont
   function scrollToSection(sectionId: string) {
     setActiveSectionId(sectionId);
     document.getElementById(sectionElementId(sectionId))?.scrollIntoView({
-      behavior: "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start",
     });
   }
@@ -217,7 +217,7 @@ export function PublicMenu({ publicId, maxContext }: { publicId: string; maxCont
                 <h2>{section.name}</h2>
                 <span>{section.items.length}</span>
               </header>
-              <div className="public-items">
+              <div className={`public-items${section.items.every((item) => !item.image_url) ? " public-items--text-only" : ""}`}>
                 {section.items.map((item, itemIndex) => {
                   const configurable = Boolean(
                     item.configuration?.variants.length
@@ -235,13 +235,9 @@ export function PublicMenu({ publicId, maxContext }: { publicId: string; maxCont
                         aria-label={item.is_available ? `Открыть ${item.name}` : `${item.name} — временно нет`}
                         onClick={() => setSelected(item)}
                       >
-                        <span className="menu-card-media">
-                          {item.image_url ? (
+                        {item.image_url && <span className="menu-card-media">
                             <img src={item.image_url} alt={item.name} loading="lazy" decoding="async" />
-                          ) : (
-                            <span className="menu-card-placeholder"><Utensils size={23} /><i aria-hidden="true" /></span>
-                          )}
-                        </span>
+                        </span>}
                         <span className="menu-card-content">
                           <strong>{item.name}</strong>
                           {item.description && <span className="menu-card-description">{item.description}</span>}
