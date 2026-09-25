@@ -5,24 +5,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchCurrentUser, loginWithMax } from "../../api/auth";
 import { fetchPublicMenu, type MenuItem } from "../../api/menu";
 import { fetchFavorite, updateFavorite } from "../../api/notifications";
-import { initializeMaxBridge } from "../../max/bridge";
+import type { MaxContext } from "../../max/bridge";
 import { GuestItemDialog } from "../menu/GuestItemDialog";
 import { displayPrice } from "../menu/configuration";
 import { SiteLayout } from "../site/SiteLayout";
-
-const maxContext = initializeMaxBridge();
 
 function sectionElementId(sectionId: string) {
   return `menu-section-${sectionId}`;
 }
 
-export function PublicMenu({ publicId }: { publicId: string }) {
+export function PublicMenu({ publicId, maxContext }: { publicId: string; maxContext: MaxContext }) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<MenuItem | null>(null);
   const [search, setSearch] = useState("");
   const [onlyAvailable, setOnlyAvailable] = useState(true);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const categoryRailRef = useRef<HTMLElement | null>(null);
+  const maxLoginStarted = useRef(false);
   const menu = useQuery({
     queryKey: ["public-menu", publicId],
     queryFn: () => fetchPublicMenu(publicId),
@@ -43,12 +42,12 @@ export function PublicMenu({ publicId }: { publicId: string }) {
       currentUser.isSuccess
       && currentUser.data === null
       && maxContext.initData
-      && !maxLogin.isPending
-      && !maxLogin.isSuccess
+      && !maxLoginStarted.current
     ) {
+      maxLoginStarted.current = true;
       maxLogin.mutate(maxContext.initData);
     }
-  }, [currentUser.data, currentUser.isSuccess, maxLogin]);
+  }, [currentUser.data, currentUser.isSuccess, maxContext.initData, maxLogin]);
 
   const favorite = useQuery({
     queryKey: ["favorite", publicId],

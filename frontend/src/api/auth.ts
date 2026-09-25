@@ -46,6 +46,12 @@ export async function loginWithMax(initData: string): Promise<AuthUser> {
     body: JSON.stringify({ init_data: initData }),
   });
 
+  if (response.status === 401) {
+    throw new Error("MAX не подтвердил запуск. Закройте мини-приложение и откройте его снова из бота.");
+  }
+  if (response.status === 503) {
+    throw new Error("Вход через MAX пока не настроен на сервере.");
+  }
   return parseAuthResponse(response);
 }
 

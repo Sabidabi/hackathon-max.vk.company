@@ -22,6 +22,43 @@ async function waitForFixture() {
   throw new Error("Fixture server did not start");
 }
 
+async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const initData = new URLSearchParams({
+    auth_date: "1790330000",
+    user: JSON.stringify({ id: 12345, first_name: "Test" }),
+    hash: "synthetic-fixture-signature",
+  }).toString();
+  const received = [];
+  await page.route("https://st.max.ru/js/max-web-app.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: bridgeScript.replace("__INIT_DATA__", JSON.stringify(initData)) }),
+  );
+  await page.route("**/api/v1/auth/**", async (route) => {
+    const request = route.request();
+    if (request.url().endsWith("/auth/me")) {
+      await route.fulfill({ status: 401, contentType: "application/json", body: '{"detail":"Not authenticated"}' });
+    } else if (request.url().endsWith("/auth/bootstrap")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ max_auth_configured: true, development_auth: false, max_launch_url: null }) });
+    } else if (request.url().endsWith("/auth/max")) {
+      received.push(JSON.parse(request.postData()).init_data);
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "test-user", max_user_id: 12345, display_name: "Test", username: null, language_code: "ru" }) });
+    } else {
+      await route.continue();
+    }
+  });
+  try {
+    const launchHash = hash === "fragment"
+      ? `#WebAppData=${encodeURIComponent(initData)}&WebAppPlatform=web&WebAppVersion=26.2.8`
+      : "";
+    await page.goto(`${baseUrl}/${launchHash}`);
+    await page.getByRole("button", { name: "Добавить позиции с ИИ" }).waitFor();
+    assert.deepEqual(received, [initData], "MAX signed payload must be sent exactly once");
+  } finally {
+    await context.close();
+  }
+}
+
 (async () => {
   const fixture = spawn(process.execPath, [path.join(__dirname, "fixture-server.cjs")], {
     cwd: path.resolve(__dirname, ".."),
@@ -116,6 +153,7 @@ async function waitForFixture() {
     await page.screenshot({ path: path.join(output, "qr-mobile.png"), fullPage: true });
 
     await page.goto(`${baseUrl}/r/test-point`);
+    await page.getByLabel("Поиск по меню").waitFor({ timeout: 1_000 });
     await page.screenshot({ path: path.join(output, "guest-catalog-mobile.png"), fullPage: true });
     assert.equal(await page.getByRole("button", { name: /Американо/ }).count(), 0);
     await page.getByLabel("В наличии").uncheck();
@@ -157,9 +195,16 @@ async function waitForFixture() {
     await page.getByRole("button", { name: "Отправить · 1", exact: true }).click();
     await page.getByText("Рассылка в очереди", { exact: true }).waitFor();
 
+    await verifyMaxLaunch(browser, baseUrl, "", "fragment");
+    await verifyMaxLaunch(
+      browser,
+      baseUrl,
+      "setTimeout(() => { window.WebApp = { initData: __INIT_DATA__, platform: 'android', ready() {}, expand() {} }; }, 150);",
+    );
+
     assert.deepEqual(pageErrors, []);
     assert.equal(fixtureError, "");
-    console.log("PASS: templates, preview isolation, photos, AI draft, modifiers, server quote, dark palette, publication, QR, favorites, unavailable items, category rail and 390px layout (fixture API)");
+    console.log("PASS: MAX fragment and delayed bridge login, templates, editor, modifiers, publication, QR, favorites and 390px layout (fixture API)");
   } finally {
     await browser.close();
     fixture.kill();
