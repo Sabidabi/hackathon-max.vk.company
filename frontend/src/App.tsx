@@ -92,13 +92,13 @@ export default function App() {
   }, [maxContext]);
 
   const publicMatch = window.location.pathname.match(/^\/r\/([a-zA-Z0-9_-]+)\/?$/);
-  const maxRestaurantId = maxContext?.startParam?.match(/^r_([a-zA-Z0-9_-]+)$/)?.[1];
+  const maxRestaurantId = (maxContext ?? readMaxContext()).startParam?.match(/^r_([a-zA-Z0-9_-]+)$/)?.[1];
   const publicId = publicMatch?.[1] ?? maxRestaurantId;
   if (publicId) {
     return <PublicMenu publicId={publicId} maxContext={maxContext ?? readMaxContext()} />;
   }
   if (!maxContext) {
-    return <main className="launch-state" aria-live="polite"><LoaderCircle className="launch-spinner" size={28} /><strong>Открываем приложение</strong></main>;
+    return <main className="admin-shell"><section className="launch-state launch-state--standalone" aria-live="polite"><LoaderCircle className="launch-spinner" size={28} /><strong>Открываем приложение</strong></section></main>;
   }
   return <OwnerApp maxContext={maxContext} />;
 }

@@ -1,7 +1,7 @@
 import logging
 import re
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import httpx
 
@@ -9,16 +9,41 @@ from app.config import Settings
 
 logger = logging.getLogger(__name__)
 WEBHOOK_SECRET_PATTERN = re.compile(r"^[A-Za-z0-9_-]{5,256}$")
+STARTAPP_PAYLOAD_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,512}$")
 
 
 def build_max_deep_link(bot_username: str, payload: str | None = None) -> str | None:
     username = bot_username.strip().lstrip("@")
     if not username:
         return None
+    if payload is not None and not STARTAPP_PAYLOAD_PATTERN.fullmatch(payload):
+        raise ValueError("MAX startapp payload must contain 1-512 safe characters")
     query = "startapp"
     if payload:
         query = urlencode({"startapp": payload})
     return f"https://max.ru/{username}?{query}"
+
+
+def build_message_button(settings: Settings, text: str, url: str) -> dict[str, Any]:
+    """Launch this bot's mini-app inside MAX; keep external URLs as normal links."""
+    username = settings.max_bot_username.strip().lstrip("@")
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    if (
+        username
+        and parsed.scheme == "https"
+        and parsed.netloc.lower() == "max.ru"
+        and parsed.path.strip("/").casefold() == username.casefold()
+        and not parsed.fragment
+        and set(query) == {"startapp"}
+        and len(query["startapp"]) == 1
+    ):
+        button: dict[str, Any] = {"type": "open_app", "text": text, "web_app": username}
+        start_payload = query["startapp"][0]
+        if start_payload:
+            button["payload"] = start_payload
+        return button
+    return {"type": "link", "text": text, "url": url}
 
 
 async def send_max_message(
@@ -44,11 +69,7 @@ async def send_max_message(
                 "payload": {
                     "buttons": [
                         [
-                            {
-                                "type": "link",
-                                "text": button_text,
-                                "url": button_url,
-                            }
+                            build_message_button(settings, button_text, button_url)
                         ]
                     ]
                 },
@@ -98,6 +119,6 @@ async def register_max_webhook(settings: Settings) -> dict[str, Any]:
         )
         response.raise_for_status()
         payload = response.json()
-    if not isinstance(payload, dict):
+    if not isinstance(payload, dict) or payload.get("success") is not True:
         raise ValueError("MAX API returned an unexpected subscription response")
     return payload

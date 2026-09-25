@@ -71,6 +71,8 @@ npm run test:browser
 
 Browser smoke использует отдельный in-memory fixture server и не совершает реальные вызовы MAX, GigaChat или платежей.
 
+Порядок обновления Docker-сервера и проверки входа в реальном MAX описан в [docs/max-production-check.md](docs/max-production-check.md). Сверка с официальным API — в [docs/max-api-audit.md](docs/max-api-audit.md).
+
 ## Документы команды
 
 - [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — краткий контекст продукта и границы этапа;

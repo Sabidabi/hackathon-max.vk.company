@@ -133,6 +133,9 @@ export function PublicMenu({ publicId, maxContext }: { publicId: string; maxCont
 
   const menuContent = (
     <div className="mobile-menu-catalog">
+      {selected && (
+        <GuestItemDialog item={selected} publicId={publicId} onClose={() => setSelected(null)} />
+      )}
       <div className="catalog-discovery">
         <label className="catalog-search">
           <Search size={18} />
@@ -268,9 +271,6 @@ export function PublicMenu({ publicId, maxContext }: { publicId: string; maxCont
 
   return (
     <main className="public-shell">
-      {selected && (
-        <GuestItemDialog item={selected} publicId={publicId} onClose={() => setSelected(null)} />
-      )}
       <SiteLayout
         config={menu.data.site}
         restaurant={menu.data.restaurant}

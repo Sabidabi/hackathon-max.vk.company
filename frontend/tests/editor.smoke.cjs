@@ -59,6 +59,61 @@ async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
   }
 }
 
+async function verifyOutsideMax(browser, baseUrl) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  let loginAttempts = 0;
+  await page.route("https://st.max.ru/js/max-web-app.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
+  );
+  await page.route("**/api/v1/auth/**", async (route) => {
+    const url = route.request().url();
+    if (url.endsWith("/auth/me")) {
+      await route.fulfill({ status: 401, contentType: "application/json", body: '{"detail":"Not authenticated"}' });
+    } else if (url.endsWith("/auth/bootstrap")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ max_auth_configured: true, development_auth: false, max_launch_url: null }) });
+    } else if (url.endsWith("/auth/max")) {
+      loginAttempts += 1;
+      await route.fulfill({ status: 401, contentType: "application/json", body: '{"detail":"Invalid data"}' });
+    } else {
+      await route.continue();
+    }
+  });
+  try {
+    await page.goto(baseUrl);
+    await page.getByText("Нет данных для входа", { exact: true }).waitFor({ timeout: 5_000 });
+    assert.equal(loginAttempts, 0, "No MAX login should be attempted without signed launch data");
+    const colors = await page.locator(".launch-state").evaluate((element) => ({
+      background: getComputedStyle(element).backgroundColor,
+      text: getComputedStyle(element.querySelector("strong")).color,
+    }));
+    assert.notEqual(colors.background, colors.text, "Outside-MAX state must keep readable contrast");
+    await page.screenshot({ path: path.join(output, "outside-max-mobile.png") });
+  } finally {
+    await context.close();
+  }
+}
+
+async function verifyPublicStartParam(browser, baseUrl) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  let ownerLoginAttempts = 0;
+  await page.route("https://st.max.ru/js/max-web-app.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
+  );
+  await page.route("**/api/v1/auth/max", (route) => {
+    ownerLoginAttempts += 1;
+    return route.abort();
+  });
+  try {
+    await page.goto(`${baseUrl}/?WebAppStartParam=r_test-point`);
+    await page.getByLabel("Поиск по меню").waitFor({ timeout: 1_000 });
+    assert.equal(ownerLoginAttempts, 0, "Unsigned start parameter must not trigger owner login");
+  } finally {
+    await context.close();
+  }
+}
+
 (async () => {
   const fixture = spawn(process.execPath, [path.join(__dirname, "fixture-server.cjs")], {
     cwd: path.resolve(__dirname, ".."),
@@ -174,14 +229,30 @@ async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
     const latte = page.locator("article").filter({ hasText: "Латте" });
     await latte.getByRole("button", { name: "Открыть Латте" }).click();
     assert.equal(await page.getByLabel("Обычное").isChecked(), true);
-    assert.equal(await page.getByLabel("Обычное").isDisabled(), true);
+    assert.equal(await page.getByLabel("Обычное").isDisabled(), false);
+    assert.notEqual(
+      await page.locator(".guest-item-dialog").evaluate((dialog) => getComputedStyle(dialog).backgroundColor),
+      "rgb(255, 255, 255)",
+      "Guest dialog should use the restaurant's dark theme",
+    );
     await page.getByLabel("Овсяное").check();
     await page.getByText("250 ₽", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Добавить Карамель" }).click();
+    await page.getByText("280 ₽", { exact: true }).waitFor();
     assert.ok(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
       "Guest item dialog has horizontal overflow at 390 px",
     );
     await page.screenshot({ path: path.join(output, "guest-config-mobile.png"), fullPage: true });
+    await page.setViewportSize({ width: 320, height: 700 });
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      "Guest item dialog has horizontal overflow at 320 px",
+    );
+    await page.screenshot({ path: path.join(output, "guest-config-small.png") });
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.screenshot({ path: path.join(output, "guest-config-desktop.png") });
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "Закрыть карточку" }).click();
     await page.getByRole("button", { name: "Добавить в избранное" }).click();
     await page.getByRole("button", { name: "Убрать из избранного" }).waitFor();
@@ -201,10 +272,12 @@ async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
       baseUrl,
       "setTimeout(() => { window.WebApp = { initData: __INIT_DATA__, platform: 'android', ready() {}, expand() {} }; }, 150);",
     );
+    await verifyOutsideMax(browser, baseUrl);
+    await verifyPublicStartParam(browser, baseUrl);
 
     assert.deepEqual(pageErrors, []);
     assert.equal(fixtureError, "");
-    console.log("PASS: MAX fragment and delayed bridge login, templates, editor, modifiers, publication, QR, favorites and 390px layout (fixture API)");
+    console.log("PASS: MAX launch and public start parameter, templates, editor, modifiers, publication, QR, favorites and responsive layout (fixture API)");
   } finally {
     await browser.close();
     fixture.kill();

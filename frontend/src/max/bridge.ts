@@ -2,6 +2,7 @@ export type MaxPlatform = "ios" | "android" | "desktop" | "web" | "unknown";
 
 interface MaxWebApp {
   initData?: string;
+  initDataUnsafe?: { start_param?: string };
   platform?: Exclude<MaxPlatform, "unknown">;
   version?: string;
   ready?: () => void;
@@ -28,9 +29,10 @@ let preparedBridge: MaxWebApp | null = null;
 
 function readLaunchFragment(): { initData: string; platform: MaxPlatform; version: string | null } {
   const fragment = new URLSearchParams(window.location.hash.slice(1));
-  // A duplicated outer parameter is ambiguous; the backend separately checks
-  // duplicate fields inside signed WebAppData before creating a session.
-  if (fragment.getAll("WebAppData").length !== 1) {
+  // MAX requires every outer launch parameter to be unique. The backend also
+  // checks duplicate fields inside signed WebAppData before creating a session.
+  const keys = Array.from(fragment.keys());
+  if (fragment.getAll("WebAppData").length !== 1 || new Set(keys).size !== keys.length) {
     return { initData: "", platform: "unknown", version: null };
   }
   const platform = fragment.get("WebAppPlatform");
@@ -47,10 +49,14 @@ export function readMaxContext(): MaxContext {
   const bridge = window.WebApp;
   const fragment = readLaunchFragment();
   const initData = bridge?.initData?.trim() || fragment.initData;
+  // This value only selects a public menu. Authentication always uses signed initData.
+  const startParam = (initData && new URLSearchParams(initData).get("start_param"))
+    || bridge?.initDataUnsafe?.start_param
+    || new URLSearchParams(window.location.search).get("WebAppStartParam")
+    || null;
   if (!initData) {
-    return { available: false, initData: "", platform: "unknown", version: null, startParam: null };
+    return { available: false, initData: "", platform: "unknown", version: null, startParam };
   }
-  const startParam = new URLSearchParams(initData).get("start_param");
   return {
     available: true,
     initData,
