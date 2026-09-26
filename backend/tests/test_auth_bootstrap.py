@@ -1,4 +1,6 @@
-from app.api.routes.auth import get_auth_bootstrap
+from fastapi import Response
+
+from app.api.routes.auth import get_auth_bootstrap, set_session_cookie
 from app.config import Settings
 
 
@@ -24,3 +26,25 @@ async def test_development_bootstrap_enables_automatic_dev_session() -> None:
     assert result.development_auth is True
     assert result.max_auth_configured is False
     assert result.max_launch_url is None
+
+
+def test_production_session_cookie_supports_embedded_max_client() -> None:
+    response = Response()
+
+    set_session_cookie(response, "session-token", Settings(app_env="production"))
+
+    cookie = response.headers["set-cookie"].lower()
+    assert "httponly" in cookie
+    assert "secure" in cookie
+    assert "samesite=none" in cookie
+
+
+def test_development_session_cookie_remains_local_http_compatible() -> None:
+    response = Response()
+
+    set_session_cookie(response, "session-token", Settings(app_env="development"))
+
+    cookie = response.headers["set-cookie"].lower()
+    assert "httponly" in cookie
+    assert "secure" not in cookie
+    assert "samesite=lax" in cookie

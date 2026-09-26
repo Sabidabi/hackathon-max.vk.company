@@ -60,13 +60,14 @@ def set_session_cookie(
     token: str,
     settings: Settings,
 ) -> None:
+    is_production = settings.app_env != "development"
     response.set_cookie(
         key=settings.session_cookie_name,
         value=token,
         max_age=settings.session_ttl_seconds,
         httponly=True,
-        secure=settings.app_env != "development",
-        samesite="lax",
+        secure=is_production,
+        samesite="none" if is_production else "lax",
         path="/",
     )
 
@@ -141,4 +142,11 @@ async def logout(
     session_token = request.cookies.get(settings.session_cookie_name)
     if session_token:
         await revoke_session(session, session_token)
-    response.delete_cookie(settings.session_cookie_name, path="/")
+    is_production = settings.app_env != "development"
+    response.delete_cookie(
+        settings.session_cookie_name,
+        path="/",
+        httponly=True,
+        secure=is_production,
+        samesite="none" if is_production else "lax",
+    )
