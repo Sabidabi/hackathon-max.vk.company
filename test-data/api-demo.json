@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "source": "backend/app/demo_data.py; создаётся командой python -m app.demo_seed",
+  "synthetic": true,
+  "points": [
+    {
+      "public_id": "demo-sever",
+      "name": "Север на Петровском",
+      "menus": ["Основное", "Завтраки"],
+      "expected_items": [
+        {"name": "Латте", "base_price_minor": 19000, "variant": "350 мл", "modifier": "Овсяное", "quote_price_minor": 28000},
+        {"name": "Круассан", "price_minor": 17000, "is_available": true}
+      ]
+    },
+    {
+      "public_id": "demo-sever-park",
+      "name": "Север у парка",
+      "menus": ["Основное"],
+      "expected_items": [
+        {"name": "Круассан", "price_minor": 17000, "is_available": false}
+      ]
+    }
+  ],
+  "money_unit": "RUB minor units (kopecks)",
+  "notes": [
+    "Завтраки на первой точке видны только с 08:00 до 12:00 по Москве.",
+    "ID опубликованных позиций создаются базой; тест получает их из ответа меню, а не хранит статически.",
+    "В фикстуре нет реальных клиентов, платежей и секретов."
+  ]
+}

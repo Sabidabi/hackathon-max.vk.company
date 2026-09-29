@@ -1,116 +1,85 @@
-# Синица
+# Синица — меню кофейни в MAX
 
-«Синица» — мини-приложение MAX для кофеен и пекарен. Гость открывает меню заведения по QR, собирает «Мой выбор» и показывает его на кассе. Администратор ведёт точки, меню, стоп-лист, оформление и QR прямо в MAX. Онлайн-оплаты нет: заказ оформляется на кассе.
+Мини-приложение для кофеен и пекарен. Гость открывает меню точки по QR, выбирает размер и добавки, собирает «Мой выбор» и показывает его кассиру. Администратор создаёт точки, ведёт библиотеку меню, стоп-лист и оформление, публикует изменения и получает QR. [Бот MAX](https://max.ru/t540_hakaton_max_bot) открывает приложение и обслуживает уведомления по согласию.
 
-## Возможности
+**Текущий MVP — демонстрация выбора на кассе.** Предзаказ на время, ЮKassa, оплаченный заказ, возврат, экран выдачи и финансовый отчёт в этом репозитории не реализованы. Публичный адрес, предоставленный командой: [max.nii-mvus.ru](https://max.nii-mvus.ru); работоспособность запущенного на нём коммита проверяется отдельно.
 
-**Гость**
-- Меню точки по QR или ссылке `/r/<id>` в теме заведения: разделы, поиск с опечатками, карточка позиции с размерами и добавками.
-- «Мой выбор» → «Показать на кассе»; цену считает сервер.
-- «Синица, что взять?» — ИИ-подборка до трёх доступных позиций. Без ИИ показывается подборка по ключевым словам.
+## Путь пользователя
 
-**Администратор**
-- Заведение с несколькими точками, библиотека меню, часы показа, стоп-лист точки.
-- Черновик и публикация раздельно, «Что изменится», история версий; конфликт ревизии даёт 409 без потери правок.
-- Оформление с контролем контраста, QR и тейбл-тент A6, приглашение администратора по ссылке.
-- Импорт PDF и фото в черновик (OCR), «Синица проверила меню», ИИ-описание позиции, создание позиций текстом.
+1. Гость сканирует QR точки, видит категории и карточки позиций. «Латте» 350 мл с обязательным овсяным молоком стоит 280 ₽ по расчёту API.
+2. «Мой выбор» показывает сводку кассиру; платёж проходит вне приложения.
+3. В `/manage` администратор правит черновик, просматривает разницу и публикует меню в назначенных точках. Стоп-лист каждой точки применяется сразу. QR и тейбл-тент A6 скачиваются из кабинета.
+4. Бот отправляет уведомления только при согласии; локальный сценарий без токена MAX их не рассылает.
 
-**Бот MAX**: вход в мини-приложение, уведомления и рассылки по согласию через очередь (идемпотентно), обращения в поддержку.
+Пошаговый показ — [docs/DEMO.md](docs/DEMO.md). Проверка в настоящем клиенте MAX — [docs/max-production-check.md](docs/max-production-check.md).
 
-**ИИ**: подборка для гостя, описания, проверка меню, структурирование импорта, недельная сводка. Подробности: [docs/ai-and-mcp.md](docs/ai-and-mcp.md).
+## Архитектура и зависимости
 
-**Аналитика**: продуктовые события гостей и недельная сводка для администратора.
+| Компонент | Назначение | Локальный порт |
+| --- | --- | --- |
+| `frontend/` — React, TypeScript, Vite, Nginx | Гостевая витрина и кабинет; `/api/` проксируется на backend | 8080 |
+| `backend/` — FastAPI, SQLAlchemy, Alembic | API, авторизация MAX, меню, серверный расчёт цены | 8000 |
+| `postgres` — PostgreSQL 16 | Данные | Только сеть Compose |
+| `worker` — Python, Tesseract | OCR, очередь уведомлений, фоновые задания | Нет |
+| `mcp` — необязательный профиль | Инструменты черновика меню | 8010 при `--profile mcp` |
 
-## Стек
+Для реального входа нужны бот MAX и настроенная кнопка мини-приложения. ИИ использует внешний OpenAI-совместимый шлюз только при заданном ключе; ручное меню и локальный демо-сценарий обходятся без него. Версии зафиксированы в `backend/requirements.txt`, `backend/requirements-dev.txt`, `frontend/package-lock.json`. Docker-сборка описана в `backend/Dockerfile` и `frontend/Dockerfile`; у обоих есть `.dockerignore`.
 
-- Backend: Python, FastAPI, SQLAlchemy, Alembic, PostgreSQL (`backend/`).
-- Frontend: React 19, TypeScript, Vite, TanStack Query, `@maxhub/max-ui` (`frontend/`).
-- Worker: OCR и фоновые задачи (`python -m app.worker`), Tesseract для изображений.
-- MCP-сервер меню (опционально), Docker Compose.
-- Бренд и токены дизайна: `brandbook-sinitsa/`.
+| Внешняя зависимость | Когда нужна | Условие проверки |
+| --- | --- | --- |
+| MAX Bot API и клиент MAX | Реальный вход, открытие mini-app, бот и уведомления | `GET /api/v1/auth/bootstrap`: `max_auth_configured=true`, затем ручной вход через кнопку того же бота в mobile/web; одной этой проверки API недостаточно |
+| OpenAI-совместимый ИИ-шлюз | Подсказки, описания, импорт с ИИ; не нужен для ручного меню | Задать `AI_API_KEY` на сервере и проверить ИИ-функцию на тестовом меню; `mock` помечается как демо |
+| PostgreSQL | Обязателен для API | `GET /api/v1/health/ready` возвращает `200`, а `postgres` проходит healthcheck |
+| Tesseract OCR | Извлечение текста из изображений и сканов PDF | Выполнить импорт тестового файла в контейнере worker; в Docker-образе языковые пакеты установлены |
 
-## Запуск локально
+ЮKassa не подключена к этому MVP; проверок платежей в комплекте нет.
 
-Docker:
+## Локальный запуск
+
+Нужны Docker Engine и Docker Compose. Из корня проекта:
 
 ```bash
 cp .env.example .env
 docker compose up -d --build
-docker compose exec backend python -m app.demo_seed   # демо-заведение «Кофейня Север»
+docker compose exec backend python -m app.demo_seed
 ```
 
-Приложение: http://localhost:8080, API: http://localhost:8000. Сценарий демо: [docs/DEMO.md](docs/DEMO.md). В браузере вход для разработки — dev-вход (`APP_ENV=development`, `DEV_AUTH_ENABLED=true`).
+В PowerShell вместо `cp` можно использовать `Copy-Item .env.example .env`. Первые две строки поднимают все обязательные локальные сервисы **одной командой Compose**; последняя создаёт синтетическую «Кофейню Север». Сид повторяемый. Если у dev-пользователя в базе уже есть своё заведение, сид может отказаться менять его: используйте чистую тестовую БД. Пример `.env` включает dev-вход и тестовый пароль PostgreSQL; **для production он непригоден**.
 
-Без Docker (нужна PostgreSQL, `DATABASE_URL` в `.env`):
+После старта: приложение `http://localhost:8080`, API `http://localhost:8000`, документация API `http://localhost:8000/docs`, готовность `http://localhost:8000/api/v1/health/ready`. Первая сборка зависит от загрузки образов и пакетов; время сборки на машине проверяющего нужно измерить отдельно.
 
-```bash
-# backend
-cd backend
-pip install -r requirements-dev.txt
-alembic upgrade head
-uvicorn app.main:app --reload --port 8000
-python -m app.worker            # отдельным процессом
+### Как проверить результат
 
-# frontend
-cd frontend
-npm ci
-npm run dev
-```
+1. `docker compose ps` показывает работающие `postgres`, `backend`, `worker`, `frontend`; `/api/v1/health/ready` возвращает `200` и `status: ready`.
+2. `http://localhost:8080/r/demo-sever`: «Основное», латте 350 мл + овсяное = 280 ₽. С эспрессо «Мой выбор» = 400 ₽. «Завтраки» видны только 08:00–12:00 по Москве.
+3. `http://localhost:8080/r/demo-sever-park`: круассан недоступен, хотя на первой точке доступен.
+4. `http://localhost:8080/manage`: dev-вход в обычном браузере, правка черновика и публикация. Вход через подписанный `initData` проверяется отдельно внутри MAX.
+5. Сверьте API с [DATA-API.yaml](DATA-API.yaml) и [test-data/api-demo.json](test-data/api-demo.json). ID позиции и вариантов берите из ответа меню, не из статической фикстуры.
 
-## Переменные окружения
+Локальный тестовый администратор — `DEV_MAX_USER_ID=900000001` из `.env.example`, только при `APP_ENV=development` и `DEV_AUTH_ENABLED=true`; гостю вход не нужен. Для роли администратора **на production** владелец должен назначить отдельный тестовый аккаунт MAX. Поддельные `initData` и статические пароли не предоставляются.
 
-Полный список со значениями по умолчанию — `.env.example`. Секреты задаются только в `.env` или окружении, не в коде и не в Git.
+Остановка: `docker compose down` сохраняет тома. Перезапуск: `docker compose up -d --build`; повторный сид не нужен. `docker compose down -v` удаляет данные и допустим только для ненужной тестовой БД. Логи: `docker compose logs --tail=100 backend frontend worker`.
 
-| Группа | Переменные |
-| --- | --- |
-| Приложение | `APP_ENV`, `LOG_LEVEL`, `PUBLIC_APP_URL`, `DEV_AUTH_ENABLED`, `DEV_MAX_USER_ID` |
-| База | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL` |
-| Сессии | `SESSION_TTL_SECONDS`, `SESSION_COOKIE_NAME`, `MAX_INIT_DATA_MAX_AGE_SECONDS` |
-| Бот MAX | `MAX_BOT_TOKEN`, `MAX_BOT_USERNAME`, `MAX_WEBHOOK_SECRET`, `MAX_WEBHOOK_URL`, `MAX_API_BASE_URL`, `SUPPORT_CHAT_ID` |
-| Файлы и OCR | `DATA_ROOT`, `MAX_UPLOAD_BYTES`, `MAX_PDF_PAGES`, `OCR_*`, `WORKER_POLL_SECONDS` |
-| ИИ | `AI_PROVIDER`, `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, лимиты `AI_*` |
-| MCP | `MCP_ENABLED`, `MCP_RESOURCE_URL`, `MCP_ISSUER_URL`, `MCP_CONFIRMATION_TTL_SECONDS` |
+## Параметры и внешние сервисы
 
-## Продакшн-развёртывание
+Полный список и локальные значения — [.env.example](.env.example). `APP_ENV`, `DEV_AUTH_ENABLED`, `PUBLIC_APP_URL` определяют режим и адрес; `POSTGRES_*`, `DATABASE_URL`, `DATA_ROOT` — хранение; `MAX_BOT_TOKEN`, `MAX_BOT_USERNAME`, `MAX_WEBHOOK_URL`, `MAX_WEBHOOK_SECRET`, `MAX_API_BASE_URL` — вход и бот; `SESSION_*`, `MAX_INIT_DATA_MAX_AGE_SECONDS` — сессии; `AI_*` — необязательный ИИ; `OCR_*`, `MAX_UPLOAD_BYTES`, `MAX_PDF_PAGES` — импорт; `MCP_*` — необязательные инструменты. Tesseract включён в backend-образ. Для production задайте отдельные секреты, `APP_ENV=production`, `DEV_AUTH_ENABLED=false`, HTTPS и того же бота, что указан в MAX. Платёжные параметры не задавайте: онлайн-оплаты в этом коде нет. Подробности: [docs/max-production-check.md](docs/max-production-check.md).
 
-1. Публичный HTTPS-адрес для приложения; тот же адрес укажите в настройках бота на платформе MAX и в `PUBLIC_APP_URL`.
-2. В `.env`: `APP_ENV=production`, `DEV_AUTH_ENABLED=false`, боевые `MAX_BOT_TOKEN` и `MAX_BOT_USERNAME`, свои значения `POSTGRES_PASSWORD` и `DATABASE_URL`.
-3. Webhook MAX: HTTPS-адрес на порту 443 (`MAX_WEBHOOK_URL`, путь `/api/v1/webhooks/max`) и случайный `MAX_WEBHOOK_SECRET`.
-4. Миграции: `alembic upgrade head` (в Compose выполняются при старте backend).
-5. Запустите worker (сервис `worker` в Compose): OCR, уведомления, аналитика.
-6. `docker compose up -d --build`, затем проверьте `/api/v1/health/ready` и `/api/v1/auth/bootstrap` (`max_auth_configured: true`, `development_auth: false`).
-7. Не заменяйте рабочий `.env` примером из репозитория.
+Не храните реальные токены, пароли, персональные данные и URL с `initData` в Git и логах.
 
-Порядок обновления и ручная проверка в MAX: [docs/max-production-check.md](docs/max-production-check.md).
-
-## Проверки
+## Проверки исходников
 
 ```bash
-# backend
-cd backend && ruff check app tests migrations && pytest -q
-
-# frontend
-cd frontend && npm run build && npm run test:unit && npm run test:browser
-
-# compose
 docker compose config --quiet
+docker compose --profile test run --rm tests
+cd frontend && npm ci && npm run build && npm run test:unit && npm run test:browser
 ```
 
-Интеграционные тесты с БД запускайте только на отдельной тестовой PostgreSQL: `RUN_DB_INTEGRATION=1 pytest -q`. Не указывайте рабочую базу. Браузерные тесты используют фикстуры и не доказывают работу внутри MAX.
+Интеграционные тесты выполняют только на отдельной тестовой PostgreSQL. `npm run test:live` удаляет и создаёт БД `E2E_DATABASE_URL`; никогда не указывайте рабочую базу (см. `frontend/tests/live.e2e.cjs`). Браузерные тесты с фикстурами не доказывают вход и Bridge внутри MAX.
 
-## Безопасность и инварианты
+## API-комплект и ограничения
 
-- Авторизация и изоляция заведений — на сервере. Роль вычисляет сервер; ссылка, `startapp` и `/manage` — только навигация.
-- Деньги — целые копейки, цену считает сервер.
-- Черновик и публикация раздельны; конфликт ревизии — 409 без потери правок.
-- ИИ, OCR и MCP пишут только в проверяемый черновик и не публикуют.
-- Недоверенный ввод (вопрос гостя, текст OCR) — данные, не инструкции.
-- Секреты только в `.env`; в логах нет промптов и текстов гостей.
-- Уведомления — через очередь, идемпотентно, по согласию.
+- [openapi.json](openapi.json) — OpenAPI 3.1, выгружена из FastAPI этого исходного кода; 89 путей. Перевыгрузка: из `backend/` выполнить `python scripts/export_openapi.py` и сравнить файл.
+- [DATA-API.yaml](DATA-API.yaml) — публичный HTTPS-адрес, роли, методы, параметры и ожидаемые ответы. [test-data/api-demo.json](test-data/api-demo.json) — синтетические данные после запуска сида.
+- Авторизацию и доступ к заведению проверяет сервер; URL кабинета и `startapp` прав не дают. Цена рассчитывается сервером в целых копейках; ИИ/OCR/MCP готовят черновик, публикация остаётся действием администратора.
 
-## Ограничения
-
-- Работу в реальном клиенте MAX (mobile и web) проверяйте по [docs/max-production-check.md](docs/max-production-check.md).
-- OCR изображений требует установленного Tesseract (в Docker-образе есть).
-- Без `AI_API_KEY` ИИ недоступен; режим `mock` помечается «Демо-ИИ».
-- Онлайн-оплаты и заказы не реализованы.
+Это демонстрационный MVP, а не завершённое продуктовое ТЗ предзаказа. Отсутствуют оплаченный заказ, резерв времени, возврат, фискализация, экран сотрудника, приватный отзыв после заказа и отчёт о продажах. Их нельзя показывать как готовые. Публичный HTTPS предоставлен владельцем, но соответствие живого сервера этому коммиту и сценарий в MAX ещё требуют проверки. Фактический статус и расхождения с полным ТЗ: [docs/implementation-status.md](docs/implementation-status.md).

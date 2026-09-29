@@ -1,0 +1,136 @@
+# Проверочный контракт решения «Синица», версия схемы этого файла 1.0.
+# Публичный URL предоставлен владельцем 30.09.2026; доступность из среды разработки
+# не подтверждена. Пути и поля сверены с openapi.json того же коммита.
+schema_version: "1.0"
+solution:
+  id: sinitsa-max
+  name: Синица — меню для кофеен и пекарен в MAX
+base_url: https://max.nii-mvus.ru
+openapi_file: openapi.json
+test_data_file: test-data/api-demo.json
+setup:
+  command: docker compose exec backend python -m app.demo_seed
+  conditions:
+    - Сид выполняется только на отдельной тестовой базе и тестовом развёртывании.
+    - На проверяемом сервере должны быть опубликованы обе демо-точки.
+roles:
+  guest:
+    auth: none
+  local_admin:
+    auth: POST /api/v1/auth/dev; cookie menu_session
+    scope: только APP_ENV=development и DEV_AUTH_ENABLED=true
+    account: DEV_MAX_USER_ID=900000001 (значение из .env.example)
+  max_admin:
+    auth: подписанный MAX initData, затем cookie menu_session
+    scope: production; тестовый аккаунт назначается владельцем в MAX
+    note: статический токен или фиктивный initData не предоставляются
+checks:
+  - id: live
+    role: guest
+    method: GET
+    path: /api/v1/health/live
+    expected:
+      status: 200
+      content_type: application/json
+      fields: {status: ok, service: string}
+  - id: ready
+    role: guest
+    method: GET
+    path: /api/v1/health/ready
+    expected:
+      status: 200
+      content_type: application/json
+      fields: {status: ready, service: string}
+  - id: max-auth-configuration
+    role: guest
+    method: GET
+    path: /api/v1/auth/bootstrap
+    expected:
+      status: 200
+      content_type: application/json
+      fields:
+        max_auth_configured: true
+        development_auth: false
+        max_launch_url: string
+    note: значения относятся к production; локально development_auth=true
+  - id: first-point-menu
+    role: guest
+    method: GET
+    path: /api/v1/public/restaurants/demo-sever/menu
+    parameters: {public_id: demo-sever}
+    expected:
+      status: 200
+      content_type: application/json
+      fields:
+        restaurant.public_id: demo-sever
+        restaurant.is_demo: true
+        menus: nonempty_array
+        sections: nonempty_array
+      items:
+        - {name: Латте, price_minor: 19000, is_available: true}
+        - {name: Круассан, price_minor: 17000, is_available: true}
+  - id: second-point-stop-list
+    role: guest
+    method: GET
+    path: /api/v1/public/restaurants/demo-sever-park/menu
+    parameters: {public_id: demo-sever-park}
+    expected:
+      status: 200
+      content_type: application/json
+      fields: {restaurant.public_id: demo-sever-park}
+      items:
+        - {name: Круассан, is_available: false}
+  - id: server-price
+    role: guest
+    method: POST
+    path: /api/v1/public/restaurants/demo-sever/menu/quote
+    parameters: {public_id: demo-sever}
+    content_type: application/json
+    prepare:
+      from_check: first-point-menu
+      item_id: "найти Латте в sections[].items[] и взять id"
+      variant_id: "в configuration.variants выбрать 350 мл и взять id"
+      oat_option_id: "в configuration.modifier_groups[].options[] выбрать Овсяное и взять id"
+    body:
+      item_id: "${item_id}"
+      variant_id: "${variant_id}"
+      modifiers: [{option_id: "${oat_option_id}", quantity: 1}]
+      quantity: 1
+    expected:
+      status: 200
+      content_type: application/json
+      fields:
+        unit_price_minor: 28000
+        total_price_minor: 28000
+        quantity: 1
+        currency: RUB
+        published_version_id: uuid
+  - id: invalid-menu
+    role: guest
+    method: GET
+    path: /api/v1/public/restaurants/does-not-exist/menu
+    parameters: {public_id: does-not-exist}
+    expected:
+      status: 404
+      content_type: application/json
+      fields: {detail: Menu not found}
+local_role_checks:
+  # Не включать в production: /auth/dev там возвращает 404 по замыслу.
+  - id: dev-login
+    role: local_admin
+    method: POST
+    path: /api/v1/auth/dev
+    expected:
+      status: 200
+      content_type: application/json
+      fields: {max_user_id: 900000001, display_name: string}
+      cookie: menu_session
+  - id: dev-session
+    role: local_admin
+    method: GET
+    path: /api/v1/auth/me
+    auth: cookie from dev-login
+    expected:
+      status: 200
+      content_type: application/json
+      fields: {max_user_id: 900000001}
