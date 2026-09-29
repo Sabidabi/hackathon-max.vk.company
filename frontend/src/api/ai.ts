@@ -68,6 +68,6 @@ export interface MenuCheck {
   provider: AiProvider | null;
 }
 
-export async function checkMenu(menuId: string): Promise<MenuCheck> {
-  return parseApiJson<MenuCheck>(await fetch(`/api/v1/menus/${menuId}/check`, json({})), "Не удалось проверить меню");
+export async function checkMenu(menuId: string, signal?: AbortSignal): Promise<MenuCheck> {
+  return parseApiJson<MenuCheck>(await fetch(`/api/v1/menus/${menuId}/check`, { ...json({}), signal }), "Не удалось проверить меню");
 }

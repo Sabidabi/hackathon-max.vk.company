@@ -4,6 +4,7 @@ const root = path.resolve(__dirname, "../dist"); const port = Number(process.env
 const rev = (n) => n.toString(16).padStart(64, "0");
 let revision = 1, siteRevision = 1, sitePublished = 0;
 let aiProposal = null;
+let aiDesign = null;
 let importApplied = false;
 let favorite = {is_favorite:false,notifications_enabled:false};
 let campaigns = [];
@@ -287,6 +288,22 @@ const server = http.createServer(async (req,res)=>{
       if(p.endsWith("/menu/publish")){if(body.expected_revision!==rev(revision))return json({detail:"Меню изменилось"},409);published=structuredClone(sections);mainVersion+=1;restaurant.current_published_version_id=randomUUID();campaigns.unshift({id:randomUUID(),kind:"menu_published",status:"completed",title:"Меню опубликовано",body:`«${restaurant.name}»: новая версия меню.`,recipient_count:1,sent_count:1,failed_count:0,created_at:new Date().toISOString(),completed_at:new Date().toISOString()});return json({version:2,item_count:published.reduce((n,s)=>n+s.items.length,0),public_id:restaurant.public_id});}
       if(p.endsWith("/menu/links"))return json({public_menu_url:`http://127.0.0.1:${port}/r/test-point`,max_deep_link:null});
       if(p.endsWith("/menu/qr")){res.writeHead(200,{"Content-Type":"image/png"});return res.end(fs.readFileSync(path.join(__dirname,"fixtures/menu-qr.png")));}
+      if(p.endsWith("/site/ai/plan")&&req.method==="POST"){
+        if(body.expected_revision!==rev(siteRevision))return json({detail:"Оформление изменилось"},409);
+        const q=String(body.prompt||"").toLowerCase();const changes={};
+        if(q.includes("тёмн")||q.includes("темн"))changes.theme_mode="dark";
+        if(q.includes("списк"))changes.menu_layout="list";
+        if(q.includes("засечк"))changes.heading_font="serif";
+        if(q.includes("круглы"))changes.card_radius="round";
+        if(!Object.keys(changes).length)return json({detail:"Демо-ИИ не понял, что менять: назовите тему, раскладку, шрифт или углы."},422);
+        aiDesign={proposal_id:randomUUID(),changes};
+        return json({proposal_id:aiDesign.proposal_id,summary:"Демо-план: "+Object.keys(changes).length+" изменения оформления.",changes,warnings:[],provider:"mock",expires_at:new Date(Date.now()+900000).toISOString()});
+      }
+      if(p.endsWith("/site/ai/apply")&&req.method==="POST"){
+        if(!aiDesign||body.proposal_id!==aiDesign.proposal_id)return json({detail:"Предложение не найдено"},404);
+        site={...site,...aiDesign.changes};siteRevision++;aiDesign=null;
+        return json({revision:rev(siteRevision),restaurant_id:restaurant.id,config:site,published_version:sitePublished,published_at:null,contrast_issues:[]});
+      }
       if(p.endsWith("/site/draft")){if(req.method==="PUT"){if(body.expected_revision!==rev(siteRevision))return json({detail:"Оформление изменилось"},409);const {expected_revision,...next}=body;site=next;siteRevision++;}return json({restaurant_id:restaurant.id,config:site,revision:rev(siteRevision),published_version:sitePublished,published_at:null});}
       if(p.endsWith("/site/publish")){if(body.expected_revision!==rev(siteRevision))return json({detail:"Оформление изменилось"},409);const lum=(h)=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4);return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];};const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((m,n)=>n-m);return (x+0.05)/(y+0.05);};if(ratio(site.text_color,site.surface_color)<4.5||ratio(site.text_color,site.background_color)<4.5||ratio(site.primary_color,site.surface_color)<3)return json({detail:"Исправьте контраст"},409);sitePublished+=1;return json({published_version:sitePublished,published_at:new Date().toISOString()});}
       // Import of a PDF on a labelled mock (P1-TASK-43): one recognised job to review.

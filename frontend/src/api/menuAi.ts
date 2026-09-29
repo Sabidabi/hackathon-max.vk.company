@@ -70,6 +70,7 @@ export async function planMenuChange(
   restaurantId: string,
   prompt: string,
   expectedRevision: string,
+  signal?: AbortSignal,
 ) {
   return parseJson<MenuAiProposal>(
     await fetch(`/api/v1/restaurants/${restaurantId}/menu/ai/plan`, {
@@ -77,6 +78,7 @@ export async function planMenuChange(
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt, expected_revision: expectedRevision }),
+      signal,
     }),
     "Не удалось подготовить изменения",
   );
@@ -86,6 +88,7 @@ export async function applyMenuChange(
   restaurantId: string,
   proposalId: string,
   expectedRevision: string,
+  signal?: AbortSignal,
 ) {
   return parseJson<DraftMenu>(
     await fetch(`/api/v1/restaurants/${restaurantId}/menu/ai/apply`, {
@@ -93,6 +96,7 @@ export async function applyMenuChange(
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ proposal_id: proposalId, expected_revision: expectedRevision }),
+      signal,
     }),
     "Не удалось применить изменения",
   );

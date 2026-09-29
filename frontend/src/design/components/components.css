@@ -326,7 +326,7 @@
      in one line at 320 px; on narrower bars labels wrap to two lines instead of an ellipsis. */
   position: relative;
   display: flex;
-  padding: var(--sinitsa-space-1) var(--sinitsa-space-2);
+  padding: var(--sinitsa-space-1) 4px;
   border-top: 1px solid var(--sinitsa-line);
   background: var(--sinitsa-surface);
 }
@@ -337,18 +337,19 @@
   left: 0;
   z-index: var(--sinitsa-z-tabbar);
   padding-bottom: calc(var(--sinitsa-space-1) + var(--sinitsa-safe-bottom));
-  padding-left: calc(var(--sinitsa-space-2) + var(--sinitsa-safe-left));
-  padding-right: calc(var(--sinitsa-space-2) + var(--sinitsa-safe-right));
+  padding-left: calc(4px + var(--sinitsa-safe-left));
+  padding-right: calc(4px + var(--sinitsa-safe-right));
 }
 .s-tabbar__item {
+  /* Equal columns: every icon and label is centred in its own fifth of the bar. */
   display: grid;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   justify-items: center;
   align-content: center;
-  gap: 2px;
-  min-width: var(--sinitsa-touch);
-  min-height: 56px;
-  padding: var(--sinitsa-space-1);
+  gap: 3px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 6px 0;
   border: 0;
   border-radius: var(--sinitsa-radius-control);
   background: transparent;
@@ -399,7 +400,8 @@
 .s-tabbar--vertical .s-tabbar__indicator { border-radius: var(--sinitsa-radius-control); }
 .s-tabbar--vertical .s-tabbar__item--active { color: var(--sinitsa-blue); }
 .s-tabbar__item--active { color: var(--sinitsa-blue); }
-.s-tabbar__icon { position: relative; display: inline-flex; }
+.s-tabbar__item--active .s-tabbar__label { font-weight: 800; }
+.s-tabbar__icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 32px; }
 .s-tabbar__label {
   /* Wraps to two lines instead of an ellipsis: «Оформление» must stay readable at 320 px. */
   display: -webkit-box;
@@ -407,12 +409,14 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-size: var(--sinitsa-text-micro);
+  font-size: clamp(9.5px, 2.6vw, 11px);
+  letter-spacing: -0.01em;
   font-weight: 700;
   line-height: var(--sinitsa-line-tight);
   text-align: center;
-  overflow-wrap: break-word;
-  hyphens: auto;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
 }
 .s-tabbar__badge {
   position: absolute;

@@ -692,7 +692,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
       await video.goto(`${baseUrl}/manage/test-point/menu`);
       await video.locator(".menu-status").filter({ hasText: "Сохранено" }).waitFor();
       await video.waitForTimeout(400);
-      await video.getByRole("button", { name: "Аналитика", exact: true }).click();
+      await video.goto(`${baseUrl}/manage/test-point/analytics`);
       await video.waitForTimeout(500);
       await video.getByRole("button", { name: "Меню", exact: true }).click();
       await video.locator(".menu-status").filter({ hasText: "Сохранено" }).waitFor();

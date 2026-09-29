@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, CircleAlert, Ellipsis, MapPin, Palette, SquareMenu } from "lucide-react";
+import { CircleAlert, Ellipsis, MapPin, Palette, Sparkles, SquareMenu } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -7,6 +7,7 @@ import { listRestaurants, type Restaurant } from "../../../api/restaurants";
 import { BrandLockup, Button, EmptyState, Skeleton, TabBar, type TabBarItem } from "../../../design";
 import { showToast } from "../../../design/toast";
 import { haptics } from "../../../max";
+import { AiFab, AiHub } from "../ai/AiHub";
 import { DesignSection } from "../design/DesignSection";
 import { MenuSection } from "../menu/MenuSection";
 import { PointHub } from "../point/PointHub";
@@ -16,8 +17,8 @@ import { NewVenue } from "./NewVenue";
 import { AccountButton, PointSwitcher } from "./Switcher";
 import "./cabinet.css";
 
-export type CabinetSection = "point" | "menu" | "analytics" | "design" | "more";
-const SECTIONS: CabinetSection[] = ["point", "menu", "analytics", "design", "more"];
+export type CabinetSection = "point" | "menu" | "analytics" | "design" | "ai" | "more";
+const SECTIONS: CabinetSection[] = ["point", "menu", "analytics", "design", "ai", "more"];
 
 /** What the current point and its venue look like to every section of the cabinet. */
 export interface CabinetContext {
@@ -70,7 +71,7 @@ function ShellSkeleton() {
 const NAV: Array<TabBarItem<CabinetSection>> = [
   { key: "point", label: "Точка", icon: <MapPin size={24} /> },
   { key: "menu", label: "Меню", icon: <SquareMenu size={24} /> },
-  { key: "analytics", label: "Аналитика", icon: <BarChart3 size={24} /> },
+  { key: "ai", label: "ИИ", icon: <Sparkles size={24} /> },
   { key: "design", label: "Оформление", icon: <Palette size={24} /> },
   { key: "more", label: "Ещё", icon: <Ellipsis size={24} /> },
 ];
@@ -154,6 +155,8 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
     go(point, key, null);
   };
 
+  // Where a card of the AI chat leads: the section that holds its result.
+  const openFromAi = (target: "design" | "menu" | "import") => (target === "import" ? go(point, "more", "import") : go(point, target, null));
   let content: ReactNode;
   if (section === "point") {
     content = (
@@ -170,6 +173,8 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
     content = <AnalyticsSection context={context} onOpenMenu={() => go(point, "menu", null)} />;
   } else if (section === "design") {
     content = <DesignSection context={context} />;
+  } else if (section === "ai") {
+    content = <AiHub context={context} onOpenSection={openFromAi} />;
   } else {
     content = <MoreSection context={context} page={page} onOpen={(next) => go(point, "more", next)} onPoint={(target, next) => go(target, "more", next)} />;
   }
@@ -194,6 +199,7 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
       <main className="cabinet-main" id="cabinet-content">
         {/* Point switch: a short cross-fade of the section, not a full redraw (P1-DOC-18). */}
         <div className="cabinet-view" key={`${point.id}:${section}:${page ?? ""}`}>{content}</div>
+        {section === "menu" && <AiFab context={context} tool="edit" onOpenSection={openFromAi} />}
       </main>
       <TabBar<CabinetSection> label="Разделы кабинета" items={nav} value={section} onChange={onNavigate} fixed className="cabinet-tabbar" />
     </div>
