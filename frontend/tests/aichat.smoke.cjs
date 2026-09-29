@@ -83,22 +83,14 @@ async function noOverflow(page, label) {
       await page.screenshot({ path: path.join(output, `aichat-check-${width}.png`) });
       await noOverflow(page, `chat check ${width}`);
 
-      // The floating button in the menu editor opens the same chat.
+      // No floating AI button any more: the chat lives in the «ИИ» tab of the toolbar.
       await page.goto(`${base}/manage/test-point/menu`);
-      const fab = page.getByRole("button", { name: "Открыть ИИ-помощника" });
-      await fab.waitFor();
-      const box = await fab.boundingBox();
-      assert.ok(box.x < 300, `The AI button sits at the left: ${box.x}`);
-      await fab.click();
-      const dialog = page.getByRole("dialog", { name: "ИИ-помощник" });
-      await dialog.waitFor();
-      await dialog.getByRole("radio", { name: /Поправить меню/ }).waitFor();
-      await noOverflow(page, `chat sheet ${width}`);
-      await page.screenshot({ path: path.join(output, `aichat-sheet-${width}.png`) });
+      await page.locator(".menu-row").first().waitFor();
+      assert.equal(await page.getByRole("button", { name: "Открыть ИИ-помощника" }).count(), 0, "No floating AI button");
       assert.deepEqual(errors, [], `page errors at ${width}`);
       await context.close();
     }
-    console.log("PASS: AI chat (tab, tools, plan → apply to the draft, stop, check, floating button) at 320/390/1280px (fixture with the demo AI)");
+    console.log("PASS: AI chat (tab, tools, plan → apply to the draft, stop, check; no floating button) at 320/390/1280px (fixture with the demo AI)");
   } finally {
     await browser.close();
     server.kill();

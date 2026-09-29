@@ -7,7 +7,7 @@ import { listRestaurants, type Restaurant } from "../../../api/restaurants";
 import { BrandLockup, Button, EmptyState, Skeleton, TabBar, type TabBarItem } from "../../../design";
 import { showToast } from "../../../design/toast";
 import { haptics } from "../../../max";
-import { AiFab, AiHub } from "../ai/AiHub";
+import { AiHub } from "../ai/AiHub";
 import { DesignSection } from "../design/DesignSection";
 import { MenuSection } from "../menu/MenuSection";
 import { PointHub } from "../point/PointHub";
@@ -199,7 +199,6 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
       <main className="cabinet-main" id="cabinet-content">
         {/* Point switch: a short cross-fade of the section, not a full redraw (P1-DOC-18). */}
         <div className="cabinet-view" key={`${point.id}:${section}:${page ?? ""}`}>{content}</div>
-        {section === "menu" && <AiFab context={context} tool="edit" onOpenSection={openFromAi} />}
       </main>
       <TabBar<CabinetSection> label="Разделы кабинета" items={nav} value={section} onChange={onNavigate} fixed className="cabinet-tabbar" />
     </div>
