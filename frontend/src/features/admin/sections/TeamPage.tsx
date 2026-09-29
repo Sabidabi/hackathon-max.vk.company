@@ -29,14 +29,24 @@ export function TeamPage({ pointId, venueName }: { pointId: string; venueName: s
     void client.invalidateQueries({ queryKey: ["team-members", pointId] });
     void client.invalidateQueries({ queryKey: ["team-invites", pointId] });
   };
-  const shareInvite = (invite: CreatedInvite) => void share({ text: `Приглашаю администратором «${venueName}» в Синице`, link: inviteLink(invite) });
+  // A link lives only if it was sent: a closed share sheet withdraws the fresh invite.
+  const discard = async (value: CreatedInvite, message: string) => {
+    setFresh((current) => (current?.id === value.id ? null : current));
+    await revokeInvite(pointId, value.id).catch(() => undefined);
+    refresh();
+    showToast(message);
+  };
+  const shareInvite = async (value: CreatedInvite) => {
+    const result = await share({ text: `Приглашаю администратором «${venueName}» в Синице`, link: inviteLink(value) });
+    if (result === "cancelled") await discard(value, "Приглашение не отправлено");
+  };
   const invite = useMutation({
     mutationFn: () => createInvite(pointId),
     onSuccess: (value) => {
       haptics.notify("success");
       setFresh(value);
       refresh();
-      shareInvite(value);
+      void shareInvite(value);
     },
     onError: () => haptics.notify("error"),
   });
@@ -59,7 +69,7 @@ export function TeamPage({ pointId, venueName }: { pointId: string; venueName: s
   });
   const myId = me.data?.id;
   const now = new Date();
-  const pending = invites.data?.filter((item) => !item.accepted_at && !item.revoked_at && new Date(item.expires_at) > now) ?? [];
+  const pending = invites.data?.filter((item) => item.id !== fresh?.id && !item.accepted_at && !item.revoked_at && new Date(item.expires_at) > now) ?? [];
   const error = invite.error ?? revoke.error;
 
   return (
@@ -70,7 +80,8 @@ export function TeamPage({ pointId, venueName }: { pointId: string; venueName: s
         <div className="team-fresh" role="status">
           <Link2 size={18} aria-hidden="true" />
           <span className="team-fresh__link">{inviteLink(fresh)}</span>
-          <Button variant="ghost" icon={<Share2 size={18} />} onClick={() => shareInvite(fresh)}>Отправить</Button>
+          <Button variant="ghost" icon={<Share2 size={18} />} onClick={() => void shareInvite(fresh)}>Отправить</Button>
+          <IconButton aria-label="Отменить приглашение" icon={<X size={20} />} onClick={() => void discard(fresh, "Приглашение отменено")} />
         </div>
       )}
       {error && <p className="cabinet-error" role="alert">{error.message}</p>}

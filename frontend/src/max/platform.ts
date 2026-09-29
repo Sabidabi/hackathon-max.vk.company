@@ -10,15 +10,25 @@ import {
   type MaxShareContent,
 } from "./bridge";
 
-type Settled<T> = { ok: true; value: T } | { ok: false };
+type Settled<T> = { ok: true; value: T } | { ok: false; error?: unknown };
 
 /** Calls a Bridge method that may return a value or a promise, or throw. */
 async function settle<T>(call: () => T | Promise<T>): Promise<Settled<T>> {
   try {
     return { ok: true, value: await call() };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    return { ok: false, error };
   }
+}
+
+/** The person closed the share sheet (Web Share `AbortError`, or a «cancel» error). */
+function isCancel(result: Settled<unknown>): boolean {
+  if (result.ok || !result.error) return false;
+  const error = result.error as { name?: unknown; message?: unknown; code?: unknown };
+  if (error.name === "AbortError") return true;
+  return [error.message, error.code, result.error].some(
+    (value) => typeof value === "string" && /cancel|abort|dismiss/i.test(value),
+  );
 }
 
 function fireAndForget(call: () => unknown): boolean {
@@ -92,7 +102,7 @@ export const haptics = {
 
 // --- Sharing ----------------------------------------------------------------------------
 
-export type ShareResult = "max" | "system" | "copied" | "failed";
+export type ShareResult = "max" | "system" | "copied" | "cancelled" | "failed";
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -122,11 +132,20 @@ async function copyText(text: string): Promise<boolean> {
 /**
  * Share a menu or an invitation: `shareMaxContent` (chats in MAX) → `shareContent`
  * (system sheet; absent on desktop) → copy the link and show «Ссылка скопирована».
+ * A sheet closed by the person resolves to "cancelled" and copies nothing.
  */
 export async function share(content: MaxShareContent): Promise<ShareResult> {
   const bridge = getMaxBridge();
-  if (bridge?.shareMaxContent && (await settle(() => bridge.shareMaxContent?.(content))).ok) return "max";
-  if (bridge?.shareContent && (await settle(() => bridge.shareContent?.(content))).ok) return "system";
+  if (bridge?.shareMaxContent) {
+    const result = await settle(() => bridge.shareMaxContent?.(content));
+    if (result.ok) return "max";
+    if (isCancel(result)) return "cancelled";
+  }
+  if (bridge?.shareContent) {
+    const result = await settle(() => bridge.shareContent?.(content));
+    if (result.ok) return "system";
+    if (isCancel(result)) return "cancelled";
+  }
   const text = content.link ?? content.text ?? "";
   if (text && (await copyText(text))) {
     showToast(content.link ? "Ссылка скопирована" : "Текст скопирован");

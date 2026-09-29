@@ -199,6 +199,18 @@ assert.ok(bridgeCalls.includes("downloadFile:qr.png"));
 max.ready();
 assert.equal(bridgeCalls.filter((call) => call === "ready").length, 1, "ready() is sent once");
 
+// A share sheet closed by the person is "cancelled": no fallback, nothing copied.
+{
+  const saved = window.WebApp.shareMaxContent;
+  clipboard = [];
+  window.WebApp.shareMaxContent = () => Promise.reject(Object.assign(new Error("closed"), { name: "AbortError" }));
+  assert.equal(await max.share({ link: "https://example.com/r/demo" }), "cancelled");
+  window.WebApp.shareMaxContent = () => Promise.reject(new Error("User cancelled sharing"));
+  assert.equal(await max.share({ link: "https://example.com/r/demo" }), "cancelled");
+  assert.deepEqual(clipboard, [], "a cancelled share copies nothing");
+  window.WebApp.shareMaxContent = saved;
+}
+
 // --- BackButton stack: screen with an item card, then a Sheet on top ----------
 {
   const log = [];
