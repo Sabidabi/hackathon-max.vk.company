@@ -793,7 +793,7 @@ label.g-option::after { transition: none; }
 .g-card--photo .g-card__meta { align-items: baseline; }
 
 /* Quantity stepper on a tile: «−  N  +». */
-.g-stepper {
+.g-tstep {
   position: absolute;
   right: var(--sinitsa-space-2);
   bottom: var(--sinitsa-space-2);
@@ -806,13 +806,13 @@ label.g-option::after { transition: none; }
   box-shadow: inset 0 0 0 2px var(--sinitsa-blue), 0 4px 12px color-mix(in srgb, var(--sinitsa-blue) 25%, transparent);
   animation: g-count-in var(--motion-base, 240ms) var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
 }
-.g-card--row .g-stepper { top: 50%; bottom: auto; right: var(--sinitsa-space-3); transform: translateY(-50%); }
-.g-stepper .g-stepper__btn { min-height: 0; min-width: 0; box-shadow: none; display: grid; place-items: center; width: var(--sinitsa-touch); height: var(--sinitsa-touch); padding: 0; border: 0; border-radius: var(--sinitsa-radius-pill); background: transparent; color: var(--sinitsa-blue); cursor: pointer; }
-.g-stepper .g-stepper__btn:active { background: var(--sinitsa-sky); }
-.g-stepper .g-stepper__btn:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
-.g-stepper__qty { min-width: 22px; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+.g-card--row .g-tstep { top: 50%; bottom: auto; right: var(--sinitsa-space-3); transform: translateY(-50%); }
+.g-tstep .g-tstep__btn { min-height: 0; min-width: 0; box-shadow: none; display: grid; place-items: center; width: var(--sinitsa-touch); height: var(--sinitsa-touch); padding: 0; border: 0; border-radius: var(--sinitsa-radius-pill); background: transparent; color: var(--sinitsa-blue); cursor: pointer; }
+.g-tstep .g-tstep__btn:active { background: var(--sinitsa-sky); }
+.g-tstep .g-tstep__btn:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.g-tstep__qty { min-width: 22px; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
 /* With a stepper the price stays on its own line and the stepper sits below it. */
-.g-card--photo:has(.g-stepper) .g-card__meta { min-height: 0; padding-right: 0; }
-.g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: calc(var(--sinitsa-touch) + var(--sinitsa-space-3)); }
-.g-card--row:has(.g-stepper) .g-card__body { padding-right: calc(var(--sinitsa-touch) * 2 + 22px + var(--sinitsa-space-6)); }
-@media (prefers-reduced-motion: reduce) { .g-stepper { animation: none; } }
+.g-card--photo:has(.g-tstep) .g-card__meta { min-height: 0; padding-right: 0; }
+.g-card--photo:has(.g-tstep) .g-card__body { padding-bottom: calc(var(--sinitsa-touch) + var(--sinitsa-space-3)); }
+.g-card--row:has(.g-tstep) .g-card__body { padding-right: calc(var(--sinitsa-touch) * 2 + 22px + var(--sinitsa-space-6)); }
+@media (prefers-reduced-motion: reduce) { .g-tstep { animation: none; } }

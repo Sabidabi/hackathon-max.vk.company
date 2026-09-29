@@ -4,7 +4,8 @@
    add-button kind, heading font, description/weight visibility.
    ========================================================================================== */
 .g-root,
-.s-sheet {
+.s-sheet,
+.g-cashier {
   --g-accent: var(--sinitsa-blue);
   --g-r: 22px;
   --g-ratio: 1 / 1;
@@ -144,7 +145,7 @@
 .g-root .g-card__count { top: -6px; right: -6px; background: var(--sinitsa-ink); color: var(--sinitsa-surface); box-shadow: 0 0 0 2px var(--sinitsa-surface); }
 
 /* --- Stepper: «−  N  +» in the same soft tone --------------------------------------------- */
-.g-root .g-stepper {
+.g-root .g-tstep {
   right: 12px;
   bottom: 12px;
   height: 44px;
@@ -152,13 +153,13 @@
   background: var(--g-tint-strong);
   box-shadow: none;
 }
-.g-root .g-stepper .g-stepper__btn { width: 44px; height: 44px; color: var(--g-accent); }
-.g-root .g-stepper .g-stepper__btn:active { background: color-mix(in srgb, var(--g-accent) 22%, transparent); }
-.g-root .g-stepper__qty { min-width: 20px; color: var(--sinitsa-ink); font-size: 16px; }
-.g-root .g-card--row .g-stepper { top: 50%; bottom: auto; right: 14px; transform: translateY(-50%); }
-.g-root .g-card--photo:has(.g-stepper) .g-card__meta { min-height: 0; padding-right: 0; }
-.g-root .g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: 64px; }
-.g-root .g-card--row:has(.g-stepper) .g-card__body { padding-right: calc(14px + 44px * 2 + 22px + 10px); }
+.g-root .g-tstep .g-tstep__btn { width: 44px; height: 44px; color: var(--g-accent); }
+.g-root .g-tstep .g-tstep__btn:active { background: color-mix(in srgb, var(--g-accent) 22%, transparent); }
+.g-root .g-tstep__qty { min-width: 20px; color: var(--sinitsa-ink); font-size: 16px; }
+.g-root .g-card--row .g-tstep { top: 50%; bottom: auto; right: 14px; transform: translateY(-50%); }
+.g-root .g-card--photo:has(.g-tstep) .g-card__meta { min-height: 0; padding-right: 0; }
+.g-root .g-card--photo:has(.g-tstep) .g-card__body { padding-bottom: 64px; }
+.g-root .g-card--row:has(.g-tstep) .g-card__body { padding-right: calc(14px + 44px * 2 + 22px + 10px); }
 
 /* --- Layout: list — one wide tile per row, photo on the left (like files in a folder) ------- */
 .g-root[data-layout="list"] .g-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -168,10 +169,10 @@
 .g-root[data-layout="list"] .g-card__mono { width: 112px; height: 112px; margin: 10px 0 10px 10px; font-size: 34px; }
 .g-root[data-layout="list"] .g-card__body { flex: 1 1 auto; min-width: 0; align-content: center; padding: 12px calc(14px + 44px + 8px) 12px 14px; }
 .g-root[data-layout="list"] .g-card__meta { min-height: 0; padding-right: 0; margin-top: 4px; }
-.g-root[data-layout="list"] .g-card__add, .g-root[data-layout="list"] .g-stepper { top: auto; bottom: 14px; right: 14px; transform: none; }
+.g-root[data-layout="list"] .g-card__add, .g-root[data-layout="list"] .g-tstep { top: auto; bottom: 14px; right: 14px; transform: none; }
 .g-root[data-layout="list"][data-add="pill"] .g-card__body { padding-right: 14px; padding-bottom: 64px; }
-.g-root[data-layout="list"] .g-card--photo:has(.g-stepper) .g-card__body { padding-right: 14px; padding-bottom: 64px; }
-.g-root[data-layout="list"] .g-card--row:has(.g-stepper) .g-card__body { padding-right: 14px; padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--photo:has(.g-tstep) .g-card__body { padding-right: 14px; padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--row:has(.g-tstep) .g-card__body { padding-right: 14px; padding-bottom: 64px; }
 .g-root[data-layout="list"] .g-card--row .g-card__add:active { transform: scale(0.92); }
 
 /* --- Layout: large — one big photo tile per row ----------------------------------------------- */
@@ -182,7 +183,7 @@
 .g-root[data-layout="large"] .g-card__name { font-size: 19px; }
 .g-root[data-layout="large"] .g-card__price { font-size: 19px; }
 .g-root[data-layout="large"] .g-card__desc { font-size: 14px; }
-.g-root[data-layout="large"] .g-card__add, .g-root[data-layout="large"] .g-stepper { right: 16px; bottom: 16px; }
+.g-root[data-layout="large"] .g-card__add, .g-root[data-layout="large"] .g-tstep { right: 16px; bottom: 16px; }
 .g-root[data-layout="large"] .g-card--row .g-card__open { flex-direction: row; }
 
 /* Pill: the button gets its own line under the text, so it never covers the price. */
@@ -191,7 +192,7 @@
 .g-root[data-add="pill"] .g-card--row .g-card__body { padding-bottom: 64px; }
 .g-root[data-add="pill"] .g-card--row .g-card__body { padding-right: 14px; }
 .g-root[data-add="pill"] .g-card--row .g-card__add,
-.g-root[data-add="pill"] .g-card--row .g-stepper { top: auto; bottom: 12px; right: 12px; transform: none; }
+.g-root[data-add="pill"] .g-card--row .g-tstep { top: auto; bottom: 12px; right: 12px; transform: none; }
 .g-root[data-add="pill"] .g-card--row .g-card__add:active { transform: scale(0.94); }
 
 @media (prefers-reduced-motion: reduce) { .g-root .g-card, .g-root .g-card__add { transition: none; } }
@@ -203,17 +204,17 @@
 .g-root .g-card--photo .g-card__body { padding-bottom: 12px; }
 .g-root .g-card--photo.g-card--off .g-card__meta { grid-template-rows: auto; }
 .g-root .g-card--photo.g-card--off .g-card__body { padding-bottom: 16px; }
-.g-root .g-card--photo:has(.g-stepper) .g-card__meta { grid-template-rows: auto 44px; }
-.g-root .g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: 12px; }
-.g-root .g-card--photo:has(.g-stepper) .g-card__weight { padding-right: 0; }
+.g-root .g-card--photo:has(.g-tstep) .g-card__meta { grid-template-rows: auto 44px; }
+.g-root .g-card--photo:has(.g-tstep) .g-card__body { padding-bottom: 12px; }
+.g-root .g-card--photo:has(.g-tstep) .g-card__weight { padding-right: 0; }
 /* Other layouts keep the flat meta line. */
 .g-root[data-layout="list"] .g-card--photo .g-card__meta,
 .g-root[data-add="pill"] .g-card--photo .g-card__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .g-root[data-layout="list"] .g-card--photo .g-card__weight,
 .g-root[data-add="pill"] .g-card--photo .g-card__weight,
-.g-root[data-layout="list"] .g-card--photo:has(.g-stepper) .g-card__weight { padding-right: 0; }
+.g-root[data-layout="list"] .g-card--photo:has(.g-tstep) .g-card__weight { padding-right: 0; }
 .g-root[data-layout="list"] .g-card--photo .g-card__body { padding-bottom: 12px; }
 .g-root[data-add="pill"] .g-card--photo .g-card__body,
 .g-root[data-layout="list"][data-add="pill"] .g-card--photo .g-card__body { padding-bottom: 64px; }
-.g-root[data-layout="list"] .g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--photo:has(.g-tstep) .g-card__body { padding-bottom: 64px; }
 .g-root[data-layout="large"] .g-card--photo .g-card__meta { grid-template-rows: auto 44px; }

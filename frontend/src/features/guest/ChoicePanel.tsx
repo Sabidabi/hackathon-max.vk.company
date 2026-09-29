@@ -11,6 +11,14 @@ import { MotionSheet } from "./MotionSheet";
 import { RollingText } from "./RollingText";
 import type { ChoiceTotals, ChoiceView } from "./useChoice";
 
+function Thumb({ name, src }: { name: string; src?: string | null }) {
+  return (
+    <span className="g-thumb" aria-hidden="true">
+      {src ? <img src={src} alt="" loading="lazy" /> : <span>{name.trim().charAt(0).toUpperCase()}</span>}
+    </span>
+  );
+}
+
 function totalLabel(totals: ChoiceTotals): string {
   return totals.totalMinor === null ? "Считаем…" : formatMoney(totals.totalMinor);
 }
@@ -38,6 +46,7 @@ export function ChoiceBar({ totals, onOpen }: { totals: ChoiceTotals; onOpen: ()
 export function ChoiceSheet({
   open,
   views,
+  images,
   totals,
   onClose,
   onQty,
@@ -47,6 +56,7 @@ export function ChoiceSheet({
 }: {
   open: boolean;
   views: ChoiceView[];
+  images?: ReadonlyMap<string, string | null>;
   totals: ChoiceTotals;
   onClose: () => void;
   onQty: (lineId: string, qty: number) => void;
@@ -102,17 +112,18 @@ export function ChoiceSheet({
               const off = state.kind === "unavailable";
               return (
                 <li key={line.lineId} className={`g-choice-line${off ? " g-choice-line--off" : ""}${leaving.has(line.lineId) ? " g-choice-line--leaving" : ""}`}>
+                  <Thumb name={line.name} src={images?.get(line.itemId)} />
                   <div className="g-choice-line__main">
                     <strong>{line.name}</strong>
                     {lineDetails(line) && <span className="g-muted">{lineDetails(line)}</span>}
                     {state.kind === "unavailable" && <span className="g-badge g-badge--muted">{state.reason}</span>}
                     {state.kind === "ok" && state.priceUpdated && <span className="g-badge g-badge--warning">Цена обновлена</span>}
                     {state.kind === "error" && <span className="g-badge g-badge--danger">{state.message}</span>}
-                  </div>
-                  <div className="g-choice-line__side">
                     <span className="g-choice-line__price">
                       {state.kind === "ok" ? formatMoney(state.totalPriceMinor) : state.kind === "pending" ? "…" : "—"}
                     </span>
+                  </div>
+                  <div className="g-choice-line__side">
                     <span className="g-stepper">
                       <button
                         type="button"
@@ -158,9 +169,10 @@ export function ChoiceSheet({
  * «Показать на кассе»: full-screen summary in large type for the cashier, with the screen
  * brightness raised in MAX and the native «Назад» closing it (P1-DOC-6, P1-DOC-12).
  */
-export function CashierView({ venueName, views, totals, onClose, from }: {
+export function CashierView({ venueName, views, images, totals, onClose, from }: {
   venueName: string;
   views: ChoiceView[];
+  images?: ReadonlyMap<string, string | null>;
   totals: ChoiceTotals;
   onClose: () => void;
   from?: { x: number; y: number } | null;
@@ -206,30 +218,31 @@ export function CashierView({ venueName, views, totals, onClose, from }: {
   const lines = views.filter((view) => view.state.kind === "ok");
   return createPortal(
     <div ref={rootRef} className="g-cashier" role="dialog" aria-modal="true" aria-labelledby="g-cashier-title">
-      <header className="g-cashier__header">
-        <div>
-          <p className="g-cashier__venue">{venueName}</p>
+      <IconButton ref={closeRef} className="g-cashier__close" aria-label="Закрыть сводку" icon={<X size={24} />} onClick={onClose} />
+      <section className="g-receipt">
+        <header className="g-receipt__head">
+          <p className="g-receipt__venue">{venueName}</p>
           <h2 id="g-cashier-title" className="g-cashier__title">Мой выбор</h2>
-        </div>
-        <IconButton ref={closeRef} aria-label="Закрыть сводку" icon={<X size={24} />} onClick={onClose} />
-      </header>
-      <ol className="g-cashier__list">
-        {lines.map(({ line, state }) => (
-          <li key={line.lineId}>
-            <span className="g-cashier__qty">{line.qty}×</span>
-            <span className="g-cashier__name">
-              <strong>{line.name}</strong>
-              {lineDetails(line) && <span>{lineDetails(line)}</span>}
-            </span>
-            <span className="g-cashier__price">{state.kind === "ok" ? formatMoney(state.totalPriceMinor) : ""}</span>
-          </li>
-        ))}
-      </ol>
-      <footer className="g-cashier__total">
-        <span>Итого</span>
-        <strong data-testid="cashier-total">{totalLabel(totals)}</strong>
-      </footer>
-      <p className="g-cashier__note">Покажите экран на кассе. Оплата — у кассира.</p>
+        </header>
+        <ol className="g-receipt__list">
+          {lines.map(({ line, state }) => (
+            <li key={line.lineId}>
+              <Thumb name={line.name} src={images?.get(line.itemId)} />
+              <span className="g-receipt__name">
+                <strong>{line.name}</strong>
+                {lineDetails(line) && <span>{lineDetails(line)}</span>}
+              </span>
+              <span className="g-receipt__qty">×{line.qty}</span>
+              <span className="g-receipt__price">{state.kind === "ok" ? formatMoney(state.totalPriceMinor) : ""}</span>
+            </li>
+          ))}
+        </ol>
+        <footer className="g-receipt__total">
+          <span>Итого</span>
+          <strong data-testid="cashier-total">{totalLabel(totals)}</strong>
+        </footer>
+      </section>
+      <p className="g-cashier__note">Покажите экран кассиру. Оплата — на кассе.</p>
     </div>,
     document.body,
   );

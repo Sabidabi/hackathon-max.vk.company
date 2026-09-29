@@ -1,0 +1,76 @@
+/* «Мой выбор» и экран кассы: строки с миниатюрой, чек на кассе. */
+.g-thumb {
+  display: grid; place-items: center; flex: none; width: 56px; height: 56px; overflow: hidden;
+  border-radius: 16px; background: var(--g-tint); color: var(--g-accent); font-size: 22px; font-weight: 700;
+}
+.g-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.g-choice-list { gap: 0; }
+.g-choice-line {
+  flex-wrap: nowrap; gap: 12px; padding: 12px 0; border: 0; border-radius: 0; background: none;
+  border-bottom: 1px solid var(--sinitsa-line);
+}
+.g-choice-line:last-child { border-bottom: 0; }
+.g-choice-line__main { flex: 1 1 auto; gap: 2px; }
+.g-choice-line__main strong { font-size: 16px; line-height: 1.25; }
+.g-choice-line__main .g-muted { font-size: 13px; }
+.g-choice-line__price { min-width: 0; margin-top: 2px; font-weight: 700; text-align: left; font-variant-numeric: tabular-nums; }
+.g-choice-line__side { margin-left: 0; }
+.s-sheet .g-stepper { gap: 0; padding: 3px; border-radius: 999px; background: var(--g-tint); }
+.s-sheet .g-stepper button {
+  width: 34px; height: 34px; border: 0; border-radius: 50%;
+  background: var(--sinitsa-surface); color: var(--g-accent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sinitsa-ink) 10%, transparent);
+}
+.s-sheet .g-stepper button::after { content: ""; position: absolute; inset: -5px; }
+.s-sheet .g-stepper button { position: relative; }
+.s-sheet .g-stepper output { min-width: 26px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.g-choice-note { margin: 4px 0 0; text-align: center; font-size: 12px; }
+
+/* Footer: total on its own row above the full-width button — never side by side. */
+.s-sheet .g-choice-footer { display: grid; flex: 1 1 100%; grid-template-columns: minmax(0, 1fr); justify-content: stretch; width: 100%; gap: 12px; }
+.s-sheet .g-choice-footer__total { display: flex; align-items: baseline; justify-content: space-between; }
+.g-choice-footer__total small { font-size: 15px; color: var(--sinitsa-muted); }
+.g-choice-footer__total strong { font-size: 24px; font-variant-numeric: tabular-nums; }
+.s-sheet .g-choice-footer .s-button { width: 100%; justify-self: stretch; border-radius: 999px; }
+
+/* Cashier: a receipt on a tinted page, total right after the lines. */
+.g-cashier { justify-content: center; gap: 16px; background: var(--g-tint); }
+.g-cashier__close { position: absolute; top: calc(12px + var(--sinitsa-safe-top)); right: 12px; width: auto !important; }
+.g-receipt {
+  position: relative; display: grid; gap: 0; width: min(100%, 520px) !important; padding: 24px 20px 20px;
+  border-radius: 28px; background: var(--sinitsa-surface); box-shadow: var(--g-shadow);
+}
+.g-receipt__head { padding-bottom: 16px; text-align: center; border-bottom: 2px dashed var(--sinitsa-line-strong); }
+.g-receipt__venue { margin: 0 0 4px; color: var(--sinitsa-muted); font-size: 14px; }
+.g-receipt .g-cashier__title { font-size: 28px; }
+.g-receipt__list { display: grid; margin: 0; padding: 8px 0; list-style: none; }
+.g-receipt__list li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 0;
+}
+.g-receipt__name { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.g-receipt__name strong { font-size: 20px; line-height: 1.2; }
+.g-receipt__name span { color: var(--sinitsa-muted); font-size: 14px; }
+.g-receipt__qty {
+  padding: 4px 10px; border-radius: 999px; background: var(--g-tint); color: var(--g-accent);
+  font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.g-receipt__price { min-width: 72px; font-size: 18px; font-weight: 700; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.g-receipt__total {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding-top: 16px; border-top: 2px dashed var(--sinitsa-line-strong); font-size: 20px; font-weight: 700;
+}
+.g-receipt__total strong { color: var(--g-accent); font-size: clamp(36px, 11vw, 52px); line-height: 1; font-variant-numeric: tabular-nums; }
+.g-cashier__note { width: min(100%, 520px) !important; margin: 0; color: var(--sinitsa-muted); text-align: center; font-size: 14px; }
+@media (max-width: 360px) {
+  .g-receipt__list li { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .g-receipt__qty { grid-column: 2; justify-self: start; }
+  .g-receipt__price { grid-row: 1; grid-column: 3; }
+  .g-receipt .g-thumb { width: 44px; height: 44px; }
+}
+@media (max-width: 360px) {
+  .g-choice-line { gap: 10px; }
+  .g-choice-line .g-thumb { width: 44px; height: 44px; border-radius: 12px; font-size: 18px; }
+  .s-sheet .g-stepper button { width: 30px; height: 30px; }
+  .s-sheet .g-stepper output { min-width: 22px; }
+}

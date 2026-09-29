@@ -50,7 +50,7 @@ async function addControl(page, name) {
   return page.evaluate((itemName) => {
     const card = [...document.querySelectorAll(".g-card")].find((element) => element.querySelector(".g-card__name")?.textContent.trim() === itemName);
     // A quick-added position shows the «− N +» stepper; one that needs choices shows «✓».
-    if (card?.querySelector(".g-stepper")) return { state: "in", icon: "stepper" };
+    if (card?.querySelector(".g-tstep")) return { state: "in", icon: "stepper" };
     const button = card?.querySelector(".g-card__add");
     const svg = button?.querySelector("svg");
     return { state: button?.dataset.state, icon: svg ? [...svg.classList].find((name) => /^lucide-(check|plus)$/.test(name)) : null };
@@ -180,7 +180,7 @@ async function scenarioAtWidth(browser, width, errors) {
     await quoted(page, "310 ₽");
     await noHorizontalScroll(page, `item sheet ${width}`);
     // WCAG 2.5.5: touch targets of the menu and the item sheet are at least 44×44.
-    const small = await page.evaluate(() => [...document.querySelectorAll(".g-card__add, .g-stepper button, .s-icon-button, .s-chip, .g-tab, .g-search__clear, .g-size, label.g-option, .g-item-footer__add")]
+    const small = await page.evaluate(() => [...document.querySelectorAll(".g-card__add, .g-tstep button, .s-icon-button, .s-chip, .g-tab, .g-search__clear, .g-size, label.g-option, .g-item-footer__add")]
       .filter((element) => element.offsetParent !== null)
       .map((element) => [element.className, Math.round(element.getBoundingClientRect().width), Math.round(element.getBoundingClientRect().height)])
       .filter(([, w, h]) => w < 44 || h < 44));
@@ -233,7 +233,7 @@ async function scenarioAtWidth(browser, width, errors) {
     await page.locator(".g-cashier").waitFor();
     await settle(page);
     assert.equal((await page.getByTestId("cashier-total").textContent()).replace(/\s/g, " "), "670 ₽");
-    await page.locator(".g-cashier").getByText("2×").waitFor();
+    await page.locator(".g-cashier").getByText("×2").waitFor();
     await noHorizontalScroll(page, `cashier ${width}`);
     await shot(page, { path: path.join(output, `guest-cashier-${width}.png`) });
     await page.getByRole("button", { name: "Закрыть сводку" }).click();

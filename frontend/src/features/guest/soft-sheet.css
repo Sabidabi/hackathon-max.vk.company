@@ -102,6 +102,3 @@
   .g-hero .g-item__photo { aspect-ratio: 16 / 10; }
 }
 @media (prefers-reduced-motion: reduce) { .g-item .g-size, .g-item .g-option { transition: none; } }
-
-/* Option steppers inside the sheet reuse the tile stepper class: strip its tile look. */
-.g-item .g-option--stepper .g-stepper { position: static; transform: none; box-shadow: none; height: auto; animation: none; z-index: auto; }

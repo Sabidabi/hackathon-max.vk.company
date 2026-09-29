@@ -20,6 +20,7 @@ import { useChoice } from "./useChoice";
 import "./guest.css";
 import "./soft-tiles.css";
 import "./soft-sheet.css";
+import "./soft-choice.css";
 import { WriteToPointButton } from "../notifications/GuestButtons";
 
 interface Selected {
@@ -131,14 +132,14 @@ function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, o
         </span>
       </button>
       {item.is_available && inChoice > 0 && quick && (
-        <div className="g-stepper" role="group" aria-label={`${item.name}: в выборе ${inChoice}`}>
-          <button type="button" className="g-stepper__btn" aria-label={`Убрать одну: ${item.name}`} onClick={() => onQuickRemove(item)}>
+        <div className="g-tstep" role="group" aria-label={`${item.name}: в выборе ${inChoice}`}>
+          <button type="button" className="g-tstep__btn" aria-label={`Убрать одну: ${item.name}`} onClick={() => onQuickRemove(item)}>
             <Minus size={18} aria-hidden="true" />
           </button>
-          <b key={inChoice} className="g-stepper__qty" aria-live="polite">{inChoice}</b>
+          <b key={inChoice} className="g-tstep__qty" aria-live="polite">{inChoice}</b>
           <button
             type="button"
-            className="g-stepper__btn"
+            className="g-tstep__btn"
             aria-label={`Добавить ещё: ${item.name}`}
             onClick={(event) => onQuickAdd(item, sectionName, toRect(event.currentTarget.getBoundingClientRect()))}
           >
@@ -262,6 +263,8 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   const { restaurant, site } = data;
   const tabs = useMemo(() => mergeTabs(data.tabs), [data.tabs]);
   // Analytics keep the menu each position really belongs to.
+  const imageByItem = useMemo(() => new Map(data.tabs.flatMap((candidate) => candidate.sections.flatMap((section) =>
+    section.items.map((entry) => [entry.id, entry.image_url] as const)))), [data.tabs]);
   const menuByItem = useMemo(() => new Map(data.tabs.flatMap((candidate) => candidate.sections.flatMap((section) =>
     section.items.map((item): [string, string] => [item.id, candidate.menu_id])))), [data.tabs]);
   const variables = useMemo<Record<string, string>>(() => ({ ...themeVariables(site), "--g-spring": easeSpring() }), [site]);
@@ -763,6 +766,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
       <ChoiceSheet
         open={choiceOpen}
         views={choice.views}
+        images={imageByItem}
         totals={choice.totals}
         onClose={closeChoice}
         onQty={choice.setQty}
@@ -772,7 +776,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
       />
 
       {cashierOpen && (
-        <CashierView venueName={subtitle ? `${title} · ${subtitle}` : title} views={choice.views} totals={choice.totals} onClose={closeCashier} from={cashierFrom} />
+        <CashierView venueName={subtitle ? `${title} · ${subtitle}` : title} views={choice.views} images={imageByItem} totals={choice.totals} onClose={closeCashier} from={cashierFrom} />
       )}
 
       <AskSheet
