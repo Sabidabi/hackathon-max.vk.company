@@ -220,7 +220,7 @@
 .g-card__media img { width: 100%; height: 100%; object-fit: cover; }
 .g-card__body { display: grid; align-content: start; gap: var(--sinitsa-space-1); min-width: 0; padding: var(--sinitsa-space-3); }
 .g-card--photo:not(.g-card--off) .g-card__meta { min-height: var(--sinitsa-touch); padding-right: calc(var(--sinitsa-touch) + var(--sinitsa-space-1)); }
-.g-card--row .g-card__body { flex: 1 1 auto; padding: var(--sinitsa-space-3) calc(var(--sinitsa-touch) + var(--sinitsa-space-4)) var(--sinitsa-space-3) var(--sinitsa-space-4); }
+.g-card--row .g-card__body { flex: 1 1 auto; padding: var(--sinitsa-space-3) calc(var(--sinitsa-touch) + var(--sinitsa-space-6)) var(--sinitsa-space-3) var(--sinitsa-space-4); }
 .g-card__name { font-size: var(--sinitsa-text-body); font-weight: 700; line-height: 1.3; overflow-wrap: break-word; hyphens: auto; }
 .g-card__name mark { padding: 0 1px; border-radius: 3px; background: var(--sinitsa-sky); color: inherit; }
 .g-card__fav { display: inline-block; margin-left: 6px; vertical-align: -1px; color: var(--guest-accent, var(--sinitsa-blue)); }
@@ -253,7 +253,7 @@
   transition: transform var(--sinitsa-duration-fast) var(--sinitsa-easing);
 }
 .g-card__add:active { transform: scale(0.94); }
-.g-card__add--done { animation: g-pop var(--sinitsa-duration-standard) var(--sinitsa-easing); }
+
 @keyframes g-pop { 50% { transform: scale(1.08); } }
 .g-card--row .g-card__add--done { animation: none; }
 .g-card__add:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
@@ -714,4 +714,74 @@ label.g-option::after { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .g-ask-reason, .g-ask-list li { animation: none; }
   .g-ask-entry, .g-ask-card { transition: none; }
+}
+
+/* --- Premium coffee-app pass (29.09): cover, tiles, add control, item sheet, removal ----------- */
+/* Cover: a photo band that melts into the canvas; the title sits under it, never on the picture. */
+.g-cover.g-cover--image { position: relative; isolation: isolate; min-height: 0; align-content: start; padding-top: calc(148px + var(--sinitsa-safe-top)); padding-bottom: var(--sinitsa-space-3); background: none; }
+.g-cover.g-cover--image::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: -1;
+  height: calc(176px + var(--sinitsa-safe-top));
+  background: linear-gradient(180deg, transparent 50%, var(--sinitsa-canvas) 100%), var(--g-cover) center / cover no-repeat;
+}
+.g-cover.g-cover--image > * { margin-inline: auto; }
+.g-root .g-cover__title { font-size: clamp(24px, 6.4vw, 34px); font-weight: 700; }
+.g-cover__logo { width: 52px; height: 52px; border-radius: var(--sinitsa-radius-card); box-shadow: 0 0 0 2px var(--sinitsa-surface), var(--sinitsa-shadow-raised); }
+
+.g-sticky { backdrop-filter: saturate(1.4) blur(10px); background: color-mix(in srgb, var(--sinitsa-canvas) 92%, transparent); }
+
+.g-root .g-section__head h2 { font-size: 22px; font-weight: 700; }
+.g-section__head span { min-width: 24px; padding: 1px 8px; border-radius: var(--sinitsa-radius-pill); background: var(--sinitsa-sky); color: var(--sinitsa-muted); text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Tiles: the drink photo is the hero; the frame keeps its ratio before the image arrives. */
+.g-card--photo { border-color: transparent; border-radius: 22px; box-shadow: 0 1px 2px color-mix(in srgb, var(--sinitsa-ink) 8%, transparent), 0 6px 18px color-mix(in srgb, var(--sinitsa-ink) 6%, transparent); }
+.g-card--photo .g-card__media { margin: 6px 6px 0; border-radius: 17px; overflow: hidden; aspect-ratio: 1 / 1; }
+.g-card--photo .g-card__media img { display: block; }
+.g-card--photo .g-card__body { padding: var(--sinitsa-space-3) var(--sinitsa-space-3) var(--sinitsa-space-2); }
+.g-card--photo .g-card__body { grid-template-rows: 1fr auto; flex: 1 1 auto; }
+.g-card--photo .g-card__name { display: -webkit-box; align-self: start; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow-wrap: anywhere; }
+.g-card--row .g-card__name { overflow-wrap: anywhere; }
+.g-card__price { letter-spacing: -0.01em; }
+.g-rows { border-radius: 22px; }
+
+/* Add control: «+» when the position is not in «Мой выбор», «✓» (with the total quantity from 2) when it is. */
+.g-card__add { position: absolute; background: var(--sinitsa-blue); box-shadow: 0 4px 12px color-mix(in srgb, var(--sinitsa-blue) 35%, transparent); }
+.g-card__add[data-state="in"] { background: var(--sinitsa-surface); color: var(--sinitsa-blue); box-shadow: inset 0 0 0 2px var(--sinitsa-blue); }
+.g-card__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-ink);
+  color: var(--sinitsa-canvas);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  animation: g-count-in var(--motion-base, 240ms) var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+}
+@keyframes g-count-in { from { opacity: 0; transform: scale(0.5); } }
+
+/* Item sheet: a large photo with a reserved frame, then the calm details. */
+.g-item__photo { aspect-ratio: 4 / 3; max-height: none; border-radius: 22px; background: var(--sinitsa-skeleton); }
+.g-size { border-radius: 16px; }
+.g-size__name { font-size: 16px; }
+.g-item-footer__add.s-button { border-radius: 18px; }
+
+/* «Мой выбор»: a removed line slides out and fades; the rest closes up when it is gone. */
+.g-choice-line--leaving { animation: g-line-out var(--motion-base, 240ms) var(--ease-in, cubic-bezier(0.4, 0, 1, 1)) forwards; pointer-events: none; }
+@keyframes g-line-out { to { opacity: 0; transform: translateX(32px); } }
+.g-choice-bar__button { border-radius: 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .g-card__count, .g-choice-line--leaving { animation: none; }
+  .g-choice-line--leaving { opacity: 0; }
 }

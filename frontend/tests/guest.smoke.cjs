@@ -45,6 +45,16 @@ async function quoted(page, text) {
   await page.waitForFunction((expected) => document.querySelector(".quoted-price")?.textContent.replace(/\s/g, " ").includes(expected), text);
 }
 
+// State of a card's add control: the data attribute and the real icon drawn in it.
+async function addControl(page, name) {
+  return page.evaluate((itemName) => {
+    const card = [...document.querySelectorAll(".g-card")].find((element) => element.querySelector(".g-card__name")?.textContent.trim() === itemName);
+    const button = card?.querySelector(".g-card__add");
+    const svg = button?.querySelector("svg");
+    return { state: button?.dataset.state, icon: svg ? [...svg.classList].find((name) => /^lucide-(check|plus)$/.test(name)) : null };
+  }, name);
+}
+
 async function openMenu(page, appPath = "/r/test-point") {
   await page.goto(preview(appPath));
   await page.getByRole("button", { name: "Открыть Латте", exact: true }).waitFor({ timeout: 15_000 });
@@ -177,6 +187,12 @@ async function scenarioAtWidth(browser, width, errors) {
     await bar.waitFor();
     await page.waitForFunction(() => document.querySelector(".g-choice-bar__button")?.textContent.replace(/\s/g, " ").includes("490 ₽"));
     assert.match((await bar.textContent()).replace(/\s/g, " "), /2 позиции/);
+    // The add icon follows the choice, whatever the size / add-ons of the line: «✓» for both.
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "lucide-check" }, "Quick-added item shows «✓»");
+    assert.deepEqual(await addControl(page, "Латте"), { state: "in", icon: "lucide-check" }, "Item added with size and add-ons shows «✓»");
+    assert.deepEqual(await addControl(page, "Какао"), { state: "out", icon: "lucide-plus" }, "Item not in the choice shows «+»");
+    await page.waitForTimeout(1600);
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "lucide-check" }, "«✓» does not fall back to «+» by a timer");
     await noHorizontalScroll(page, `choice bar ${width}`);
     await bar.click();
     const choice = page.getByRole("dialog", { name: "Мой выбор" });
@@ -189,6 +205,19 @@ async function scenarioAtWidth(browser, width, errors) {
     await quotedTwo;
     await page.waitForFunction(() => document.querySelector("[data-testid=choice-total]")?.textContent.replace(/\s/g, " ") === "670 ₽");
     await shot(page, { path: path.join(output, `guest-choice-${width}.png`) });
+    // «−» at quantity 1 removes the line (with «Отменить»), the total is recounted, the card is «+» again.
+    await choice.getByRole("button", { name: "Меньше: Капучино" }).click();
+    await page.waitForFunction(() => document.querySelector("[data-testid=choice-total]")?.textContent.replace(/\s/g, " ") === "490 ₽");
+    await choice.getByRole("button", { name: "Убрать: Капучино" }).click();
+    await choice.getByRole("button", { name: /Капучино/ }).first().waitFor({ state: "detached" });
+    await page.waitForFunction(() => document.querySelector("[data-testid=choice-total]")?.textContent.replace(/\s/g, " ") === "310 ₽");
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "out", icon: "lucide-plus" }, "Removed item shows «+» again");
+    assert.deepEqual(await addControl(page, "Латте"), { state: "in", icon: "lucide-check" }, "Other item keeps «✓»");
+    await page.getByRole("button", { name: "Отменить" }).click();
+    await choice.getByLabel("Количество: Капучино").waitFor();
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "lucide-check" }, "Undo brings «✓» back");
+    await choice.getByRole("button", { name: "Больше: Капучино" }).click();
+    await page.waitForFunction(() => document.querySelector("[data-testid=choice-total]")?.textContent.replace(/\s/g, " ") === "670 ₽");
 
     // «Показать на кассе».
     await choice.getByRole("button", { name: "Показать на кассе" }).click();
@@ -207,6 +236,53 @@ async function scenarioAtWidth(browser, width, errors) {
     await choice.waitFor({ state: "detached" });
   } finally {
     await context.close();
+  }
+}
+
+// Owner report: the description overlapped the name. Name, description, price and the add
+// control of every card must occupy separate rectangles, long texts included.
+async function scenarioLongText(browser, errors) {
+  for (const width of [320, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: 780 } });
+    const page = await context.newPage();
+    page.on("pageerror", (error) => errors.push(`long text ${width}: ${error.message}`));
+    try {
+      await openMenu(page);
+      await page.getByRole("tab", { name: "Завтраки" }).click();
+      await page.getByRole("button", { name: /Открыть Большой фермерский завтрак/ }).waitFor();
+      const boxes = await page.evaluate(() => [...document.querySelectorAll(".g-card")].map((card) => {
+        const rect = (selector) => {
+          const element = card.querySelector(selector);
+          if (!element) return null;
+          const box = element.getBoundingClientRect();
+          return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+        };
+        const cardBox = card.getBoundingClientRect();
+        return { name: card.querySelector(".g-card__name").textContent, tile: card.classList.contains("g-card--photo"), card: { left: cardBox.left, right: cardBox.right }, parts: { name: rect(".g-card__name"), desc: rect(".g-card__desc"), price: rect(".g-card__price"), add: rect(".g-card__add") } };
+      }));
+      const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+      assert.ok(boxes.some((box) => box.name.length > 60 && box.tile), "A long-named tile is on the page");
+      assert.ok(boxes.some((box) => box.name.length > 60 && !box.tile), "A long-named row is on the page");
+      for (const box of boxes) {
+        const present = Object.entries(box.parts).filter(([, value]) => value);
+        for (let first = 0; first < present.length; first += 1) {
+          for (let second = first + 1; second < present.length; second += 1) {
+            assert.equal(overlap(present[first][1], present[second][1]), false, `${width}: «${box.name.slice(0, 24)}…» ${present[first][0]} overlaps ${present[second][0]}`);
+          }
+        }
+        for (const [part, value] of present) {
+          assert.ok(value.left >= box.card.left - 1 && value.right <= box.card.right + 1, `${width}: ${part} of «${box.name.slice(0, 24)}…» stays inside its card`);
+        }
+      }
+      await noHorizontalScroll(page, `long text ${width}`);
+      await shot(page, { path: path.join(output, `guest-long-text-${width}.png`), fullPage: true });
+      await page.getByRole("button", { name: /Открыть Сезонный авторский/ }).click();
+      await settle(page);
+      await noHorizontalScroll(page, `long text sheet ${width}`);
+      await shot(page, { path: path.join(output, `guest-long-item-${width}.png`) });
+    } finally {
+      await context.close();
+    }
   }
 }
 
@@ -260,6 +336,9 @@ async function scenarioDetails(browser, errors) {
     const more = choice.getByRole("button", { name: "Больше: Круассан" });
     for (let step = 0; step < 25 && !(await more.isDisabled()); step += 1) await more.click();
     assert.equal(await choice.getByLabel("Количество: Круассан").textContent(), "20");
+    for (let step = 0; step < 25 && !(await choice.getByRole("button", { name: "Убрать: Круассан" }).count()); step += 1) {
+      await choice.getByRole("button", { name: "Меньше: Круассан" }).click();
+    }
     await choice.getByRole("button", { name: "Убрать: Круассан" }).click();
     await page.keyboard.press("Escape");
     await choice.waitFor({ state: "detached" });
@@ -333,6 +412,28 @@ async function scenarioDarkWidths(browser, errors) {
       await openMenu(page, "/r/single-point");
       await noHorizontalScroll(page, `dark ${width}`);
       await shot(page, { path: path.join(output, `guest-no-photo-dark-${width}.png`), fullPage: true });
+    } finally {
+      await context.close();
+    }
+  }
+  // The same menu with photos in a dark venue theme («Ночь»), at all three widths.
+  for (const width of [320, 390, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: width >= 1024 ? 900 : 780 } });
+    const page = await context.newPage();
+    page.on("pageerror", (error) => errors.push(`dark photos ${width}: ${error.message}`));
+    try {
+      await page.route(`**${menuApi}`, async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        body.site = { ...body.site, template: "night", theme_mode: "dark", primary_color: "#E8A24A", background_color: "#121212", surface_color: "#1E1E1E", text_color: "#F2EFEA", icon_color: "#E8A24A" };
+        await route.fulfill({ response, json: body });
+      });
+      await openMenu(page);
+      assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".g-root")).backgroundColor), "rgb(18, 18, 18)", "Dark venue theme with photos");
+      await noHorizontalScroll(page, `dark photos ${width}`);
+      await page.getByRole("button", { name: "Добавить Капучино в мой выбор" }).click();
+      await page.locator(".g-choice-bar__button").waitFor();
+      await shot(page, { path: path.join(output, `guest-photo-dark-${width}.png`), fullPage: true });
     } finally {
       await context.close();
     }
@@ -661,10 +762,12 @@ async function scenarioInMax(browser, errors) {
       await scenarioAtWidth(browser, width, errors);
       console.log(`ok - guest flow at ${width}px`);
     }
+    await scenarioLongText(browser, errors);
+    console.log("ok - long names and descriptions: name, description, price and «+» never overlap at 320/390px");
     await scenarioDetails(browser, errors);
     console.log("ok - deep links, price update, 503 recovery, skeleton, single-menu format, unpublished");
     await scenarioDarkWidths(browser, errors);
-    console.log("ok - dark theme without photos at 320/1280px");
+    console.log("ok - dark theme without photos at 320/1280px, with photos at 320/390/1280px");
     await scenarioAsk(browser, errors);
     console.log("ok - «Синица, что взять?»: chips, free text, cards open the item, 429 and no-AI picks, events without text");
     await scenarioMotion(browser, errors);

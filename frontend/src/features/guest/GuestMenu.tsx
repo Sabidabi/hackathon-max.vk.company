@@ -64,8 +64,10 @@ type QuickAdd = (item: GuestItem, sectionName: string, from: Rect) => void;
 /** First build of the catalog: up to 8 cards cascade in once, never on scroll. */
 const CASCADE_LIMIT = 8;
 
-function ItemCard({ item, sectionName, highlights, favorite, onOpen, onQuickAdd, enterIndex }: {
+function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, onQuickAdd, enterIndex }: {
   item: GuestItem;
+  /** Total quantity of this position in «Мой выбор» over all sizes and add-on variants. */
+  inChoice: number;
   sectionName: string;
   highlights?: Array<[number, number]>;
   favorite: boolean;
@@ -77,12 +79,6 @@ function ItemCard({ item, sectionName, highlights, favorite, onOpen, onQuickAdd,
   const detailsId = useId();
   const withPhoto = Boolean(item.image_url);
   const quick = canQuickAdd(item);
-  const [justAdded, setJustAdded] = useState(false);
-  useEffect(() => {
-    if (!justAdded) return;
-    const timer = window.setTimeout(() => setJustAdded(false), 1200);
-    return () => window.clearTimeout(timer);
-  }, [justAdded]);
   return (
     <article
       className={`g-card${withPhoto ? " g-card--photo" : " g-card--row"}${item.is_available ? "" : " g-card--off"}${enterIndex !== undefined ? " g-card--enter" : ""}`}
@@ -135,28 +131,33 @@ function ItemCard({ item, sectionName, highlights, favorite, onOpen, onQuickAdd,
       {item.is_available && (
         <button
           type="button"
-          className={`g-card__add${justAdded ? " g-card__add--done" : ""}`}
-          aria-label={quick ? `Добавить ${item.name} в мой выбор` : `Выбрать параметры: ${item.name}`}
+          className="g-card__add"
+          data-state={inChoice > 0 ? "in" : "out"}
+          aria-label={inChoice > 0
+            ? `${item.name}: в выборе ${inChoice}. ${quick ? "Добавить ещё" : "Изменить"}`
+            : quick ? `Добавить ${item.name} в мой выбор` : `Выбрать параметры: ${item.name}`}
           onClick={(event) => {
             if (!quick) {
               onOpen(item, sectionName, mediaRef.current);
               return;
             }
             onQuickAdd(item, sectionName, toRect(event.currentTarget.getBoundingClientRect()));
-            setJustAdded(true);
           }}
         >
-          {justAdded ? <Check size={20} aria-hidden="true" /> : <Plus size={20} aria-hidden="true" />}
+          {/* The icon is a pure function of the choice: «✓» while the position is in it, else «+». */}
+          {inChoice > 0 ? <Check size={20} aria-hidden="true" /> : <Plus size={20} aria-hidden="true" />}
+          {inChoice > 1 && <b key={inChoice} className="g-card__count" aria-hidden="true">{inChoice}</b>}
         </button>
       )}
     </article>
   );
 }
 
-function ItemGrid({ items, sectionName, favorites, onOpen, onQuickAdd, highlights, cascade }: {
+function ItemGrid({ items, sectionName, favorites, counts, onOpen, onQuickAdd, highlights, cascade }: {
   items: GuestItem[];
   sectionName: string | ((item: GuestItem) => string);
   favorites: Set<string>;
+  counts: Map<string, number>;
   onOpen: OpenItem;
   onQuickAdd: QuickAdd;
   highlights?: Map<string, Array<[number, number]>>;
@@ -173,6 +174,7 @@ function ItemGrid({ items, sectionName, favorites, onOpen, onQuickAdd, highlight
       sectionName={nameOf(item)}
       highlights={highlights?.get(item.id)}
       favorite={favorites.has(favoriteKey(item))}
+      inChoice={counts.get(item.id) ?? 0}
       onOpen={onOpen}
       onQuickAdd={onQuickAdd}
       enterIndex={cascade?.()}
@@ -255,6 +257,21 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   const favorites = useItemFavorites(publicId, inMax);
   const favoriteSet = useMemo(() => new Set(favorites.ids), [favorites.ids]);
   const choice = useChoice(publicId, tabs);
+
+  // Quantity per catalog item over every line of it (any size / add-ons), by id or item_key.
+  const counts = useMemo(() => {
+    const byRef = new Map<string, number>();
+    choice.lines.forEach((line) => {
+      byRef.set(line.itemId, (byRef.get(line.itemId) ?? 0) + line.qty);
+      if (line.itemKey) byRef.set(`key:${line.itemKey}`, (byRef.get(`key:${line.itemKey}`) ?? 0) + line.qty);
+    });
+    const result = new Map<string, number>();
+    tabs.forEach((candidate) => candidate.sections.forEach((section) => section.items.forEach((item) => {
+      const total = Math.max(byRef.get(item.id) ?? 0, item.item_key ? byRef.get(`key:${item.item_key}`) ?? 0 : 0);
+      if (total > 0) result.set(item.id, total);
+    })));
+    return result;
+  }, [choice.lines, tabs]);
 
   const [tabId, setTabId] = useState(() => tabs[0]?.menu_id ?? "");
   const tab: GuestMenuTab | undefined = tabs.find((candidate) => candidate.menu_id === tabId) ?? tabs[0];
@@ -463,11 +480,16 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
     setCashierOpen(true);
     trackGuestEvent("choice_shown", { public_id: publicId, items: choice.lines.length });
   }, [choice, publicId]);
-  const { remove: removeLine } = choice;
+  const { remove: removeLine, restore: restoreLine, lines: choiceLines } = choice;
   const removeFromChoice = useCallback((lineId: string) => {
+    const index = choiceLines.findIndex((line) => line.lineId === lineId);
+    const line = choiceLines[index];
     trackGuestEvent("item_remove", { public_id: publicId });
     removeLine(lineId);
-  }, [publicId, removeLine]);
+    if (!line) return;
+    haptics.selection();
+    showToast(`${line.name} убрано из выбора`, { action: { label: "Отменить", onClick: () => restoreLine(line, index) } });
+  }, [choiceLines, publicId, removeLine, restoreLine]);
   const closeCashier = useCallback(() => {
     setCashierOpen(false);
     setChoiceOpen(true);
@@ -613,6 +635,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
                     items={hits.map((hit) => hit.item)}
                     sectionName={(item) => sectionOf.get(item.id) ?? ""}
                     favorites={favoriteSet}
+                    counts={counts}
                     highlights={new Map(hits.map((hit) => [hit.item.id, hit.highlights]))}
                     onOpen={openItem}
                     onQuickAdd={quickAdd}
@@ -673,6 +696,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
                         items={section.items}
                         sectionName={section.name}
                         favorites={favoriteSet}
+                    counts={counts}
                         onOpen={openItem}
                         onQuickAdd={quickAdd}
                         cascade={cascadeNext}

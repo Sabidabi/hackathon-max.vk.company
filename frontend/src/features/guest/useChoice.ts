@@ -6,6 +6,7 @@ import { GuestApiError, quoteGuestItem, type GuestMenuTab } from "./api";
 import {
   addLine,
   choiceStorageKey,
+  CHOICE_MAX_LINES,
   clampQty,
   parseStoredChoice,
   resolveLine,
@@ -142,6 +143,13 @@ export function useChoice(publicId: string, tabs: GuestMenuTab[] | null) {
   const add = useCallback((line: ChoiceLine) => setLines((current) => addLine(current, line)), []);
   const setQty = useCallback((lineId: string, qty: number) => setLines((current) => current.map((line) => line.lineId === lineId ? { ...line, qty: clampQty(qty) } : line)), []);
   const remove = useCallback((lineId: string) => setLines((current) => current.filter((line) => line.lineId !== lineId)), []);
+  /** Puts a removed line back where it was («Отменить»); a line already there is left alone. */
+  const restore = useCallback((line: ChoiceLine, index: number) => setLines((current) => {
+    if (current.some((candidate) => candidate.lineId === line.lineId)) return current;
+    const next = [...current];
+    next.splice(Math.min(Math.max(index, 0), next.length), 0, line);
+    return next.slice(0, CHOICE_MAX_LINES);
+  }), []);
   const retry = useCallback(() => quotes.forEach((quote) => { if (quote.isError) void quote.refetch(); }), [quotes]);
 
   /** The guest has seen the new prices: remember them and the current ids. */
@@ -172,5 +180,5 @@ export function useChoice(publicId: string, tabs: GuestMenuTab[] | null) {
     });
   }, [resolved, views]);
 
-  return { lines, loaded, views, totals, add, setQty, remove, retry, acknowledge };
+  return { lines, loaded, views, totals, add, setQty, remove, restore, retry, acknowledge };
 }

@@ -1,5 +1,5 @@
 import { Minus, Plus, RotateCcw, ShoppingBag, Trash2, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Button, IconButton } from "../../design";
@@ -55,6 +55,21 @@ export function ChoiceSheet({
   /** `from` — centre of «Показать на кассе»: the summary opens out of it. */
   onShow: (from: { x: number; y: number }) => void;
 }) {
+  // A removed line first fades and slides out (transform/opacity), then leaves the list.
+  const [leaving, setLeaving] = useState<ReadonlySet<string>>(new Set());
+  const leave = useCallback((lineId: string) => {
+    setLeaving((current) => (current.has(lineId) ? current : new Set(current).add(lineId)));
+    const finish = () => {
+      setLeaving((current) => {
+        const next = new Set(current);
+        next.delete(lineId);
+        return next;
+      });
+      onRemove(lineId);
+    };
+    if (prefersReducedMotion()) finish();
+    else window.setTimeout(finish, motionMs("--motion-base"));
+  }, [onRemove]);
   return (
     <MotionSheet
       open={open}
@@ -86,7 +101,7 @@ export function ChoiceSheet({
             {views.map(({ line, state }) => {
               const off = state.kind === "unavailable";
               return (
-                <li key={line.lineId} className={`g-choice-line${off ? " g-choice-line--off" : ""}`}>
+                <li key={line.lineId} className={`g-choice-line${off ? " g-choice-line--off" : ""}${leaving.has(line.lineId) ? " g-choice-line--leaving" : ""}`}>
                   <div className="g-choice-line__main">
                     <strong>{line.name}</strong>
                     {lineDetails(line) && <span className="g-muted">{lineDetails(line)}</span>}
@@ -101,20 +116,21 @@ export function ChoiceSheet({
                     <span className="g-stepper">
                       <button
                         type="button"
-                        aria-label={`Меньше: ${line.name}`}
-                        disabled={line.qty <= CHOICE_QTY_MIN}
+                        aria-label={line.qty <= CHOICE_QTY_MIN ? `Убрать: ${line.name}` : `Меньше: ${line.name}`}
+                        disabled={leaving.has(line.lineId)}
                         onClick={() => {
                           haptics.selection();
-                          onQty(line.lineId, line.qty - 1);
+                          if (line.qty <= CHOICE_QTY_MIN) leave(line.lineId);
+                          else onQty(line.lineId, line.qty - 1);
                         }}
                       >
-                        <Minus size={16} aria-hidden="true" />
+                        {line.qty <= CHOICE_QTY_MIN ? <Trash2 size={16} aria-hidden="true" /> : <Minus size={16} aria-hidden="true" />}
                       </button>
                       <output aria-label={`Количество: ${line.name}`}>{line.qty}</output>
                       <button
                         type="button"
                         aria-label={`Больше: ${line.name}`}
-                        disabled={line.qty >= CHOICE_QTY_MAX || off}
+                        disabled={line.qty >= CHOICE_QTY_MAX || off || leaving.has(line.lineId)}
                         onClick={() => {
                           haptics.selection();
                           onQty(line.lineId, line.qty + 1);
@@ -123,7 +139,6 @@ export function ChoiceSheet({
                         <Plus size={16} aria-hidden="true" />
                       </button>
                     </span>
-                    <IconButton aria-label={`Убрать: ${line.name}`} icon={<Trash2 size={18} />} onClick={() => onRemove(line.lineId)} />
                   </div>
                 </li>
               );

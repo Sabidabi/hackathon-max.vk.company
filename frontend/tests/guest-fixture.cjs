@@ -40,12 +40,15 @@ function createState() {
   const cocoa = item("Какао", 20000, { description: "Можно на овсяном молоке", weight_text: "300 мл" });
   const syrniki = item("Сырники", 32000, { description: "Со сметаной и ягодным соусом", weight_text: "220 г" });
   const omelette = item("Омлет с сыром", 29000, { weight_text: "200 г" });
+  // Long texts: the name, description and price must never overlap (tile with a photo and a row).
+  const longTile = item("Сезонный авторский флэт уайт на альтернативном молоке с карамелью и морской солью", 34000, { description: "Двойной ристретто, альтернативное молоко собственной обжарки, домашняя солёная карамель и щепотка морской соли, подаётся в тёплой чашке", image_url: media("Латте"), weight_text: "300 мл" });
+  const longRow = item("Большой фермерский завтрак с омлетом, картофелем по-деревенски и двумя видами сыра", 45000, { description: "Три яйца, запечённый картофель с розмарином, деревенская колбаска, свежие овощи, два вида сыра и тост на закваске с маслом", weight_text: "420 г" });
   const mainSections = [
     { id: randomUUID(), name: "Кофе", items: [latte, cappuccino, flat, americano] },
     { id: randomUUID(), name: "Выпечка", items: [croissant, cinnabon, eclair] },
     { id: randomUUID(), name: "Другие напитки", items: [tea, cocoa] },
   ];
-  const breakfastSections = [{ id: randomUUID(), name: "Завтраки", items: [syrniki, omelette] }];
+  const breakfastSections = [{ id: randomUUID(), name: "Завтраки", items: [syrniki, omelette, longTile, longRow] }];
   return {
     version: 3,
     menus: [
@@ -55,7 +58,7 @@ function createState() {
   };
 }
 
-const lightSite = { template: "modern", theme_mode: "light", primary_color: "#1F6B57", background_color: "#F3F5F4", surface_color: "#FFFFFF", text_color: "#16201C", icon_color: "#D1495B", background_image_url: null, background_overlay: 0, font_scale: 1, tagline: null, about: null, phone: null, hours: "Ежедневно 08:00–21:00", booking_url: null, logo_url: null, cover_url: null, gallery_urls: [], blocks: [] };
+const lightSite = { template: "modern", theme_mode: "light", primary_color: "#1F6B57", background_color: "#F3F5F4", surface_color: "#FFFFFF", text_color: "#16201C", icon_color: "#D1495B", background_image_url: null, background_overlay: 0, font_scale: 1, tagline: null, about: null, phone: null, hours: "Ежедневно 08:00–21:00", booking_url: null, logo_url: null, cover_url: "/api/__fixture/media/Обложка.svg", gallery_urls: [], blocks: [] };
 const darkSite = { ...lightSite, template: "noir", theme_mode: "dark", primary_color: "#E0B25C", background_color: "#121212", surface_color: "#1E1E1E", text_color: "#F2F2F2", icon_color: "#E0B25C", hours: "Пн–Пт 09:00–20:00" };
 
 function reidentify(menus) {
