@@ -76,12 +76,17 @@ class OpenAICompatClient:
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    async def chat(self, messages: list[dict[str, str]], function: dict[str, Any]) -> Any:
+    async def chat(
+        self,
+        messages: list[dict[str, str]],
+        function: dict[str, Any],
+        timeout_seconds: float | None = None,
+    ) -> Any:
         """One completion forced to call ``function``; returns its raw arguments."""
         api_key = self.settings.ai_api_key.strip()
         if not api_key:
             raise OpenAICompatError("ИИ не настроен")
-        timeout = httpx.Timeout(self.settings.ai_request_timeout_seconds)
+        timeout = httpx.Timeout(timeout_seconds or self.settings.ai_request_timeout_seconds)
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 f"{self.settings.ai_base_url.rstrip('/')}/chat/completions",
@@ -110,7 +115,9 @@ class OpenAICompatProvider:
 
     async def complete(self, task: AITask) -> Any:
         try:
-            return await self._client.chat(build_messages(task), function_spec(task))
+            return await self._client.chat(
+                build_messages(task), function_spec(task), task.timeout_seconds
+            )
         except (OpenAICompatError, httpx.HTTPError, ValueError) as error:
             raise AIUnavailable("ИИ сейчас недоступен") from error
 

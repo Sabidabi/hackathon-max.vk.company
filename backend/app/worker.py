@@ -11,7 +11,7 @@ from app.bot.delivery import deliver_due, recover_interrupted
 from app.bot.events import on_import_finished
 from app.config import get_settings
 from app.database import SessionFactory, engine
-from app.imports.llm import structure_with_ai
+from app.imports.llm import add_ai_descriptions, structure_with_ai
 from app.imports.ocr import OcrResult, ocr_source
 from app.imports.processor import (
     extract_pdf_text,
@@ -210,6 +210,7 @@ async def process_job(job_id: uuid.UUID) -> None:
         stored_path = job.stored_path
         mime_type = job.mime_type
         restaurant_id = job.restaurant_id
+        created_by_id = job.created_by_id
         existing_payload = dict(job.extracted_payload or {})
         venue_id = await session.scalar(
             select(Restaurant.venue_id).where(Restaurant.id == restaurant_id)
@@ -258,6 +259,8 @@ async def process_job(job_id: uuid.UUID) -> None:
         if structured_menu is None:
             structured_menu = await asyncio.to_thread(structure_menu_text, text_content)
             structured_menu["ai_fallback"] = fallback_reason
+        elif venue_id is not None:
+            await add_ai_descriptions(settings, structured_menu, venue_id, created_by_id)
         if ocr_result is not None and ocr_result.confidence is not None:
             for section in structured_menu["sections"]:
                 assert isinstance(section, dict)

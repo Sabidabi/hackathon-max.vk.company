@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field, field_validator
@@ -111,6 +111,8 @@ class ReviewItem(BaseModel):
     currency: str = Field(default="RUB", pattern="^RUB$")
     weight_text: str | None = Field(default=None, max_length=100)
     description: str | None = Field(default=None, max_length=2000)
+    # «document» — text from the menu, «ai» — a draft suggested by the AI (to be checked).
+    description_source: Literal["document", "ai"] | None = None
     source_line: str | None = Field(default=None, max_length=2000)
     source_confidence: float | None = Field(default=None, ge=0, le=1)
     # The price was not readable in the source: shown as «Проверьте цену»; with price 0 the
@@ -151,6 +153,8 @@ class ImportReviewResponse(MenuReviewPayload):
     # "llm-v1" — structured by the AI (checked by code), "heuristic-v1" — by the parser.
     parser: str
     provider: str | None = None
+    # Why the AI did not structure the import: unavailable | limit | too_long | disabled | ...
+    ai_fallback: str | None = None
 
 
 class ApplyReviewPayload(MenuReviewPayload):
@@ -289,6 +293,10 @@ async def get_import_review(
         provider=(
             structured_menu["provider"] if isinstance(structured_menu.get("provider"), str)
             else None
+        ),
+        ai_fallback=(
+            structured_menu["ai_fallback"]
+            if isinstance(structured_menu.get("ai_fallback"), str) else None
         ),
     )
 

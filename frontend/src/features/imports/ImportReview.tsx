@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ListPlus, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, ListPlus, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { trackAdmin } from "../../analytics";
@@ -18,12 +18,23 @@ const emptyItem = (): ReviewItem => ({
   currency: "RUB",
   weight_text: null,
   description: null,
+  description_source: null,
   source_line: null,
   source_confidence: null,
   price_missing: true,
   field_confidence: null,
   variants: [],
 });
+
+const FALLBACK_NOTES: Record<string, string> = {
+  unavailable: "ИИ недоступен — меню распознано без ИИ, проверьте внимательнее",
+  limit: "Лимит ИИ на сегодня исчерпан — распознано без ИИ",
+  too_long: "Меню слишком большое для ИИ — распознано без ИИ",
+  disabled: "ИИ-разбор выключен — меню распознано без ИИ",
+  empty: "В документе нет текста для ИИ — распознано без ИИ",
+  no_items: "ИИ не нашёл позиций — распознано без ИИ",
+  no_venue: "ИИ недоступен — меню распознано без ИИ",
+};
 
 const rubles = (minor: number) => String(minor / 100);
 
@@ -198,6 +209,12 @@ export function ImportReview({ restaurantId, importId, onClose }: {
             </span>
             {stats.items} позиций{stats.doubts ? ` · проверьте ${stats.doubts}` : ""}
           </p>
+          {review.data.ai_fallback && (
+            <p className="review-note" role="note">{FALLBACK_NOTES[review.data.ai_fallback] ?? "Меню распознано без ИИ"}</p>
+          )}
+          {sections.some((section) => section.items.some((item) => item.description_source === "ai")) && (
+            <p className="review-note" role="note"><Sparkles size={14} aria-hidden="true" /> Описания без текста в меню предложил ИИ — проверьте</p>
+          )}
           {review.data.unparsed_lines.length > 0 && (
             <details className="review-unparsed">
               <summary>Не распределили строк: {review.data.unparsed_lines.length}</summary>
@@ -251,7 +268,13 @@ export function ImportReview({ restaurantId, importId, onClose }: {
                           <TextInput label="Вес / объём" maxLength={100} placeholder="250 мл" value={item.weight_text ?? ""} onChange={(event) => updateItem(sectionIndex, itemIndex, { weight_text: event.target.value || null })} />
                         </div>
                       )}
-                      {item.description && <p className="review-item__desc">{item.description}</p>}
+                      {item.description !== null && item.description !== "" && (
+                        <div className="review-item__desc-row">
+                          <TextInput label="Описание" maxLength={500} value={item.description} onChange={(event) => updateItem(sectionIndex, itemIndex, { description: event.target.value || null, description_source: event.target.value ? item.description_source ?? null : null })} />
+                          {item.description_source === "ai" && <span className="review-badge review-badge--ai" title="Описание предложил ИИ — проверьте"><Sparkles size={14} aria-hidden="true" />ИИ</span>}
+                          <IconButton aria-label={`Убрать описание ${item.name}`} icon={<X size={20} />} onClick={() => updateItem(sectionIndex, itemIndex, { description: null, description_source: null })} />
+                        </div>
+                      )}
                     </li>
                   );
                 })}

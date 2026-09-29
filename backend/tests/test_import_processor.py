@@ -31,7 +31,9 @@ def test_structures_sections_and_items_without_inventing_fields() -> None:
         "source_line": "Цезарь с курицей 590 ₽",
         "source_confidence": 0.75,
     }
-    assert result["unparsed_lines"] == ["Состав уточняйте у официанта"]
+    # A line after «название … цена» without a price is that item's description.
+    assert sections[1]["items"][0]["description"] == "Состав уточняйте у официанта"
+    assert result["unparsed_lines"] == []
 
 
 def test_joins_wrapped_names_with_weight_and_price() -> None:
@@ -91,3 +93,78 @@ def test_resolve_data_path_rejects_escape(tmp_path: Path) -> None:
     assert resolve_data_path(tmp_path, "uploads/source.pdf").is_relative_to(tmp_path)
     with pytest.raises(ValueError, match="outside"):
         resolve_data_path(tmp_path, "../secret.txt")
+
+
+def _items(text: str) -> dict[str, dict]:
+    result = structure_menu_text(text)
+    return {i["name"]: i for section in result["sections"] for i in section["items"]}
+
+
+def test_description_on_the_next_line_is_not_part_of_the_next_name() -> None:
+    items = _items(
+        """
+        ВЫПЕЧКА
+        Сырники 290
+        Со сметаной и джемом
+        Круассан 150
+        Сливочный, слоёный
+        Эклер 180
+        """
+    )
+    assert list(items) == ["Сырники", "Круассан", "Эклер"]
+    assert items["Сырники"]["description"] == "Со сметаной и джемом"
+    assert items["Круассан"]["description"] == "Сливочный, слоёный"
+    assert "description" not in items["Эклер"] and items["Эклер"]["price_minor"] == 18000
+
+
+def test_name_and_description_on_one_line() -> None:
+    items = _items(
+        """
+        ВЫПЕЧКА
+        Сырники со сметаной и джемом 290
+        Круассан — сливочный, слоёный 150
+        Эклер. Заварной крем и шоколад 180
+        Чизкейк с ягодами, нежный творожный сыр и хрустящая основа 320
+        """
+    )
+    assert "Круассан" in items and items["Круассан"]["description"] == "сливочный, слоёный"
+    assert items["Круассан"]["price_minor"] == 15000
+    assert items["Эклер"]["description"] == "Заварной крем и шоколад"
+    assert items["Чизкейк с ягодами"]["description"] == (
+        "нежный творожный сыр и хрустящая основа"
+    )
+    assert "Сырники со сметаной и джемом" in items  # short name without a separator
+
+
+def test_description_before_the_price_line_and_weight_stays_apart() -> None:
+    items = _items(
+        """
+        ВЫПЕЧКА
+        Медовик
+        Нежные коржи и сливочный крем
+        250 г – 320
+        Штрудель — яблоко и корица 150 г 210
+        Маффин 90 г 130
+        """
+    )
+    assert items["Медовик"]["description"] == "Нежные коржи и сливочный крем"
+    assert items["Медовик"]["weight_text"] == "250 г" and items["Медовик"]["price_minor"] == 32000
+    assert items["Штрудель"]["weight_text"] == "150 г"
+    assert items["Штрудель"]["description"] == "яблоко и корица"
+    assert items["Маффин"]["weight_text"] == "90 г" and items["Маффин"]["price_minor"] == 13000
+
+
+def test_neighbouring_items_are_not_glued_together() -> None:
+    result = structure_menu_text(
+        """
+        НАПИТКИ
+        Латте 200
+        Эспрессо с молоком
+        Капучино 190
+        Раф 250
+        """
+    )
+    items = result["sections"][0]["items"]
+    assert [i["name"] for i in items] == ["Латте", "Капучино", "Раф"]
+    assert items[0]["description"] == "Эспрессо с молоком"
+    assert "description" not in items[1] and "description" not in items[2]

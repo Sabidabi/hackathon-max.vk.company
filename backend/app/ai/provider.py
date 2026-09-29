@@ -15,7 +15,8 @@ from pydantic import BaseModel, ValidationError
 from app.config import Settings
 
 ProviderName = Literal["openai", "mock"]
-TaskName = Literal["guest_ask", "item_description", "menu_check", "import_structure"]
+TaskName = Literal["guest_ask", "item_description", "menu_check", "import_structure",
+                  "import_descriptions"]
 
 # Shared rules put before each task's instructions. Untrusted text is data, never orders.
 COMMON_RULES = """Ты — помощник сервиса меню кофеен «Синица».
@@ -46,6 +47,8 @@ class AITask:
     # Short human description of the function the model must call.
     function_description: str = ""
     extra: dict[str, Any] = field(default_factory=dict, compare=False)
+    # Overrides AI_REQUEST_TIMEOUT_SECONDS for background jobs (imports).
+    timeout_seconds: float | None = field(default=None, compare=False)
 
     @property
     def function_name(self) -> str:

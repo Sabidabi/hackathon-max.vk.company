@@ -87,4 +87,6 @@ class MockAIProvider:
             }
         if task.name == "import_structure":
             return _import(data["text"])
+        if task.name == "import_descriptions":
+            return {"descriptions": []}  # the demo never writes descriptions
         raise ValueError(f"unknown task {task.name}")

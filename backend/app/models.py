@@ -679,7 +679,7 @@ class AiUsage(Base):
     __table_args__ = (
         CheckConstraint(
             "feature IN ('guest_ask', 'item_description', 'menu_check', 'import_structure', "
-            "'menu_plan', 'weekly_summary')",
+            "'menu_plan', 'weekly_summary', 'import_descriptions')",
             name="ck_ai_usage_feature",
         ),
         CheckConstraint(

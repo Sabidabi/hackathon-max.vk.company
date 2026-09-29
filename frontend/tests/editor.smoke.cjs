@@ -742,6 +742,8 @@ async function verifyPublicStartParam(browser, baseUrl) {
       await review.getByText("Без цены позицию не опубликовать", { exact: true }).first().waitFor();
       // A size without a price is hidden by the server, the position itself still publishes.
       await review.getByText("Размер без цены будет скрыт", { exact: true }).waitFor();
+      await review.getByText("ИИ", { exact: true }).waitFor();
+      await review.getByText("Описания без текста в меню предложил ИИ — проверьте", { exact: false }).waitFor();
       await review.getByRole("status").getByText("Без цены: 2 — их не опубликовать", { exact: true }).waitFor();
       await page.screenshot({ path: path.join(output, `import-review-${width}.png`) });
       if (width !== 1280) {

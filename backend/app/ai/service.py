@@ -9,7 +9,7 @@ import logging
 import time
 import uuid
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any, Literal
 
@@ -31,7 +31,7 @@ from app.models import AiUsage
 logger = logging.getLogger(__name__)
 
 Feature = Literal["guest_ask", "item_description", "menu_check", "import_structure", "menu_plan",
-           "weekly_summary"]
+           "weekly_summary", "import_descriptions"]
 GUEST_FEATURES = ("guest_ask",)
 
 
@@ -226,6 +226,7 @@ async def run_task(
     venue_id: uuid.UUID,
     subject: str,
     provider: AIProvider | None = None,
+    timeout_seconds: float | None = None,
 ) -> AIResult:
     """Limits → cache → provider with timeout → strict schema. Raises ``AIUnavailable``
     (no key, error, timeout, invalid answer) or ``AILimitExceeded``."""
@@ -235,6 +236,8 @@ async def run_task(
     feature: Feature = task.name
     await consume_quota(settings, venue_id=venue_id, feature=feature, subject=subject)
 
+    if timeout_seconds:
+        task = replace(task, timeout_seconds=timeout_seconds)
     key = cache_key(provider, task)
     cached = CACHE.get(key)
     if cached is not None:
@@ -242,7 +245,7 @@ async def run_task(
 
     started = time.monotonic()
     try:
-        async with asyncio.timeout(settings.ai_request_timeout_seconds):
+        async with asyncio.timeout(timeout_seconds or settings.ai_request_timeout_seconds):
             raw = await provider.complete(task)
     except TimeoutError as error:
         raise AIUnavailable("ИИ не ответил вовремя") from error

@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     ai_api_key: str = ""
     ai_model: str = "qwen/qwen3.8-omni-flash"
     ai_request_timeout_seconds: float = Field(default=20, ge=1, le=180)
+    # Background import (structuring a whole menu, batch descriptions) takes longer than a click.
+    ai_import_timeout_seconds: float = Field(default=120, ge=10, le=600)
     ai_cache_ttl_seconds: int = Field(default=600, ge=0, le=86_400)
     ai_guest_daily_limit: int = Field(default=20, ge=1, le=10_000)
     ai_admin_daily_limit: int = Field(default=100, ge=1, le=10_000)

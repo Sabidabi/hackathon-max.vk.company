@@ -33,6 +33,8 @@ export interface ReviewItem {
   currency: string;
   weight_text: string | null;
   description: string | null;
+  /** "document" — text from the menu; "ai" — a draft suggested by the AI, to be checked. */
+  description_source?: "document" | "ai" | null;
   source_line: string | null;
   source_confidence: number | null;
   /** The price was not readable: the field is empty and marked «Проверьте цену». */
@@ -55,6 +57,8 @@ export interface ImportReview {
   unparsed_lines: string[];
   parser?: string;
   provider?: string | null;
+  /** Why the AI did not structure the import (unavailable, limit, too_long, disabled, empty, no_items). */
+  ai_fallback?: string | null;
 }
 
 export interface ApplyReviewResult {

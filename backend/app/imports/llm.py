@@ -14,8 +14,17 @@ from typing import Any
 
 from app.ai.provider import AIUnavailable
 from app.ai.service import AILimitExceeded, run_task
-from app.ai.tasks import ImportStructureAnswer, import_structure_task, price_to_minor
+from app.ai.tasks import (
+    DESCRIPTION_LIMIT,
+    ImportDescriptionsAnswer,
+    ImportStructureAnswer,
+    check_description,
+    import_descriptions_task,
+    import_structure_task,
+    price_to_minor,
+)
 from app.config import Settings
+from app.imports.processor import split_name_description
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +35,50 @@ LOW_CONFIDENCE = 0.7
 
 def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", text.casefold().replace("ё", "е")).strip()
+
+
+MAX_NAME_LENGTH = 80
+MIN_WORD = 3
+WORD_MATCH_SHARE = 0.85
+ORDER_SHARE = 0.8
+
+
+def _tokens(text: str) -> list[str]:
+    """Words of a text for the fuzzy comparison: case, ё, punctuation, quotes and OCR
+    hyphenation at a line break do not matter."""
+    text = re.sub(r"(?<=\w)[-­]\s*\n\s*(?=\w)", "", text)
+    text = text.casefold().replace("­", "").replace("ё", "е")
+    return re.findall(r"\w+", text)
+
+
+def description_in_source(description: str, source_text: str) -> bool:
+    """The description is taken from the document, not written by the model.
+
+    At least 85% of its words (3+ letters) occur in the document, mostly in the same order;
+    every number of the description occurs in the document literally."""
+    words = _tokens(description)
+    if not words:
+        return False
+    source = _tokens(source_text)
+    source_numbers = {w for w in source if w.isdigit()}
+    if any(w.isdigit() and w not in source_numbers for w in words):
+        return False
+    long_words = [w for w in words if len(w) >= MIN_WORD and not w.isdigit()]
+    if not long_words:
+        return _norm(description) in _norm(source_text)
+    positions: dict[str, list[int]] = {}
+    for at, word in enumerate(source):
+        positions.setdefault(word, []).append(at)
+    found = [w for w in long_words if w in positions]
+    if len(found) < WORD_MATCH_SHARE * len(long_words):
+        return False
+    ordered, last = 0, -1
+    for word in found:
+        later = next((at for at in positions[word] if at > last), None)
+        if later is not None:
+            ordered += 1
+            last = later
+    return ordered >= ORDER_SHARE * len(found)
 
 
 def answer_to_structured_menu(
@@ -40,6 +93,10 @@ def answer_to_structured_menu(
             name = item.name.strip()
             if not name:
                 continue
+            raw_description = (item.description or "").strip() or None
+            if len(name) > MAX_NAME_LENGTH:  # the model put the description into the name
+                name, tail = split_name_description(name)
+                raw_description = raw_description or tail
             variants = []
             for size in item.sizes:
                 size_name = size.name.strip()
@@ -59,8 +116,8 @@ def answer_to_structured_menu(
             if _norm(name) not in source_norm:
                 name_confidence = min(name_confidence, 0.5)
             price_confidence = 0.0 if price_missing else item.confidence.price
-            description = (item.description or "").strip() or None
-            if description and _norm(description) not in source_norm:
+            description = raw_description
+            if description and not description_in_source(description, source_text):
                 description = None  # the model may copy text, never write it
             items.append({
                 "name": name[:250],
@@ -69,6 +126,7 @@ def answer_to_structured_menu(
                 "currency": "RUB",
                 "weight_text": (item.weight_text or "").strip()[:100] or None,
                 "description": description,
+                "description_source": "document" if description else None,
                 "variants": [
                     {"name": v["name"], "price_minor": v["price_minor"] or 0} for v in variants
                 ],
@@ -107,12 +165,16 @@ async def structure_with_ai(
         return None, "too_long"
     try:
         result = await run_task(
-            settings, import_structure_task(text), venue_id=venue_id, subject="worker"
+            settings, import_structure_task(text), venue_id=venue_id, subject="worker",
+            timeout_seconds=settings.ai_import_timeout_seconds,
         )
     except AILimitExceeded:
         return None, "limit"
     except AIUnavailable as error:
-        logger.info("AI import structuring unavailable: %s", error)
+        cause = error.__cause__ or error  # class and HTTP code only, never a body or a key
+        logger.warning(
+            "AI import structuring unavailable: %s: %s", type(cause).__name__, cause
+        )
         return None, "unavailable"
     answer = result.value
     assert isinstance(answer, ImportStructureAnswer)
@@ -120,3 +182,58 @@ async def structure_with_ai(
     if not structured["item_count"]:
         return None, "no_items"
     return structured, None
+
+
+async def add_ai_descriptions(
+    settings: Settings, structured: dict[str, Any], venue_id: uuid.UUID, admin_id: uuid.UUID
+) -> int:
+    """Draft descriptions for the items without one: one batch task for the whole import.
+
+    Each description is checked against its own item (no invented numbers or facts), the
+    ones that fail stay empty. No AI, a limit or an error → the import stays as it is.
+    The result only feeds the review screen; nothing reaches a menu before «Применить»."""
+    targets: list[dict[str, Any]] = []
+    sources: list[dict[str, Any]] = []
+    for section in structured["sections"]:
+        for item in section["items"]:
+            if item.get("description") or len(targets) >= 60:
+                continue
+            sizes = [v["name"] for v in item.get("variants") or []]
+            source: dict[str, Any] = {"name": item["name"], "section": section["name"]}
+            if item.get("weight_text"):
+                source["weight_text"] = item["weight_text"]
+            if sizes:
+                source["sizes"] = sizes
+            targets.append(item)
+            sources.append(source)
+    if not targets:
+        return 0
+    data = [{"index": at, **source} for at, source in enumerate(sources)]
+    try:
+        result = await run_task(
+            settings, import_descriptions_task(data), venue_id=venue_id,
+            subject=f"user:{admin_id}", timeout_seconds=settings.ai_import_timeout_seconds,
+        )
+    except AILimitExceeded:
+        return 0
+    except AIUnavailable as error:
+        cause = error.__cause__ or error
+        logger.warning("AI import descriptions unavailable: %s: %s", type(cause).__name__, cause)
+        return 0
+    answer = result.value
+    assert isinstance(answer, ImportDescriptionsAnswer)
+    added = 0
+    for entry in answer.descriptions:
+        if not 0 <= entry.index < len(targets) or targets[entry.index].get("description"):
+            continue
+        text = entry.description
+        if not text or len(text) > DESCRIPTION_LIMIT:
+            continue
+        try:
+            check_description(text, sources[entry.index])
+        except AIUnavailable:
+            continue
+        targets[entry.index]["description"] = text
+        targets[entry.index]["description_source"] = "ai"
+        added += 1
+    return added

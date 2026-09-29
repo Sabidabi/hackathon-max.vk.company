@@ -90,6 +90,9 @@
 .review-item__head > .review-field { flex: 1 1 auto; min-width: 0; }
 .review-item__head > .s-icon-button { margin-top: 26px; }
 .review-item__row, .review-sizes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sinitsa-space-2) var(--sinitsa-space-3); }
+.review-item__desc-row { display: flex; align-items: flex-end; gap: var(--sinitsa-space-2); }
+.review-item__desc-row > :first-child { flex: 1; min-width: 0; }
+.review-note { display: flex; align-items: center; gap: var(--sinitsa-space-2); margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
 .review-item__desc { margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
 .review-field--doubt .s-input { border-color: var(--sinitsa-warning); background: var(--sinitsa-warning-bg); }
 .review-field--doubt .s-field__hint { color: var(--sinitsa-warning); font-weight: 700; }
