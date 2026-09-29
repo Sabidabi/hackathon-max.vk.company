@@ -25,7 +25,7 @@ interface TabBarProps<K extends string> {
 /**
  * Cabinet navigation (Меню │ Аналитика │ Оформление │ Ещё): a bottom bar on phones and the
  * same items as a left column on desktop. The active indicator slides to the new tab
- * — only its transform changes; reduced motion: it jumps.
+ * (P1-DOC-18 «Навигация кабинета») — only its transform changes; reduced motion: it jumps.
  */
 export function TabBar<K extends string>({ items, value, onChange, label, fixed, orientation = "horizontal", className }: TabBarProps<K>) {
   const navRef = useRef<HTMLElement>(null);

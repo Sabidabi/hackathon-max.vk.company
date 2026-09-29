@@ -20,7 +20,7 @@ import "./notifications.css";
 
 const QUERY_KEY = ["notification-settings"];
 
-/** Admin notification types: what the admin gets and when. */
+/** Admin notification types (P1-DOC-11 А1–А8): what the admin gets and when. */
 export const ADMIN_KIND_LABELS: Record<AdminKind, { title: string; hint: string }> = {
   a8_point_message: { title: "Сообщения гостей", hint: "Вопрос гостя точке — сразу" },
   a1_import_ready: { title: "Импорт меню готов", hint: "Файл распознан, проверьте позиции" },
@@ -99,7 +99,7 @@ function SettingsSkeleton() {
 }
 
 /**
- * «Уведомления»: the guest's
+ * «Уведомления» (P1-DOC-11 «Настройки уведомлений», «Согласие гостя»): the guest's
  * subscriptions by point and position, and the admin's types А1–А8 per venue. Every switch
  * is saved on the server at once (optimistic, rolled back on error).
  */

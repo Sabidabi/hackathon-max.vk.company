@@ -14,7 +14,6 @@ import { configurationError } from "../../menu/configuration";
 import { parsePrice } from "../../menu/PriceInput";
 import type { SaveStatus } from "./useMenuDraft";
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png"]);
 type Tab = "main" | "sizes" | "modifiers";
 const TABS: Array<[Tab, string]> = [["main", "Основное"], ["sizes", "Размеры"], ["modifiers", "Добавки"]];
@@ -75,8 +74,8 @@ function Stepper({ label, value, onChange }: { label: string; value: number; onC
 const newOption = (): ModifierOption => ({ id: crypto.randomUUID(), name: "Новая добавка", price_minor: 0, min_quantity: 0, max_quantity: 1, default_quantity: 0, is_available: true, price_by_variant: {} });
 
 /**
- * Item card of the cabinet: a sheet grown out of the tapped row
- * with tabs Основное · Размеры · Добавки. Every edit goes straight
+ * Item card of the cabinet (P1-TASK-28, P1-DOC-7): a sheet grown out of the tapped row
+ * (shared element, P1-DOC-18) with tabs Основное · Размеры · Добавки. Every edit goes straight
  * to the draft (autosave), so switching tabs, closing or a 409 conflict loses nothing.
  * Escape, the backdrop and MAX «Назад» close it; focus returns to the row.
  */
@@ -107,7 +106,6 @@ export function ItemSheet({ open, item, origin, point, pointState, status, menuI
   const upload = useMutation({
     mutationFn: (file: File) => {
       if (!IMAGE_TYPES.has(file.type)) throw new Error("Выберите изображение в формате JPG или PNG");
-      if (file.size > MAX_IMAGE_BYTES) throw new Error("Фотография должна быть не больше 8 МБ");
       return uploadMenuMedia(point.id, file);
     },
     onSuccess: (media) => {
@@ -126,7 +124,7 @@ export function ItemSheet({ open, item, origin, point, pointState, status, menuI
   });
 
   const aiStatus = useQuery({ queryKey: aiKeys.status, queryFn: fetchAiStatus, staleTime: 60_000, enabled: open });
-  // «Написать описание»: the AI only suggests; the text goes into the form and
+  // «Написать описание» (P1-TASK-42): the AI only suggests; the text goes into the form and
   // reaches the draft with the usual autosave. Previous text can be restored from the toast.
   const describe = useMutation({
     mutationFn: (source: MenuItem) => {
@@ -227,7 +225,7 @@ export function ItemSheet({ open, item, origin, point, pointState, status, menuI
                 }}
               />
               <ImagePlus size={24} aria-hidden="true" />
-              <span><strong>{upload.isPending ? "Загружаем…" : shown.image_url ? "Заменить фото" : "Добавить фото"}</strong><small>JPG или PNG · до 8 МБ</small></span>
+              <span><strong>{upload.isPending ? "Загружаем…" : shown.image_url ? "Заменить фото" : "Добавить фото"}</strong><small>JPG или PNG · большие уменьшим сами</small></span>
             </label>
             {shown.image_url && <IconButton className="item-photo__remove" aria-label="Убрать фото" icon={<Trash2 size={20} />} onClick={() => onChange({ image_url: null })} />}
           </div>

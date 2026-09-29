@@ -17,6 +17,7 @@ from app.api.routes import (
     point_items,
     public_menu,
     restaurants,
+    site_ai,
     sites,
     team,
     venues,
@@ -41,4 +42,5 @@ api_router.include_router(notifications.router)
 api_router.include_router(bot_settings.router)
 api_router.include_router(conversations.router)
 api_router.include_router(sites.router)
+api_router.include_router(site_ai.router)
 api_router.include_router(analytics.router)

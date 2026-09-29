@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, CircleAlert, Ellipsis, Palette, SquareMenu } from "lucide-react";
+import { BarChart3, CircleAlert, Ellipsis, MapPin, Palette, SquareMenu } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -9,14 +9,15 @@ import { showToast } from "../../../design/toast";
 import { haptics } from "../../../max";
 import { DesignSection } from "../design/DesignSection";
 import { MenuSection } from "../menu/MenuSection";
+import { PointHub } from "../point/PointHub";
 import { AnalyticsSection } from "../sections/AnalyticsSection";
 import { MoreSection } from "../sections/MoreSection";
 import { NewVenue } from "./NewVenue";
 import { AccountButton, PointSwitcher } from "./Switcher";
 import "./cabinet.css";
 
-export type CabinetSection = "menu" | "analytics" | "design" | "more";
-const SECTIONS: CabinetSection[] = ["menu", "analytics", "design", "more"];
+export type CabinetSection = "point" | "menu" | "analytics" | "design" | "more";
+const SECTIONS: CabinetSection[] = ["point", "menu", "analytics", "design", "more"];
 
 /** What the current point and its venue look like to every section of the cabinet. */
 export interface CabinetContext {
@@ -29,7 +30,9 @@ export interface CabinetContext {
 
 function parsePath(path: string): { section: CabinetSection; page: string | null } {
   const [first = "", second = null] = path.split("/").filter(Boolean);
-  const section = (SECTIONS as string[]).includes(first) ? (first as CabinetSection) : "menu";
+  // `/manage/<id>` without a tail opens the point page; a link to a position (`?item=`) is
+  // handled by the shell and opens the menu.
+  const section = (SECTIONS as string[]).includes(first) ? (first as CabinetSection) : "point";
   return { section, page: section === "more" ? second : null };
 }
 
@@ -65,6 +68,7 @@ function ShellSkeleton() {
 }
 
 const NAV: Array<TabBarItem<CabinetSection>> = [
+  { key: "point", label: "Точка", icon: <MapPin size={24} /> },
   { key: "menu", label: "Меню", icon: <SquareMenu size={24} /> },
   { key: "analytics", label: "Аналитика", icon: <BarChart3 size={24} /> },
   { key: "design", label: "Оформление", icon: <Palette size={24} /> },
@@ -72,7 +76,7 @@ const NAV: Array<TabBarItem<CabinetSection>> = [
 ];
 
 /**
- * Cabinet frame: header with
+ * Cabinet frame (P1-DOC-7 «Навигация», P1-DOC-15 «Быстрое переключение»): header with
  * «Заведение ▾ / Точка ▾» and the account; bottom tab bar under 1024 px, a 240 px left column
  * from 1024 px. Switching the point keeps the section and does not reload the app.
  */
@@ -80,7 +84,9 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const focusItem = useFocusItem();
-  const { section, page } = parsePath(path);
+  const parsed = parsePath(path);
+  const section: CabinetSection = !path && focusItem ? "menu" : parsed.section;
+  const page = parsed.page;
   const [unsaved, setUnsaved] = useState(false);
   const [changes, setChanges] = useState(0);
   const restaurants = useQuery({ queryKey: ["restaurants"], queryFn: listRestaurants, retry: false });
@@ -132,14 +138,14 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
     );
   }
   // `manage_<id>` / `/manage/<id>` for a point the server does not list for this user: the guest
-  // menu with «Управление доступно администраторам». The cabinet API would answer 404.
+  // menu with «Управление доступно администраторам» (P1-DOC-4). The cabinet API would answer 404.
   if (publicId && missingPoint) return <ManageDenied publicId={publicId} />;
   if (!point) return <NewVenue onCreated={(created) => go(created, "menu", null)} first />;
   // `/manage` without a point: the first point's cabinet, keeping a deep link's query.
-  if (!publicId) return <Navigate to={`/manage/${point.public_id}/menu${search.size ? `?${search}` : ""}`} replace />;
+  if (!publicId) return <Navigate to={`/manage/${point.public_id}/${focusItem ? "menu" : "point"}${search.size ? `?${search}` : ""}`} replace />;
 
   const context: CabinetContext = { point, venuePoints, allPoints: points };
-  // «Новая точка» opens on its QR; a new venue starts with «Как начнём?».
+  // «Новая точка» opens on its QR (P1-DOC-17); a new venue starts with «Как начнём?».
   const onCreated = (created: Restaurant) => (created.venue_id === point.venue_id ? go(created, "more", "qr") : go(created, "menu", null));
   const published = Boolean(point.current_published_version_id);
   const nav = NAV.map((item) => (item.key === "menu" && changes ? { ...item, badge: changes } : item));
@@ -149,7 +155,16 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
   };
 
   let content: ReactNode;
-  if (section === "menu") {
+  if (section === "point") {
+    content = (
+      <PointHub
+        context={context}
+        onOpen={(next, nextPage) => go(point, next, nextPage)}
+        onPoint={(target) => switchPoint(target)}
+        onCreated={onCreated}
+      />
+    );
+  } else if (section === "menu") {
     content = <MenuSection context={context} focusItem={focusItem} onUnsavedChange={setUnsaved} onChangesCount={setChanges} />;
   } else if (section === "analytics") {
     content = <AnalyticsSection context={context} onOpenMenu={() => go(point, "menu", null)} />;
@@ -177,7 +192,7 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
         <AccountButton />
       </header>
       <main className="cabinet-main" id="cabinet-content">
-        {/* Point switch: a short cross-fade of the section, not a full redraw. */}
+        {/* Point switch: a short cross-fade of the section, not a full redraw (P1-DOC-18). */}
         <div className="cabinet-view" key={`${point.id}:${section}:${page ?? ""}`}>{content}</div>
       </main>
       <TabBar<CabinetSection> label="Разделы кабинета" items={nav} value={section} onChange={onNavigate} fixed className="cabinet-tabbar" />

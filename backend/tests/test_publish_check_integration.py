@@ -1,4 +1,4 @@
-"""Publish check, «Шаблон кофейни» and the no-price rule against the real API."""
+"""Publish check, «Шаблон кофейни» and the no-price rule against the real API (P1-PLAN-9)."""
 
 import os
 import uuid

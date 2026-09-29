@@ -1,6 +1,7 @@
-// Imperative toasts for any code, inside React or not. Same look as the <Toast> component
+// Imperative toasts for any code, inside React or not (MAX fallbacks: «Ссылка скопирована»;
+// quick actions with «Отменить», P1-DOC-17). Same look as the <Toast> component
 // (components/components.css). A stack of at most two: the newest is at the bottom and has
-// id `app-toast`; a third one pushes the oldest out. Motion: enters on a spring
+// id `app-toast`; a third one pushes the oldest out. Motion (P1-DOC-18): enters on a spring
 // from below, leaves down with a fade, the older toast slides up (FLIP).
 
 import { flip, measure, play, settled } from "./motion";

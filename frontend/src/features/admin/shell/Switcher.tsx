@@ -30,7 +30,7 @@ function groupVenues(points: Restaurant[]): VenueGroup[] {
 type Mode = null | "venue" | "point" | "new-venue" | "new-point";
 
 /**
- * «Заведение ▾ / Точка ▾». Picking a point keeps the
+ * «Заведение ▾ / Точка ▾» (P1-DOC-15 «Переключатели в кабинете»). Picking a point keeps the
  * current section; «Новое заведение» and «Новая точка» live inside the lists.
  */
 export function PointSwitcher({ context, onSelect, onCreated, layout }: {

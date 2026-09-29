@@ -5,7 +5,7 @@ import { isNotFound, isNotPublished } from "./api";
 import "./guest.css";
 
 /**
- * Loading and failure states of the guest menu:
+ * Loading and failure states of the guest menu (P1-DOC-6 «Состояния загрузки и ошибок»):
  * a skeleton with the shape of the menu, a clear error with «Попробовать снова» that refetches
  * without restarting the app, «Меню ещё не опубликовано» and an unknown link.
  */

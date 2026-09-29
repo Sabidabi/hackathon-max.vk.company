@@ -54,7 +54,7 @@ def test_diff_matches_positions_by_item_key_not_by_row_or_name():
 
 
 def test_client_copy_with_a_duplicated_item_key_keeps_both_positions():
-    """Review a duplicated ``item_key`` in the client's copy must not collapse
+    """Review P1-PLAN-7: a duplicated ``item_key`` in the client's copy must not collapse
     two positions into one; the second counts as new, as a draft save would store it."""
     latte = uuid.UUID(int=10)
     server = [MenuSectionResponse(id=uuid.uuid4(), name="Кофе", items=[

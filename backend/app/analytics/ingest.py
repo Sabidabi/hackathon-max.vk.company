@@ -1,4 +1,4 @@
-"""Batch ingestion of product events.
+"""Batch ingestion of product events (P1-TASK-33).
 
 A batch is idempotent by ``client_event_id``: a repeated batch inserts nothing and has no
 side effects. Side effects of a *new* event: the normalised phrase of ``search_empty`` goes

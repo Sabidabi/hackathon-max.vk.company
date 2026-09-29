@@ -30,7 +30,7 @@ interface SheetProps {
   /** Label of the close button; defaults to «Закрыть». */
   closeLabel?: string;
   /**
-   * Shared element: the element the sheet grows out of (a menu row) and shrinks
+   * Shared element (P1-DOC-18): the element the sheet grows out of (a menu row) and shrinks
    * back into on close. Without it the sheet rises from the bottom edge.
    */
   origin?: Element | null;
@@ -38,6 +38,8 @@ interface SheetProps {
   toolbar?: ReactNode;
   /** Wider dialog on desktop (editor cards). */
   wide?: boolean;
+  /** A photo on top bleeds to the edges; the close button floats over it, the title is read aloud only. */
+  hero?: boolean;
 }
 
 function isPhone(): boolean {
@@ -55,15 +57,15 @@ function currentTransform(element: HTMLElement): string {
 
 /**
  * Bottom sheet on phones, centred dialog from 768 px. Modal: traps Tab focus, closes on
- * Escape, on the backdrop and on the native MAX «Назад», returns focus to the
+ * Escape, on the backdrop and on the native MAX «Назад» (P1-DOC-12), returns focus to the
  * element that opened it and locks page scroll while open.
  *
- * Motion: rises on a spring (or grows out of `origin`), leaves faster than it
+ * Motion (P1-DOC-18): rises on a spring (or grows out of `origin`), leaves faster than it
  * came; on phones it follows a downward drag of the grip/header with resistance and closes
  * past a quarter of its height or on a flick. Every animation starts from the current
  * position, so reopening or «Назад» mid-way interrupts it at once. Reduced motion: no moves.
  */
-export function Sheet({ open, onClose, title, children, footer, closeLabel = "Закрыть", origin = null, toolbar, wide }: SheetProps) {
+export function Sheet({ open, onClose, title, children, footer, closeLabel = "Закрыть", origin = null, toolbar, wide, hero }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -209,7 +211,7 @@ export function Sheet({ open, onClose, title, children, footer, closeLabel = "З
       <div ref={backdropRef} className="s-sheet__backdrop" aria-hidden="true" onClick={() => latestClose.current()} />
       <div
         ref={panelRef}
-        className={["s-sheet__panel", wide && "s-sheet__panel--wide"].filter(Boolean).join(" ")}
+        className={["s-sheet__panel", wide && "s-sheet__panel--wide", hero && "s-sheet__panel--hero"].filter(Boolean).join(" ")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

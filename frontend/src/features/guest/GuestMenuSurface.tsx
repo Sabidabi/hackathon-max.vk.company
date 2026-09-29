@@ -6,7 +6,7 @@ import { GuestSurface } from "./GuestMenu";
 
 /**
  * Route entry of guest menu 2.0 for `/r/:publicId` and `/r/:publicId/i/:itemId`.
- * The router loads it through `GuestSurface.tsx`, which re-exports it.
+ * The router loads it through `GuestSurface.tsx`, which re-exports it (P1-TASK-59).
  */
 export default function GuestMenuSurface() {
   const { publicId = "", itemId = null } = useParams();

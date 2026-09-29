@@ -1,4 +1,4 @@
-// The signed-in user's own context. Everything is scoped to the session
+// The signed-in user's own context (P1-DOC-4 «Главная»). Everything is scoped to the session
 // user on the server; the client only navigates by it.
 
 export interface HomePoint {

@@ -16,7 +16,7 @@ interface StartChoice {
 }
 
 /**
- * «Как начнём?»: an empty menu offers four ways
+ * «Как начнём?» (P1-DOC-7 «Мастер первого меню», P1-DOC-17): an empty menu offers four ways
  * to start. Every way writes only to the draft; the checklist below leads to publication.
  */
 export function MenuStart({ onPhoto, onDescribe, onTemplate, onManual, templateBusy, error }: {
@@ -28,7 +28,7 @@ export function MenuStart({ onPhoto, onDescribe, onTemplate, onManual, templateB
   error: string | null;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
-  // First assembly: the choices arrive one after another.
+  // First assembly: the choices arrive one after another (P1-DOC-18 cascade, ≤ 8 items).
   useEffect(() => {
     if (listRef.current) stagger(listRef.current.children);
   }, []);
@@ -81,7 +81,7 @@ function qrSeen(pointId: string): boolean {
 }
 
 /**
- * «До публикации» checklist: positions → prices → design → publication → QR,
+ * «До публикации» checklist (P1-DOC-7): positions → prices → design → publication → QR,
  * computed from the real draft, the site draft and the publication; hidden once all is done.
  */
 export function StartChecklist({ pointId, sections, published, onStep }: {

@@ -21,7 +21,7 @@ const LAST = STEPS.length - 1;
 const SWIPE_PX = 56;
 
 /**
- * «Что умеет Синица»: full-screen intro before Home on the first launch in MAX
+ * «Что умеет Синица» (P1-TASK-62): full-screen intro before Home on the first launch in MAX
  * (`mode="first"`, flag in DeviceStorage) and again from Home (`/intro`, `mode="replay"`).
  * Three short steps on one persistent brand stage whose content morphs between steps; the
  * guest and owner steps are live mini-demos on real components. One main button per step,
@@ -80,7 +80,7 @@ export default function IntroSurface({ mode }: { mode: "first" | "replay" }) {
     void settled(animation).then(() => ghost.remove());
   }
 
-  // Choreography: the stage content morphs in from the side of travel on a spring,
+  // Choreography (P1-DOC-18): the stage content morphs in from the side of travel on a spring,
   // then copy and actions cascade with --stagger. Each call cancels the running one.
   useLayoutEffect(() => {
     const dir = direction.current;

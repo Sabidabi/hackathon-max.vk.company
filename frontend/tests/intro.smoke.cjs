@@ -1,4 +1,4 @@
-// First-launch intro «Что умеет Синица» against the built app and the in-memory
+// First-launch intro «Что умеет Синица» (P1-TASK-62) against the built app and the in-memory
 // fixture API, inside a MAX Bridge mock. Browser fixture only: it proves routing, the
 // DeviceStorage contract and the screens, not a real MAX client.
 const { chromium } = require("playwright");
@@ -312,7 +312,7 @@ async function verifyReducedMotion(browser) {
   }
 }
 
-/** Video of the choreography. */
+/** Video of the choreography (P1-DOC-18 «Проверка моушна на ревью»). */
 async function recordVideo(browser) {
   const { context, page } = await maxContext(browser, { video: true });
   try {

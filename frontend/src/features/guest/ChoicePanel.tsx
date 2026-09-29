@@ -156,7 +156,7 @@ export function ChoiceSheet({
 
 /**
  * «Показать на кассе»: full-screen summary in large type for the cashier, with the screen
- * brightness raised in MAX and the native «Назад» closing it.
+ * brightness raised in MAX and the native «Назад» closing it (P1-DOC-6, P1-DOC-12).
  */
 export function CashierView({ venueName, views, totals, onClose, from }: {
   venueName: string;

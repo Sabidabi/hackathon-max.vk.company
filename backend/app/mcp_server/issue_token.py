@@ -14,7 +14,7 @@ async def issue(args) -> str:
     user_id = uuid.UUID(args.user_id)
     scopes = sorted(set(args.scopes.split(",")))
     if not scopes or any(scope not in ALLOWED_SCOPES for scope in scopes):
-        raise ValueError("Scopes: menu:read,menu:propose,menu:write")
+        raise ValueError("Scopes: " + ",".join(sorted(ALLOWED_SCOPES)))
     async with SessionFactory() as session:
         if not await is_venue_admin(session, user_id, restaurant_id):
             raise ValueError("User has no access to the restaurant")
@@ -40,7 +40,7 @@ def main() -> None:
     parser.add_argument("--client-id", required=True)
     parser.add_argument(
         "--scopes",
-        default="menu:read,menu:propose,menu:write",
+        default="menu:read,menu:propose,menu:write,design:read,design:propose,design:write",
     )
     parser.add_argument("--days", type=int, default=7, choices=range(1, 31))
     token = asyncio.run(issue(parser.parse_args()))

@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     database_url: str = "postgresql+asyncpg://menu:menu@postgres:5432/menu"
     data_root: Path = Path("/data")
-    max_upload_bytes: int = Field(default=20 * 1024 * 1024, gt=0)
+    max_upload_bytes: int = Field(default=64 * 1024 * 1024, gt=0)
     max_pdf_pages: int = Field(default=30, gt=0)
-    max_site_image_bytes: int = Field(default=8 * 1024 * 1024, gt=0)
+    max_site_image_bytes: int = Field(default=64 * 1024 * 1024, gt=0)
     worker_poll_seconds: float = Field(default=2.0, gt=0)
     ocr_languages: str = Field(default="rus+eng", pattern=r"^[a-zA-Z0-9_+-]+$")
     ocr_dpi: int = Field(default=220, ge=150, le=300)
@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     max_api_base_url: str = "https://platform-api2.max.ru"
     # Team support chat the bot forwards tickets to; empty — tickets are only stored.
     support_chat_id: int | None = None
-    # Send a user nothing until they started a dialog with the bot.
+    # Send a user nothing until they started a dialog with the bot (unverified whether a
+    # bot may write to someone who only opened the mini-app, P1-DOC-11).
     max_bot_require_dialog: bool = True
     bot_checks_interval_seconds: int = Field(default=900, ge=60, le=86400)
     public_app_url: str = "http://localhost:8080"
@@ -44,7 +45,7 @@ class Settings(BaseSettings):
     dev_auth_enabled: bool = False
     dev_max_user_id: int = 900000001
     ai_proposal_ttl_seconds: int = Field(default=600, ge=60, le=3600)
-    # AI features. "auto"/"openai" = the OpenAI-compatible gateway when
+    # AI features (P1-DOC-8). "auto"/"openai" = the OpenAI-compatible gateway when
     # AI_API_KEY is set, otherwise the AI is honestly unavailable;
     # "mock" = the labelled demo/CI adapter; "off" = always unavailable.
     ai_provider: Literal["auto", "openai", "mock", "off"] = "auto"

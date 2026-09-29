@@ -1,4 +1,4 @@
-// AI features of the cabinet: status, item description, «Синица проверила меню».
+// AI features of the cabinet (P1-DOC-8): status, item description, «Синица проверила меню».
 // AI only suggests: the description goes into the item form and reaches the draft through the
 // usual autosave (revision check); the check lists findings computed by the server code.
 import { parseApiJson } from "./errors";

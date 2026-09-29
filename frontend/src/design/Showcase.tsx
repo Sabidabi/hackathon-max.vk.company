@@ -1,4 +1,4 @@
-// Dev-only showcase of the «Синица» design system. Never shipped:
+// Dev-only showcase of the «Синица» design system (`/__ui`, P1-TASK-6). Never shipped:
 // AppRoutes loads it only when `import.meta.env.DEV` is true. `?screen=` opens a service
 // screen full-page: splash | splash-timeout | auth-error | load-error | open-in-max |
 // open-in-max-unconfigured | not-found.
@@ -49,7 +49,7 @@ function Screen({ name }: { name: string }) {
   }
 }
 
-/** «Движение» block: every reference animation of the spec on one screen. */
+/** «Движение» block (P1-TASK-58): every reference animation of P1-DOC-18 on one screen. */
 function MotionDemo() {
   const [status, setStatus] = useState<"idle" | "progress" | "success">("idle");
   const [changes, setChanges] = useState(3);

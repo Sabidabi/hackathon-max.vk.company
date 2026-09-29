@@ -105,7 +105,7 @@ function Dialog({ id, pointName, onBack }: { id: string; pointName: string; onBa
 }
 
 /**
- * «Ещё → Сообщения»: guests' questions to this point through the bot. Only
+ * «Ещё → Сообщения» (P1-TASK-64): guests' questions to this point through the bot. Only
  * admins of the venue see them; answers go to the guest in MAX signed by the point.
  */
 export function MessagesPage({ pointId, pointName }: { pointId: string; pointName: string }) {

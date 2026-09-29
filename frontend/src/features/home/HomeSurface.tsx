@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, ChevronRight, Clock, QrCode, RotateCcw, ScanLine, Sparkles, Star, Store } from "lucide-react";
+import { Bell, ChevronRight, Clock, MapPin, QrCode, RotateCcw, ScanLine, Sparkles, Star, Store } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -37,22 +37,37 @@ function VenueRows<T extends HomeVenue>({ venues, icon, end }: { venues: T[]; ic
   );
 }
 
+/**
+ * A venue and its points. Each point is its own block that opens the page of that point
+ * (`/manage/<id>/point`), not the menu editor.
+ */
 function AdminVenueCard({ venue }: { venue: HomeAdminVenue }) {
   return (
-    <li>
-      <Link className="home-venue" to={`/manage/${venue.public_id}`} aria-label={`Кабинет «${venue.name}»`} onClick={() => haptics.selection()}>
-        <span className="home-venue__icon" aria-hidden="true"><Store size={24} /></span>
-        <span className="home-venue__text">
-          <span className="home-venue__name">{venue.name}</span>
+    <li className="home-venue-group">
+      <div className="home-venue-group__head">
+        <span className="home-venue__icon" aria-hidden="true"><Store size={22} /></span>
+        <div className="home-venue__text">
+          <h3 className="home-venue__name">{venue.name}</h3>
           <span className={`home-venue__status${venue.has_published_menu ? " home-venue__status--live" : ""}`}>
             {venue.has_published_menu ? "Меню опубликовано" : "Меню не опубликовано"}
           </span>
-          {venue.unpublished_changes > 0 && (
-            <span className="home-venue__badge">Не опубликовано: {venue.unpublished_changes}</span>
-          )}
-        </span>
-        <ChevronRight className="home-venue__chevron" size={20} aria-hidden="true" />
-      </Link>
+        </div>
+        {venue.unpublished_changes > 0 && <span className="home-venue__badge">Не опубликовано: {venue.unpublished_changes}</span>}
+      </div>
+      <ul className="home-points">
+        {venue.points.map((point) => (
+          <li key={point.id}>
+            <Link className="home-point" to={`/manage/${point.public_id}/point`} aria-label={`Точка «${point.name}»`} onClick={() => haptics.selection()}>
+              <span className="home-point__icon" aria-hidden="true"><MapPin size={20} /></span>
+              <span className="home-point__text">
+                <span className="home-point__name">{point.name}</span>
+                <span className="home-point__meta">{point.address ?? "Адрес не указан"}</span>
+              </span>
+              <ChevronRight size={18} aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </li>
   );
 }
@@ -133,19 +148,43 @@ function HomeContent({ home }: { home: HomeData }) {
         </Section>
       )}
 
+      {/* Favourites are always here: a filled collection, or a hint how to fill it. */}
+      <Section id="home-favorites" icon={<Star size={20} />} title="Избранные точки">
+        {home.favorites.length > 0 ? (
+          <ul className="home-fav-grid">
+            {home.favorites.map((venue) => (
+              <li key={venue.public_id}>
+                <Link className="home-fav" to={`/r/${venue.public_id}`} onClick={() => haptics.selection()}>
+                  <span className="home-fav__icon" aria-hidden="true"><Star size={20} fill="currentColor" /></span>
+                  <span className="home-fav__text">
+                    <span className="home-fav__name">{venue.name}</span>
+                    <span className="home-fav__meta">{venue.address ?? "Адрес не указан"}</span>
+                  </span>
+                  <span className="home-fav__end">
+                    {venue.notifications_enabled && <Bell size={16} aria-label="Уведомления включены" />}
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="home-fav-empty">Откройте меню кофейни и нажмите сердечко у названия. Точка появится здесь.</p>
+        )}
+      </Section>
+
       {home.recent.length > 0 && (
         <Section id="home-recent" icon={<Clock size={20} />} title="Недавние">
-          <VenueRows venues={home.recent} icon={<Store size={20} />} />
-        </Section>
-      )}
-
-      {home.favorites.length > 0 && (
-        <Section id="home-favorites" icon={<Star size={20} />} title="Избранные">
-          <VenueRows
-            venues={home.favorites}
-            icon={<Star size={20} />}
-            end={(venue) => venue.notifications_enabled ? <Bell size={16} aria-label="Уведомления включены" /> : null}
-          />
+          <ul className="home-recent-row">
+            {home.recent.map((venue) => (
+              <li key={venue.public_id}>
+                <Link className="home-recent" to={`/r/${venue.public_id}`} onClick={() => haptics.selection()}>
+                  <span className="home-recent__name">{venue.name}</span>
+                  <span className="home-recent__meta">{venue.address ?? "Адрес не указан"}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 
@@ -174,7 +213,7 @@ function HomeContent({ home }: { home: HomeData }) {
 }
 
 /**
- * Home of the mini app (`/` inside MAX without a start parameter, and `/home`)
+ * Home of the mini app (`/` inside MAX without a start parameter, and `/home`), P1-DOC-4/5
  * «Главная». Data comes from `/me/home`, scoped to the session user by the server.
  */
 function HomeScreen() {

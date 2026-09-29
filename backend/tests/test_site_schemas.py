@@ -39,6 +39,28 @@ def test_legacy_site_config_gets_safe_design_tokens() -> None:
     assert config.font_scale == 1
 
 
+def test_tile_settings_have_defaults_and_reject_unknown_values() -> None:
+    config = SiteConfig.model_validate({"template": "modern"})
+
+    assert (config.menu_layout, config.card_style, config.card_radius) == ("grid", "soft", "soft")
+    assert (config.image_ratio, config.add_button) == ("square", "round")
+    assert config.heading_font == "sans"
+    assert config.body_font == "sans"
+    assert config.show_description is True and config.show_weight is True
+
+    tuned = SiteConfig(
+        menu_layout="list", add_button="pill", image_ratio="landscape", show_weight=False
+    )
+    assert tuned.model_dump(mode="json")["menu_layout"] == "list"
+
+    assert SiteConfig(heading_font="elegant", body_font="humanist").heading_font == "elegant"
+
+    with pytest.raises(ValidationError):
+        SiteConfig(menu_layout="masonry")
+    with pytest.raises(ValidationError):
+        SiteConfig(heading_font="comic")
+
+
 def test_dark_template_and_background_are_validated() -> None:
     config = SiteConfig(
         template="noir",

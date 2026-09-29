@@ -1,5 +1,5 @@
-// Public API of the guest menu. Own module of `features/guest` so the new menu
-// does not change the shared `src/api/*`.
+// Public API of the guest menu (P1-DOC-6). Own module of `features/guest` so the new menu
+// does not change the shared `src/api/*` (P1-EPIC-1 «Правила против мёрдж-конфликтов»).
 // Everything here is anonymous: the guest sees only the published snapshot.
 
 import type { MenuItem, MenuSection } from "../../api/menu";
@@ -8,7 +8,7 @@ import type { SiteConfig } from "../../api/site";
 export type { ItemConfiguration, ItemVariant, MenuItem, MenuSection, ModifierGroup, ModifierOption } from "../../api/menu";
 export type { SiteConfig } from "../../api/site";
 
-/** A position may carry a stable `item_key`. */
+/** A position may carry a stable `item_key` (same in every version of its menu, P1-PLAN-7). */
 export type GuestItem = MenuItem & { item_key?: string | null };
 export type GuestSection = Omit<MenuSection, "items"> & { items: GuestItem[] };
 
@@ -23,7 +23,7 @@ export interface GuestRestaurant {
   is_demo?: boolean;
 }
 
-/** One menu tab of a point. */
+/** One menu tab of a point (`menus[]` after P1-PLAN-7). */
 export interface GuestMenuTab {
   menu_id: string;
   title: string;
@@ -32,7 +32,7 @@ export interface GuestMenuTab {
   sections: GuestSection[];
 }
 
-/** Raw public response: `menus[]` is present after the spec, absent on older servers. */
+/** Raw public response: `menus[]` is present after P1-PLAN-7, absent on older servers. */
 export interface GuestMenuResponse {
   restaurant: GuestRestaurant;
   site: SiteConfig;
@@ -79,7 +79,7 @@ export function normalizeGuestMenu(raw: GuestMenuResponse): GuestMenu {
     : raw.version === null
       ? []
       : [{ menu_id: "main", title: "Меню", version: raw.version, published_at: raw.published_at, sections: raw.sections ?? [] }];
-  // the spec backend answers 200 only when something is published; an empty `menus[]` then means
+  // P1-PLAN-7 backend answers 200 only when something is published; an empty `menus[]` then means
   // no menu is shown right now (display hours), and the top-level `version` is null in that case.
   const outsideHours = Array.isArray(raw.menus) && raw.menus.length === 0;
   const assistant: GuestAssistant = raw.assistant?.available
@@ -129,7 +129,7 @@ export interface QuoteResult {
 }
 
 /**
- * Server price of one portion. 409 — the position is gone or
+ * Server price of one portion (P1-DOC-6 «Серверная цена»). 409 — the position is gone or
  * unavailable in the current snapshot, 422 — the selection breaks the item's rules.
  */
 export async function quoteGuestItem(publicId: string, selection: QuoteSelection, signal?: AbortSignal): Promise<QuoteResult> {
@@ -187,7 +187,7 @@ export interface AskAnswer {
 }
 
 /**
- * «Синица, что взять?». The guest text is sent as data; the server answers only
+ * «Синица, что взять?» (P1-DOC-8). The guest text is sent as data; the server answers only
  * with available positions of this point's published menu. 429 carries picks without AI.
  */
 export async function askSinitsa(publicId: string, question: string, signal?: AbortSignal): Promise<AskAnswer> {

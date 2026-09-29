@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.guard import NOTE_SUSPICIOUS, clean_model_text, inspect_user_text
 from app.ai.openai_compat import OpenAICompatError, OpenAICompatMenuPlanner
 from app.ai.provider import configured_provider_name
 from app.ai.service import AILimitExceeded, consume_quota
@@ -119,6 +120,9 @@ async def plan_menu_change(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ИИ сейчас недоступен — добавьте позицию вручную",
         )
+    report = inspect_user_text(payload.prompt)
+    if len(report.text) < 3:
+        raise HTTPException(status_code=422, detail="Опишите, что добавить в меню")
     restaurant = await session.get(Restaurant, restaurant_id)
     assert restaurant is not None  # require_menu_access found it
     try:
@@ -130,7 +134,7 @@ async def plan_menu_change(
         raise HTTPException(status_code=429, detail=limit.detail()) from limit
     try:
         plan = await OpenAICompatMenuPlanner(settings).generate(
-            payload.prompt.strip(),
+            report.text,
             _menu_context(sections),
         )
     except (OpenAICompatError, httpx.HTTPError) as error:
@@ -139,6 +143,11 @@ async def plan_menu_change(
             detail=str(error) or "ИИ-сервис временно недоступен",
         ) from error
 
+    # The model's own words for the person are plain text: no links, no markup.
+    plan.summary = clean_model_text(plan.summary)
+    plan.warnings = [clean_model_text(item) for item in plan.warnings]
+    if report.suspicious:
+        plan.warnings.insert(0, NOTE_SUSPICIOUS)
     expires_at = datetime.now(UTC) + timedelta(seconds=settings.ai_proposal_ttl_seconds)
     proposal = MenuChangeProposal(
         restaurant_id=restaurant_id,
@@ -174,6 +183,8 @@ async def apply_menu_change(
         .with_for_update()
     )
     if proposal is None:
+        raise HTTPException(status_code=404, detail="Предложение не найдено")
+    if proposal.plan.get("kind") == "design":
         raise HTTPException(status_code=404, detail="Предложение не найдено")
     if proposal.status != "pending":
         raise HTTPException(status_code=409, detail="Предложение уже применено или устарело")

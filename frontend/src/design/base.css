@@ -1,5 +1,5 @@
 /*
- * Global base for «Синица»: Arial, brand colours, visible focus,
+ * Global base for «Синица» (P1-DOC-3): Arial, brand colours, visible focus,
  * reduced motion and safe-area. Element selectors only, so legacy surfaces that set
  * their own classes keep working until epics E2–E5 move them onto the design system.
  */

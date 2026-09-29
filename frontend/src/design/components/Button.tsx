@@ -13,7 +13,7 @@ interface ButtonOwnProps {
   icon?: ReactNode;
   fullWidth?: boolean;
   /**
-   * Morph «кнопка → прогресс → галочка»: `progress` swaps the label
+   * Morph «кнопка → прогресс → галочка» (P1-DOC-18, publication): `progress` swaps the label
    * for a spinner and blocks clicks, `success` shows a check on the success colour. The label
    * stays in the layout, so the button keeps its size.
    */

@@ -1,4 +1,4 @@
-"""Optional LLM step of the import.
+"""Optional LLM step of the import (P1-TASK-43, P1-DOC-8 «ИИ-импорт меню»).
 
 The OCR / PDF text goes to the model strictly as data; the answer is validated by schema
 and then by code: a price is kept only when the number literally occurs in the source text,
@@ -184,19 +184,38 @@ async def structure_with_ai(
     return structured, None
 
 
+BATCH = 40
+MAX_DESCRIBED = 200
+
+
+def template_description(item: dict[str, Any], section: str) -> str:
+    """A neutral one-line draft made by code from the item's own fields (no AI, no invention)."""
+    name = str(item["name"]).strip()
+    parts = [f"{name}: {section.strip().lower()}" if section.strip() else name]
+    if item.get("weight_text"):
+        parts.append(str(item["weight_text"]).strip())
+    else:
+        sizes = [v["name"] for v in item.get("variants") or [] if v.get("name")]
+        if sizes:
+            parts.append("размеры: " + ", ".join(sizes[:3]))
+    text = ". ".join(parts) + "."
+    return text if len(text) <= DESCRIPTION_LIMIT else text[: DESCRIPTION_LIMIT - 1].rstrip() + "…"
+
+
 async def add_ai_descriptions(
     settings: Settings, structured: dict[str, Any], venue_id: uuid.UUID, admin_id: uuid.UUID
 ) -> int:
-    """Draft descriptions for the items without one: one batch task for the whole import.
+    """A draft description for EVERY item without one, for the review screen.
 
-    Each description is checked against its own item (no invented numbers or facts), the
-    ones that fail stay empty. No AI, a limit or an error → the import stays as it is.
-    The result only feeds the review screen; nothing reaches a menu before «Применить»."""
+    The AI writes them in batches; each is checked against its own item (no invented numbers
+    or facts). Items the AI skipped, failed or could not reach get a neutral template made by
+    code (``description_source = "auto"``). Nothing reaches a menu before «Применить»."""
     targets: list[dict[str, Any]] = []
     sources: list[dict[str, Any]] = []
+    sections: list[str] = []
     for section in structured["sections"]:
         for item in section["items"]:
-            if item.get("description") or len(targets) >= 60:
+            if item.get("description") or len(targets) >= MAX_DESCRIBED:
                 continue
             sizes = [v["name"] for v in item.get("variants") or []]
             source: dict[str, Any] = {"name": item["name"], "section": section["name"]}
@@ -206,34 +225,51 @@ async def add_ai_descriptions(
                 source["sizes"] = sizes
             targets.append(item)
             sources.append(source)
+            sections.append(section["name"])
     if not targets:
         return 0
-    data = [{"index": at, **source} for at, source in enumerate(sources)]
-    try:
-        result = await run_task(
-            settings, import_descriptions_task(data), venue_id=venue_id,
-            subject=f"user:{admin_id}", timeout_seconds=settings.ai_import_timeout_seconds,
-        )
-    except AILimitExceeded:
-        return 0
-    except AIUnavailable as error:
-        cause = error.__cause__ or error
-        logger.warning("AI import descriptions unavailable: %s: %s", type(cause).__name__, cause)
-        return 0
-    answer = result.value
-    assert isinstance(answer, ImportDescriptionsAnswer)
+
     added = 0
-    for entry in answer.descriptions:
-        if not 0 <= entry.index < len(targets) or targets[entry.index].get("description"):
-            continue
-        text = entry.description
-        if not text or len(text) > DESCRIPTION_LIMIT:
-            continue
+    ai_ok = True
+    for start in range(0, len(targets), BATCH):
+        if not ai_ok:
+            break
+        chunk = sources[start:start + BATCH]
+        data = [{"index": at, **source} for at, source in enumerate(chunk)]
         try:
-            check_description(text, sources[entry.index])
-        except AIUnavailable:
+            result = await run_task(
+                settings, import_descriptions_task(data), venue_id=venue_id,
+                subject=f"user:{admin_id}", timeout_seconds=settings.ai_import_timeout_seconds,
+            )
+        except AILimitExceeded:
+            ai_ok = False
             continue
-        targets[entry.index]["description"] = text
-        targets[entry.index]["description_source"] = "ai"
-        added += 1
+        except AIUnavailable as error:
+            cause = error.__cause__ or error
+            logger.warning(
+                "AI import descriptions unavailable: %s: %s", type(cause).__name__, cause
+            )
+            ai_ok = False
+            continue
+        answer = result.value
+        assert isinstance(answer, ImportDescriptionsAnswer)
+        for entry in answer.descriptions:
+            at = start + entry.index
+            if not 0 <= entry.index < len(chunk) or targets[at].get("description"):
+                continue
+            text = entry.description
+            if not text or len(text) > DESCRIPTION_LIMIT:
+                continue
+            try:
+                check_description(text, sources[at])
+            except AIUnavailable:
+                continue
+            targets[at]["description"] = text
+            targets[at]["description_source"] = "ai"
+            added += 1
+    for at, item in enumerate(targets):
+        if not item.get("description"):
+            item["description"] = template_description(item, sections[at])
+            item["description_source"] = "auto"
+            added += 1
     return added

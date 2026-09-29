@@ -120,7 +120,7 @@ function prepareBridge(): void {
   } catch {
     // Display methods are optional; signed login still proceeds on the server.
   }
-  // `ready()` is sent by `max/platform.ts` after the first render.
+  // `ready()` is sent by `max/platform.ts` after the first render (P1-DOC-12 «Сигнал готовности»).
 }
 
 export function initializeMaxBridge(): MaxContext {

@@ -1,4 +1,4 @@
-// Motion of the guest menu.
+// Motion of the guest menu (P1-DOC-18 «Премиальные анимации», раздел «Гость»).
 // Only transform / opacity (and a point clip-path), Web Animations API, no dependencies.
 // Durations and curves come from motion tokens with fallbacks: the shared tokens
 // (`--motion-*`, `--ease-*`, `--stagger` in src/design/tokens.css) are added by the design

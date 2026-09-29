@@ -57,7 +57,7 @@ function FindingGroup({ title, icon, findings, onOpen }: {
 }
 
 /**
- * «Синица проверила меню»: code checks of the draft — no price, prices ×10 from
+ * «Синица проверила меню» (P1-TASK-42): code checks of the draft — no price, prices ×10 from
  * the section median, duplicates, empty sections, no description or photo — with a short
  * summary and tips from the AI when it is available. Each position opens its card.
  */

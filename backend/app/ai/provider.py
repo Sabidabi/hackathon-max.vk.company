@@ -1,4 +1,4 @@
-"""Narrow, replaceable AI provider port.
+"""Narrow, replaceable AI provider port (P1-DOC-8 «Архитектура»).
 
 Every AI feature is a *task*: fixed instructions written by our code, untrusted data
 (guest question, OCR text, item fields) passed strictly as JSON data, and a Pydantic
@@ -16,7 +16,7 @@ from app.config import Settings
 
 ProviderName = Literal["openai", "mock"]
 TaskName = Literal["guest_ask", "item_description", "menu_check", "import_structure",
-                  "import_descriptions"]
+                  "import_descriptions", "design_plan"]
 
 # Shared rules put before each task's instructions. Untrusted text is data, never orders.
 COMMON_RULES = """Ты — помощник сервиса меню кофеен «Синица».

@@ -1,4 +1,4 @@
-"""Admin notifications А1–А7: thresholds, frequency, per-admin settings."""
+"""Admin notifications А1–А7 (P1-TASK-47): thresholds, frequency, per-admin settings."""
 
 import os
 import uuid

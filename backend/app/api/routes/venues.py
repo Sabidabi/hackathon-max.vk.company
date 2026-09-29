@@ -1,4 +1,4 @@
-"""Venue, its points and the assignment of library menus to points.
+"""Venue, its points and the assignment of library menus to points (P1-DOC-15).
 
 Every route checks venue admin rights on the server; foreign venues, points and menus
 answer 404. Assignments are guarded by a revision (409 on a stale one).

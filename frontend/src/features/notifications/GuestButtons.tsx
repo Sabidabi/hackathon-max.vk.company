@@ -8,7 +8,7 @@ import { fetchChatLink, fetchItemSubscription, setItemSubscription } from "./api
 import "./notifications.css";
 
 /**
- * «Написать в кофейню»: opens the bot dialog with this point
+ * «Написать в кофейню» (P1-TASK-64): opens the bot dialog with this point
  * (`/start chat_<public_id>`); hidden when the bot is not configured.
  */
 export function WriteToPointButton({ publicId }: { publicId: string }) {
@@ -26,7 +26,7 @@ export function WriteToPointButton({ publicId }: { publicId: string }) {
 }
 
 /**
- * «Сообщить, когда появится» on an unavailable position: one message when it
+ * «Сообщить, когда появится» on an unavailable position (P1-DOC-11 Г1): one message when it
  * is back at this point. Signed-in guests only; the server keeps the consent.
  */
 export function NotifyWhenBackButton({ publicId, itemKey, enabled }: { publicId: string; itemKey: string | null | undefined; enabled: boolean }) {

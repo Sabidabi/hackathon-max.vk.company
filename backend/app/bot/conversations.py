@@ -1,4 +1,4 @@
-"""Support tickets and guest ↔ point dialogs.
+"""Support tickets (P1-TASK-63) and guest ↔ point dialogs (P1-TASK-64).
 
 Messages are untrusted data: stored and forwarded as plain text, never interpreted. Every
 outgoing copy goes through the outbox; replies are not subject to quiet hours.

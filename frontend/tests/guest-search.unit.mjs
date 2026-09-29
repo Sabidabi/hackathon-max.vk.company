@@ -1,4 +1,4 @@
-// Unit checks for the guest menu search.
+// Unit checks for the guest menu search (P1-TASK-19, P1-DOC-6 «Поиск с опечатками").
 // Vite bundles src/features/guest/search.ts alone (it has no imports) and Node runs it.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -52,7 +52,7 @@ check("Damerau–Levenshtein: substitution, transposition, limit", () => {
   assert.equal(damerauLevenshtein("кофе", "чай", 1), 2, "early exit returns limit + 1");
 });
 
-check("«капучтно» finds «Капучино»", () => {
+check("«капучтно» finds «Капучино» (P1-DOC-6 scenario)", () => {
   assert.deepEqual(ids("капучтно"), ["cap"]);
 });
 

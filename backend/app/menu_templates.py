@@ -1,4 +1,4 @@
-"""Starter menus for the «Как начнём?» wizard.
+"""Starter menus for the «Как начнём?» wizard (P1-DOC-7 «Мастер первого меню»).
 
 Templates carry names, sections and short descriptions only — never prices: a position
 without a price blocks publication until the owner sets it, so a template can never reach

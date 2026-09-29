@@ -106,7 +106,7 @@ const STATUS_TEXT = {
 type ItemAction = { kind: "item"; sectionId: string; itemId: string } | { kind: "section"; sectionId: string } | { kind: "menu" };
 
 /**
- * «Меню»: the library menu edited for this venue, its
+ * «Меню» (P1-TASK-27, P1-DOC-7, P1-DOC-15): the library menu edited for this venue, its
  * sections and compact rows with the availability switch of the CURRENT point (stop-list:
  * applied at once, undo in a toast), quick «Латте 190» + Enter, search and «Нет в наличии»,
  * autosave with a status and a sticky «Опубликовать изменения (N)» — the only blue button.
@@ -145,7 +145,7 @@ export function MenuSection({ context, focusItem, onUnsavedChange, onChangesCoun
   const [pendingToggle, setPendingToggle] = useState<Set<string>>(new Set());
   const [publishState, setPublishState] = useState<"idle" | "progress" | "success">("idle");
 
-  // FLIP: rows keep their place visually when one is added, moved or removed.
+  // FLIP: rows keep their place visually when one is added, moved or removed (P1-DOC-18).
   const listRef = useRef<HTMLDivElement>(null);
   const flipBefore = useRef<Snapshot | null>(null);
   const captureFlip = () => {
@@ -183,7 +183,7 @@ export function MenuSection({ context, focusItem, onUnsavedChange, onChangesCoun
     }
   }, [editor.loaded, focusItem, sections]);
 
-  // --- Point stop-list --------------------------------------
+  // --- Point stop-list (applied at once, P1-DOC-15) --------------------------------------
   const pointState = useMemo(() => {
     const map = new Map<string, PointItemState>();
     const data = pointItems.data?.menus.find((entry) => entry.menu_id === menuId);
@@ -355,7 +355,7 @@ export function MenuSection({ context, focusItem, onUnsavedChange, onChangesCoun
     ?? (!itemCount ? "Добавьте позиции" : !availableSomewhere ? "Все позиции выключены" : null);
   const canPublish = Boolean(menu && menu.point_ids.length && !publishBlocker && status === "saved" && !publish.isPending);
   const startPublish = () => {
-    if (!menu) return;
+    if (!menu || publish.isPending || publishState !== "idle") return;
     haptics.impact("light");
     setSheet("publish");
   };
@@ -621,7 +621,7 @@ export function MenuSection({ context, focusItem, onUnsavedChange, onChangesCoun
             <Button
               icon={<CloudUpload size={20} />}
               status={publishState}
-              disabled={publishState === "idle" && !canPublish}
+              disabled={publishState !== "idle" || !canPublish}
               aria-label={`Опубликовать изменения: ${unpublished}`}
               onClick={startPublish}
             >
@@ -694,7 +694,7 @@ export function MenuSection({ context, focusItem, onUnsavedChange, onChangesCoun
         points={venuePoints}
         draftRevision={editor.revision}
         onClose={() => setSheet(null)}
-        onPublish={() => { setSheet(null); publish.mutate(); }}
+        onPublish={() => { if (publish.isPending) return; setSheet(null); publish.mutate(); }}
         onFix={(problem) => fixProblem(problem.item_key)}
       />
       <MenuCheckSheet open={sheet === "check"} menuId={menu.id} onClose={() => setSheet(null)} onOpenItem={fixProblem} />

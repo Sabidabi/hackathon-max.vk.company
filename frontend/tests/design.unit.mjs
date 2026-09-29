@@ -1,5 +1,5 @@
 // Unit checks for the «Синица» design layer (src/design), run in Node without a browser:
-// 1) text colour pairs of tokens.css meet WCAG AA;
+// 1) text colour pairs of tokens.css meet WCAG AA (P1-DOC-3 «Контраст»);
 // 2) the dependency-free QR encoder matches the Python `qrcode` reference matrices in
 //    tests/fixtures/qr-reference.json (generated with qrcode 8.x, byte mode, fixed mask).
 import assert from "node:assert/strict";
@@ -100,7 +100,7 @@ assert.throws(() => encodeQr("x".repeat(3000)), RangeError);
 
 console.log(`PASS: design tokens contrast (${textPairs.length} text pairs) and QR encoder (${references.length} reference symbols)`);
 
-// --- Venue theme contrast ------------------------------------------------------
+// --- Venue theme contrast (P1-TASK-31) ------------------------------------------------------
 {
   const result = await build({
     configFile: false,

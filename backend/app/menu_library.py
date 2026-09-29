@@ -1,4 +1,4 @@
-"""Point-level view of the venue menu library.
+"""Point-level view of the venue menu library (P1-DOC-15).
 
 - Which assigned menus a point shows right now: tab order and local show hours in the
   point's time zone. Local time comes from PostgreSQL's time zone database, so the

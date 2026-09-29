@@ -1,4 +1,4 @@
-// Service screens of «Синица» against the built app and the in-memory fixture.
+// Service screens of «Синица» (P1-TASK-7) against the built app and the in-memory fixture.
 // Browser fixture only: it proves the screens and routing, not a real MAX client.
 const { chromium } = require("playwright");
 const { launchChromium } = require("./browser.cjs");

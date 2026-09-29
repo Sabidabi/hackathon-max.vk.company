@@ -1,4 +1,4 @@
-/* «Ещё» pages on the cabinet components. */
+/* «Ещё» pages (P1-TASK-32) on the cabinet components. */
 .more-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sinitsa-space-4); max-width: 640px; min-width: 0; }
 .more-page > * { min-width: 0; }
 .more-block { display: grid; gap: var(--sinitsa-space-3); }
@@ -18,4 +18,10 @@
 .qr-page__actions { display: grid; gap: var(--sinitsa-space-2); justify-items: center; width: 100%; }
 .qr-page__secondary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sinitsa-space-2); width: 100%; }
 .team-fresh > svg { flex: none; }
-@media (max-width: 359px) { .qr-page__secondary { grid-template-columns: 1fr; } }
+/* Phones (MAX is ~360 px wide): the two secondary buttons stack, never break a word. */
+.qr-page__secondary .s-button { min-width: 0; padding-inline: var(--sinitsa-space-3); white-space: nowrap; }
+.qr-page__card { padding-inline: var(--sinitsa-space-3); }
+@media (max-width: 420px) {
+  .qr-page__secondary { grid-template-columns: 1fr; }
+  .qr-page__code .s-qr { width: min(216px, 100%); }
+}

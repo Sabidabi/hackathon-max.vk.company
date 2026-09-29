@@ -24,7 +24,7 @@ export const TIMEZONES: Array<[string, string]> = [
   ["Asia/Kamchatka", "Камчатка (МСК+9)"],
 ];
 
-/** A city in the address suggests its time zone. */
+/** A city in the address suggests its time zone (P1-DOC-17 «Новая точка»). */
 export function guessTimezone(address: string): string | null {
   const text = address.toLocaleLowerCase("ru");
   const hints: Array<[RegExp, string]> = [
@@ -101,7 +101,7 @@ export function NewVenue({ onCreated }: { onCreated: (point: Restaurant) => void
 }
 
 /**
- * «Новая точка» in ≤ 3 steps: address and time zone (suggested by the city),
+ * «Новая точка» in ≤ 3 steps (P1-DOC-17): address and time zone (suggested by the city),
  * a menu from the library («Основное» by default) → the point with its own QR.
  */
 export function NewPointForm({ venueId, onCreated }: { venueId: string; onCreated: (point: Restaurant) => void }) {

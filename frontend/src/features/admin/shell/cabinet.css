@@ -1,6 +1,6 @@
 /*
- * Cabinet frame: header «Заведение ▾ / Точка ▾» + bottom tab bar under 1024 px,
- * a 240 px left column from 1024 px. Tokens of the design system only.
+ * Cabinet frame (P1-TASK-26): header «Заведение ▾ / Точка ▾» + bottom tab bar under 1024 px,
+ * a 240 px left column from 1024 px. Tokens of the design system only (P1-DOC-3, P1-DOC-18).
  */
 .cabinet {
   --cabinet-tabbar: 64px;
@@ -207,5 +207,5 @@
 .cabinet--loading .cabinet-header { gap: var(--sinitsa-space-3); }
 
 /* Legacy panels (Оформление, QR, Администраторы, Рассылки, Импорт) keep their styles until
-   the spec moves them onto the design system. */
+   P1-PLAN-9 moves them onto the design system. */
 @media (min-width: 1024px) { .cabinet-phone-only { display: none !important; } }

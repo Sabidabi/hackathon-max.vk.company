@@ -1,5 +1,5 @@
 """Worker duties of analytics: daily roll-up of closed local days and the 180-day retention
-of raw events."""
+of raw events (P1-DOC-10: raw events 180 days, daily aggregates kept indefinitely)."""
 
 from datetime import datetime, timedelta
 

@@ -1,4 +1,4 @@
-// Browser smoke of guest menu 2.0 on the dev preview page
+// Browser smoke of guest menu 2.0 (P1-PLAN-6: P1-TASK-17…21) on the dev preview page
 // `guest-preview.html` with its own API fixture (tests/guest-fixture.cjs). Covers 320/390/1280:
 // no horizontal scroll, menu tabs, sticky categories, search with a typo, the required milk,
 // «Мой выбор», «Показать на кассе», 503 → «Попробовать снова», item deep links, the older
@@ -31,7 +31,7 @@ async function shot(page, options) {
   await page.screenshot(options);
 }
 
-// Sheets spring in; wait until nothing moves before touching their controls.
+// Sheets spring in (P1-DOC-18); wait until nothing moves before touching their controls.
 async function settle(page) {
   await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== "running" || animation.effect?.getTiming?.().iterations === Infinity));
 }
@@ -49,6 +49,8 @@ async function quoted(page, text) {
 async function addControl(page, name) {
   return page.evaluate((itemName) => {
     const card = [...document.querySelectorAll(".g-card")].find((element) => element.querySelector(".g-card__name")?.textContent.trim() === itemName);
+    // A quick-added position shows the «− N +» stepper; one that needs choices shows «✓».
+    if (card?.querySelector(".g-stepper")) return { state: "in", icon: "stepper" };
     const button = card?.querySelector(".g-card__add");
     const svg = button?.querySelector("svg");
     return { state: button?.dataset.state, icon: svg ? [...svg.classList].find((name) => /^lucide-(check|plus)$/.test(name)) : null };
@@ -74,7 +76,7 @@ async function scenarioAtWidth(browser, width, errors) {
       .filter((element) => element.getBoundingClientRect().height > (parseFloat(getComputedStyle(element).lineHeight) || parseFloat(getComputedStyle(element).fontSize) * 1.3) * 1.5 || element.getClientRects().length > 1)
       .map((element) => element.textContent));
     assert.deepEqual(wrapped, [], `Tile prices on one line at ${width}`);
-    // cover, venue theme (not the «Синица» blue), tabs, grid, rows without photos.
+    // P1-TASK-17: cover, venue theme (not the «Синица» blue), tabs, grid, rows without photos.
     await page.getByRole("heading", { name: "Кофейня Север", level: 1 }).waitFor();
     const theme = await page.evaluate(() => ({
       root: getComputedStyle(document.querySelector(".g-root")).getPropertyValue("--sinitsa-blue").trim().toLowerCase(),
@@ -84,7 +86,7 @@ async function scenarioAtWidth(browser, width, errors) {
     assert.equal(theme.root, "#1f6b57", "Menu uses the venue primary colour");
     assert.equal(theme.brand, "#2450FF", "The app palette on :root stays the brand one");
     assert.equal(theme.columns, width >= 720 ? 3 : 2, "2 cards per row on phones, 3 on wide screens");
-    assert.equal(await page.locator(".g-rows .g-card--row").filter({ hasText: "Круассан" }).count(), 1, "Item without a photo is a compact row");
+    assert.equal(await page.locator(".g-grid > .g-card--row").filter({ hasText: "Круассан" }).count(), 1, "Item without a photo is a compact row");
     await page.getByText("Меню на Синице", { exact: true }).waitFor();
     const americano = page.locator("article").filter({ hasText: "Американо" });
     await americano.getByText("Нет в наличии").waitFor();
@@ -92,20 +94,28 @@ async function scenarioAtWidth(browser, width, errors) {
     // Owner rule: photo → tile with the real <img>; no photo → list row without any picture;
     // a mixed section shows the tiles first and the rows under them (per item, not per section).
     const layout = await page.evaluate(() => [...document.querySelectorAll("[data-section-id]")].map((section) => {
-      const grid = section.querySelector(".g-grid");
-      const rows = section.querySelector(".g-rows");
+      
+      
       return {
         name: section.querySelector("h2").textContent,
         tiles: [...section.querySelectorAll(".g-card--photo")].map((card) => ({ name: card.querySelector(".g-card__name").textContent, img: Boolean(card.querySelector("img[src]")) })),
         rows: [...section.querySelectorAll(".g-card--row")].map((card) => ({ name: card.querySelector(".g-card__name").textContent, pictures: card.querySelectorAll("img, svg.g-placeholder, .g-card__media").length })),
-        gridAbove: grid && rows ? grid.getBoundingClientRect().bottom <= rows.getBoundingClientRect().top : null,
+        order: [...section.querySelectorAll(".g-card")].map((card) => card.querySelector(".g-card__name").textContent),
+        tileGaps: [...section.querySelectorAll(".g-card")].slice(1).map((card, index) => {
+          const previous = section.querySelectorAll(".g-card")[index].getBoundingClientRect();
+          const current = card.getBoundingClientRect();
+          // Vertical gap between rows of tiles; tiles side by side are separated horizontally.
+          return current.top >= previous.bottom - 1 ? current.top - previous.bottom : current.left - previous.right;
+        }),
       };
     }));
     const coffee = layout.find((section) => section.name === "Кофе");
     assert.deepEqual(coffee.tiles.map((tile) => tile.name), ["Латте", "Капучино"], "Items with photos are tiles");
     assert.ok(coffee.tiles.every((tile) => tile.img), "Tiles show the item photo");
-    assert.deepEqual(coffee.rows.map((row) => row.name), ["Флэт уайт", "Американо"], "Items without photos (incl. unavailable) are rows");
-    assert.equal(coffee.gridAbove, true, "Mixed section: tiles above rows");
+    assert.deepEqual(coffee.rows.map((row) => row.name), ["Флэт уайт", "Американо"], "Items without photos (incl. unavailable) are full-width tiles");
+    // One position, one tile, in the owner's order (no regrouping of photos above text tiles).
+    assert.deepEqual(coffee.order, ["Латте", "Капучино", "Флэт уайт", "Американо"], "Items keep the order set by the owner");
+    assert.ok(coffee.tileGaps.every((gap) => gap >= 8), `Tiles are separate surfaces with a gap: ${coffee.tileGaps}`);
     for (const section of layout) {
       assert.ok(section.rows.every((row) => row.pictures === 0), `${section.name}: rows have no stand-in pictures`);
     }
@@ -127,14 +137,12 @@ async function scenarioAtWidth(browser, width, errors) {
     assert.equal(await rail.getByRole("button", { name: "Выпечка" }).getAttribute("aria-pressed"), "true");
     await shot(page, { path: path.join(output, `guest-sticky-${width}.png`) });
 
-    // Tabs of the point's menus.
-    await page.getByRole("tab", { name: "Завтраки" }).click();
+    // The point's active menus («Основное» and «Завтраки») are one list: no tab bar on top.
+    assert.equal(await page.getByRole("tab").count(), 0, "No menu tabs");
     await page.getByRole("button", { name: "Открыть Сырники" }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Открыть Латте", exact: true }).count(), 0);
-    await page.getByRole("tab", { name: "Основное" }).click();
     await page.getByRole("button", { name: "Открыть Латте", exact: true }).waitFor();
 
-    // search with a typo, partial input via add-ons, empty result + event.
+    // P1-TASK-19: search with a typo, partial input via add-ons, empty result + event.
     await page.evaluate(() => {
       window.__events = [];
       window.addEventListener("sinitsa:event", (event) => window.__events.push(event.detail));
@@ -152,7 +160,7 @@ async function scenarioAtWidth(browser, width, errors) {
     await noHorizontalScroll(page, `empty search ${width}`);
     await page.getByRole("button", { name: "Очистить поиск" }).click();
 
-    // required milk, server price, add-on counters.
+    // P1-TASK-18: required milk, server price, add-on counters.
     await page.getByRole("button", { name: "Открыть Латте", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Латте" });
     await dialog.waitFor();
@@ -188,11 +196,11 @@ async function scenarioAtWidth(browser, width, errors) {
     await page.waitForFunction(() => document.querySelector(".g-choice-bar__button")?.textContent.replace(/\s/g, " ").includes("490 ₽"));
     assert.match((await bar.textContent()).replace(/\s/g, " "), /2 позиции/);
     // The add icon follows the choice, whatever the size / add-ons of the line: «✓» for both.
-    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "lucide-check" }, "Quick-added item shows «✓»");
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "stepper" }, "Quick-added item shows the stepper");
     assert.deepEqual(await addControl(page, "Латте"), { state: "in", icon: "lucide-check" }, "Item added with size and add-ons shows «✓»");
     assert.deepEqual(await addControl(page, "Какао"), { state: "out", icon: "lucide-plus" }, "Item not in the choice shows «+»");
     await page.waitForTimeout(1600);
-    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "lucide-check" }, "«✓» does not fall back to «+» by a timer");
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "stepper" }, "The stepper does not fall back to «+» by a timer");
     await noHorizontalScroll(page, `choice bar ${width}`);
     await bar.click();
     const choice = page.getByRole("dialog", { name: "Мой выбор" });
@@ -215,11 +223,11 @@ async function scenarioAtWidth(browser, width, errors) {
     assert.deepEqual(await addControl(page, "Латте"), { state: "in", icon: "lucide-check" }, "Other item keeps «✓»");
     await page.getByRole("button", { name: "Отменить" }).click();
     await choice.getByLabel("Количество: Капучино").waitFor();
-    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "lucide-check" }, "Undo brings «✓» back");
+    assert.deepEqual(await addControl(page, "Капучино"), { state: "in", icon: "stepper" }, "Undo brings the stepper back");
     await choice.getByRole("button", { name: "Больше: Капучино" }).click();
     await page.waitForFunction(() => document.querySelector("[data-testid=choice-total]")?.textContent.replace(/\s/g, " ") === "670 ₽");
 
-    // «Показать на кассе».
+    // P1-TASK-21: «Показать на кассе».
     await choice.getByRole("button", { name: "Показать на кассе" }).click();
     const cashier = page.getByRole("dialog", { name: "Мой выбор" });
     await page.locator(".g-cashier").waitFor();
@@ -248,7 +256,6 @@ async function scenarioLongText(browser, errors) {
     page.on("pageerror", (error) => errors.push(`long text ${width}: ${error.message}`));
     try {
       await openMenu(page);
-      await page.getByRole("tab", { name: "Завтраки" }).click();
       await page.getByRole("button", { name: /Открыть Большой фермерский завтрак/ }).waitFor();
       const boxes = await page.evaluate(() => [...document.querySelectorAll(".g-card")].map((card) => {
         const rect = (selector) => {
@@ -302,7 +309,7 @@ async function scenarioDetails(browser, errors) {
       await page.getByRole("button", { name: "Закрыть карточку" }).click();
       await page.waitForFunction(() => document.querySelector("[data-testid=preview-path]")?.textContent === "/r/test-point");
     }
-    // Unknown item: «Позиция не найдена» and back to the menu.
+    // Unknown item (P1-PLAN-4 [decision]): «Позиция не найдена» and back to the menu.
     await page.goto(preview("/r/test-point/i/00000000-0000-4000-8000-000000000000"));
     await page.getByText("Позиция не найдена", { exact: true }).waitFor({ timeout: 15_000 });
     await page.waitForFunction(() => document.querySelector("[data-testid=preview-path]")?.textContent === "/r/test-point");
@@ -402,7 +409,7 @@ async function scenarioDetails(browser, errors) {
   }
 }
 
-// Dark venue theme and a menu without photos at the other widths.
+// Dark venue theme and a menu without photos at the other widths (P1-DOC-17 «Визуальная приёмка»).
 async function scenarioDarkWidths(browser, errors) {
   for (const width of [320, 1280]) {
     const context = await browser.newContext({ viewport: { width, height: width >= 1024 ? 900 : 780 } });
@@ -440,7 +447,7 @@ async function scenarioDarkWidths(browser, errors) {
   }
 }
 
-// «Синица, что взять?» on the fixture's labelled mock: chips and free text, cards
+// «Синица, что взять?» (P1-TASK-41) on the fixture's labelled mock: chips and free text, cards
 // open the position, events carry no guest text, the 429 limit and a point without AI still
 // give picks. The grounding/ID filter/limits themselves are backend pytest.
 async function scenarioAsk(browser, errors) {
@@ -534,7 +541,7 @@ async function watchMotion(page) {
   });
 }
 
-// key guest animations (normal motion) and their absence with reduced motion,
+// P1-DOC-18: key guest animations (normal motion) and their absence with reduced motion,
 // plus a Playwright video of the key moments for review.
 async function scenarioMotion(browser, errors) {
   const videoDir = path.join(output, "guest-video");
@@ -586,11 +593,13 @@ async function scenarioMotion(browser, errors) {
     await quoted(page, "280 ₽");
     await page.waitForTimeout(400);
     // Drag the header down: the sheet follows and closes.
-    const header = await page.locator(".s-sheet__header").boundingBox();
-    await page.mouse.move(header.x + 40, header.y + header.height / 2);
+    // The grip strip on top of the sheet is the drag handle (the close button floats over the photo).
+    const header = await page.locator(".s-sheet__handle").boundingBox();
+    const gripX = header.x + header.width / 2;
+    await page.mouse.move(gripX, header.y + 12);
     await page.mouse.down();
-    await page.mouse.move(header.x + 40, header.y + 80, { steps: 5 });
-    await page.mouse.move(header.x + 40, header.y + 220, { steps: 5 });
+    await page.mouse.move(gripX, header.y + 80, { steps: 5 });
+    await page.mouse.move(gripX, header.y + 220, { steps: 5 });
     await page.mouse.up();
     await dialog.waitFor({ state: "detached" });
     // Quick «+»: the thumbnail flies to «Мой выбор».

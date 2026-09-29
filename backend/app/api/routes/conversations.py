@@ -1,4 +1,4 @@
-"""«Ещё → Сообщения»: guest dialogs of a point for the venue admins.
+"""«Ещё → Сообщения»: guest dialogs of a point for the venue admins (P1-TASK-64).
 
 Only admins of the point's venue see its dialogs (404 otherwise). Answers go to the guest
 through the bot outbox, signed with the point's name; the admin's identity is not shown.

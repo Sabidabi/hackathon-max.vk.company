@@ -8,7 +8,7 @@ import type { CabinetContext } from "../shell/CabinetShell";
 import { PointForm } from "./PointForm";
 
 /**
- * «Заведение и точки»: this point's details, the venue's points and «Новая точка»
+ * «Заведение и точки» (P1-DOC-15): this point's details, the venue's points and «Новая точка»
  * (≤ 3 steps: name and address → time zone suggested → «Основное» by default) that opens
  * straight on the new point's QR.
  */

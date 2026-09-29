@@ -68,7 +68,7 @@ export function DiffList({ diff }: { diff: MenuDiff }) {
 }
 
 /**
- * «Опубликовать изменения»: the server checks the draft
+ * «Опубликовать изменения» (P1-DOC-7 «Публикация с проверкой»): the server checks the draft
  * and says what changes for guests; blocking problems link to the position; the points that
  * get the new version are confirmed here.
  */
@@ -149,7 +149,7 @@ function when(value: string | null): string {
 }
 
 /**
- * «История версий»: author, date and what changed;
+ * «История версий» (P1-DOC-15 «История версий и откат»): author, date and what changed;
  * «Вернуть эту версию» only rewrites the draft — guests see it after the next publication.
  */
 export function HistorySheet({ open, menu, draftRevision, canRestore, onClose, onRestored }: {

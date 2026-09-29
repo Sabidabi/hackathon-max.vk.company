@@ -1,4 +1,4 @@
-"""Point stop-list and own price without publication against the real API."""
+"""Point stop-list and own price without publication (P1-DOC-15) against the real API."""
 
 import os
 import uuid
@@ -241,7 +241,7 @@ async def test_reimport_keeps_item_keys_so_the_stop_list_stays_attached() -> Non
 
 @pytest.mark.asyncio
 async def test_point_cannot_switch_on_an_unsellable_position_and_shows_size_prices() -> None:
-    """Regression: ``available: true`` at a point must not expose a position
+    """Review P1-PLAN-7 п.3: ``available: true`` at a point must not expose a position
     that cannot be sold (``availability_error``); sizes show what the guest pays."""
     user_ids: list[uuid.UUID] = []
     try:
@@ -320,7 +320,7 @@ async def test_point_cannot_switch_on_an_unsellable_position_and_shows_size_pric
 
 @pytest.mark.asyncio
 async def test_point_override_does_not_revive_a_position_published_without_a_size() -> None:
-    """Regression: ``available: true`` saved while the position was
+    """Review P1-PLAN-7 iteration 2: ``available: true`` saved while the position was
     sellable must not expose it once a version without an available size is published."""
     user_ids: list[uuid.UUID] = []
     try:

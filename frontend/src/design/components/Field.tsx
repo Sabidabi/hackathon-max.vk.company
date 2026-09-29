@@ -21,7 +21,7 @@ export interface FieldControlProps {
 
 interface FieldProps {
   label: ReactNode;
-  /** Explains a requirement next to the field. */
+  /** Explains a requirement next to the field (P1-DOC-3: не прятать в иконку i). */
   hint?: ReactNode;
   /** Visible error text; the control gets `aria-invalid` and points to it. */
   error?: ReactNode;
@@ -37,7 +37,7 @@ export function Field({ label, hint, error, required, id, children }: FieldProps
   const hintId = `${controlId}-hint`;
   const errorId = `${controlId}-error`;
   const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
-  // A new error: the control shakes (CSS) and MAX gives an error haptic.
+  // A new error: the control shakes (CSS) and MAX gives an error haptic (P1-DOC-18).
   const hadError = useRef(Boolean(error));
   useEffect(() => {
     if (error && !hadError.current) haptics.notify("error");

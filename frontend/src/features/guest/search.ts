@@ -1,4 +1,4 @@
-// Client-side menu search with typos.
+// Client-side menu search with typos (P1-DOC-6 «Поиск с опечатками», P1-TASK-19).
 // Pure functions over the published snapshot: no imports, so `tests/guest-search.unit.mjs`
 // bundles this file alone.
 

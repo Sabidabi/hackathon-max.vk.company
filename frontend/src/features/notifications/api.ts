@@ -1,4 +1,4 @@
-// Bot notifications and point dialogs. The server decides every
+// Bot notifications and point dialogs (P1-DOC-11, P1-TASK-48/64). The server decides every
 // right; these calls only read and change the signed-in user's own settings.
 
 export type AdminKind =

@@ -1,4 +1,4 @@
-/* Home, «Подключить заведение». «Синица» tokens only. */
+/* Home, «Подключить заведение» (P1-DOC-4, P1-DOC-5 «Главная»). «Синица» tokens only. */
 .app-screen {
   display: grid;
   align-content: start;
@@ -187,7 +187,7 @@
   .connect-card { max-width: 480px; }
 }
 
-/* Motion: the first render of Home
+/* Motion (P1-DOC-18, tokens with fallbacks until P1-TASK-58): the first render of Home
    cross-fades from the skeleton and assembles in a cascade of at most 8 steps; presses
    shrink to 0.97. Only transform/opacity; reduced motion keeps a plain fade, no movement. */
 @keyframes home-rise {
@@ -212,3 +212,41 @@
   .home-enter > *, .home-venues > li { animation-name: home-fade; }
   .home-row:active, .home-venue:active { transform: none; }
 }
+
+/* Venue group: header + one soft block per point (opens the point page). */
+.home-venue-group { display: grid; gap: 12px; padding: 16px; border-radius: 26px; background: var(--sinitsa-surface); box-shadow: 0 1px 2px rgb(21 24 33 / 6%), 0 14px 30px -18px rgb(21 24 33 / 22%); }
+.home-venue-group__head { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 12px; align-items: center; }
+.home-venue-group__head .home-venue__icon { width: 44px; height: 44px; border-radius: 14px; }
+.home-venue-group__head .home-venue__badge { grid-column: 2; }
+.home-venue-group .home-venue__name { margin: 0; font-size: 17px; }
+.home-points { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.home-point { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; border-radius: 18px; background: var(--sinitsa-canvas); color: inherit; text-decoration: none; transition: background var(--sinitsa-duration-fast) ease, transform var(--motion-fast, 120ms) ease; }
+.home-point:hover { background: color-mix(in srgb, var(--sinitsa-blue) 7%, var(--sinitsa-canvas)); }
+.home-point:active { transform: scale(0.98); }
+.home-point:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.home-point__icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--sinitsa-sky); color: var(--sinitsa-blue); }
+.home-point__text { display: grid; min-width: 0; }
+.home-point__name { overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.home-point__meta { overflow: hidden; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); text-overflow: ellipsis; white-space: nowrap; }
+.home-point > svg { color: var(--sinitsa-muted); }
+
+/* Favourite points: soft blocks (a collection), not a plain list. */
+.home-fav-grid { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; grid-template-columns: 1fr; }
+@media (min-width: 520px) { .home-fav-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.home-fav { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 72px; padding: 12px 14px; border-radius: 20px; background: var(--sinitsa-surface); color: inherit; text-decoration: none; box-shadow: 0 1px 2px rgb(21 24 33 / 6%), 0 10px 24px -16px rgb(21 24 33 / 20%); }
+.home-fav:active { transform: scale(0.98); }
+.home-fav:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.home-fav__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--sinitsa-sky); color: var(--sinitsa-blue); }
+.home-fav__text { display: grid; min-width: 0; }
+.home-fav__name { overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.home-fav__meta { overflow: hidden; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); text-overflow: ellipsis; white-space: nowrap; }
+.home-fav__end { display: flex; align-items: center; gap: 6px; color: var(--sinitsa-muted); }
+.home-fav-empty { margin: 0; padding: 16px; border-radius: 20px; background: var(--sinitsa-canvas); color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); box-shadow: inset 0 0 0 1px var(--sinitsa-line); }
+.home-recent-row { display: flex; gap: 10px; margin: 0 calc(-1 * var(--sinitsa-space-4)); padding: 2px var(--sinitsa-space-4) 6px; overflow-x: auto; scrollbar-width: none; list-style: none; }
+.home-recent-row::-webkit-scrollbar { display: none; }
+.home-recent { display: grid; gap: 2px; flex: none; width: 160px; padding: 14px; border-radius: 20px; background: var(--sinitsa-surface); color: inherit; text-decoration: none; box-shadow: 0 1px 2px rgb(21 24 33 / 6%), 0 10px 24px -16px rgb(21 24 33 / 20%); }
+.home-recent:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.home-recent__name { overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.home-recent__meta { overflow: hidden; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); text-overflow: ellipsis; white-space: nowrap; }
+.home-venue-group, .home-fav, .home-recent { animation: home-rise var(--motion-base, 240ms) var(--ease-out, ease) both; }
+@media (prefers-reduced-motion: reduce) { .home-venue-group, .home-fav, .home-recent { animation-name: home-fade; } .home-point:active, .home-fav:active { transform: none; } }

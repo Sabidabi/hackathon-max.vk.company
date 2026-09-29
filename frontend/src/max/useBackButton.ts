@@ -4,7 +4,7 @@ import { getMaxBridge, type MaxBackButton } from "./bridge";
 
 /*
  * One native MAX «Назад» serves every nested layer (screen → item card → Sheet), so handlers
- * live in a stack:
+ * live in a stack (P1-DOC-12 «Нативная кнопка „Назад“»):
  * - a tap calls only the top handler;
  * - the button stays visible while the stack is not empty and hides only when it empties;
  * - the Bridge gets a single listener, so a closing layer never unsubscribes its parent.

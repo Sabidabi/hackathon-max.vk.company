@@ -13,6 +13,7 @@ from app.api.routes.menus import (
     read_version_sections,
     write_version_sections,
 )
+from app.api.routes.sites import get_site, site_revision
 from app.auth.permissions import is_venue_admin
 from app.config import get_settings
 from app.database import SessionFactory
@@ -24,7 +25,11 @@ from app.models import (
     McpConfirmation,
     MenuChangeProposal,
     Restaurant,
+    RestaurantSite,
 )
+from app.sites.contrast import contrast_issues
+from app.sites.design_plan import DESIGN_FIELDS, DESIGN_OPTIONS, DesignChangePlan
+from app.sites.schemas import SiteConfig, default_site_config
 
 
 def _argument_hash(value: object) -> str:
@@ -180,6 +185,8 @@ async def apply_menu_change(
         if row is None:
             raise PermissionError("Подтверждение недействительно")
         confirmation, proposal = row
+        if proposal.plan.get("kind") == "design":
+            raise PermissionError("Это предложение по оформлению: используйте apply_design_change")
         if confirmation.used_at is not None and proposal.result_revision:
             return {
                 "proposal_id": str(proposal.id),
@@ -224,7 +231,8 @@ async def apply_menu_change(
 
 
 async def get_change_result(actor: McpActor, proposal_id: uuid.UUID) -> dict[str, object]:
-    actor.require("menu:read")
+    if not ({"menu:read", "design:read"} & actor.scopes):
+        raise PermissionError("Требуется scope menu:read или design:read")
     async with SessionFactory() as session:
         await _authorize(session, actor)
         proposal = await session.scalar(
@@ -250,4 +258,185 @@ async def get_change_result(actor: McpActor, proposal_id: uuid.UUID) -> dict[str
         "status": proposal.status,
         "revision": proposal.result_revision,
         "expires_at": proposal.expires_at.isoformat(),
+    }
+
+
+# --- Design («Оформление») -------------------------------------------------------------------
+
+
+
+def _design_view(config: SiteConfig) -> dict[str, object]:
+    data = config.model_dump(mode="json")
+    return {key: data[key] for key in DESIGN_FIELDS}
+
+
+def _merged_config(raw: dict, changes: dict) -> SiteConfig:
+    base = SiteConfig.model_validate(raw).model_dump(mode="json")
+    return SiteConfig.model_validate({**base, **changes})
+
+
+async def get_design_context(actor: McpActor) -> dict[str, object]:
+    actor.require("design:read")
+    async with SessionFactory() as session:
+        restaurant = await _authorize(session, actor)
+        site = await get_site(session, actor.restaurant_id)
+        raw = site.draft_config if site else default_site_config()
+        config = SiteConfig.model_validate(raw)
+        revision = site_revision(raw)
+        published_version = site.published_version if site else 0
+        request_id = _audit(session, actor, "get_design_context", {}, "success")
+        await session.commit()
+    return {
+        "request_id": str(request_id),
+        "restaurant": restaurant.name,
+        "revision": revision,
+        "published_version": published_version,
+        "design": _design_view(config),
+        "options": DESIGN_OPTIONS,
+        "rules": {
+            "colors": "hex #RRGGBB",
+            "font_scale": "0.9..1.15",
+            "contrast": "text 4.5:1 on surface and background, accent 3:1 on surface",
+            "publish": "not available through MCP: a person publishes in the cabinet",
+        },
+        "contrast_issues": [issue.model_dump() for issue in contrast_issues(config)],
+    }
+
+
+async def propose_design_change(
+    actor: McpActor,
+    expected_revision: str,
+    plan: DesignChangePlan,
+) -> dict[str, object]:
+    actor.require("design:propose")
+    settings = get_settings()
+    changes = plan.patch.changes()
+    if not changes:
+        raise ValueError("В плане нет изменений оформления")
+    async with SessionFactory() as session:
+        await _authorize(session, actor)
+        site = await get_site(session, actor.restaurant_id)
+        raw = site.draft_config if site else default_site_config()
+        if site_revision(raw) != expected_revision:
+            raise ValueError("Оформление изменилось: перечитайте get_design_context")
+        issues = contrast_issues(_merged_config(raw, changes))
+        expires_at = datetime.now(UTC) + timedelta(seconds=settings.mcp_confirmation_ttl_seconds)
+        proposal = MenuChangeProposal(
+            restaurant_id=actor.restaurant_id,
+            created_by_id=actor.user_id,
+            expected_revision=expected_revision,
+            plan={"kind": "design", "summary": plan.summary, "changes": changes},
+            status="pending",
+            expires_at=expires_at,
+        )
+        session.add(proposal)
+        await session.flush()
+        confirmation_token = f"confirm_{secrets.token_urlsafe(32)}"
+        session.add(
+            McpConfirmation(
+                proposal_id=proposal.id,
+                token_hash=hash_secret(confirmation_token),
+                expires_at=expires_at,
+            )
+        )
+        request_id = _audit(
+            session,
+            actor,
+            "propose_design_change",
+            {"revision": expected_revision, "changes": changes},
+            "success",
+        )
+        await session.commit()
+    warnings = [*plan.warnings]
+    warnings += [
+        f"{issue.label}: контраст {issue.ratio}:1, нужно {issue.required}:1" for issue in issues
+    ]
+    return {
+        "request_id": str(request_id),
+        "proposal_id": str(proposal.id),
+        "confirmation_token": confirmation_token,
+        "expires_at": expires_at.isoformat(),
+        "summary": plan.summary,
+        "changes": changes,
+        "warnings": warnings,
+        "requires_user_confirmation": True,
+    }
+
+
+async def apply_design_change(
+    actor: McpActor,
+    confirmation_token: str,
+    expected_revision: str,
+) -> dict[str, object]:
+    actor.require("design:write")
+    now = datetime.now(UTC)
+    async with SessionFactory() as session:
+        await _authorize(session, actor)
+        row = (
+            await session.execute(
+                select(McpConfirmation, MenuChangeProposal)
+                .join(MenuChangeProposal, MenuChangeProposal.id == McpConfirmation.proposal_id)
+                .where(
+                    McpConfirmation.token_hash == hash_secret(confirmation_token),
+                    MenuChangeProposal.restaurant_id == actor.restaurant_id,
+                    MenuChangeProposal.created_by_id == actor.user_id,
+                )
+                .with_for_update()
+            )
+        ).one_or_none()
+        if row is None:
+            raise PermissionError("Подтверждение недействительно")
+        confirmation, proposal = row
+        if proposal.plan.get("kind") != "design":
+            raise PermissionError("Это предложение по меню: используйте apply_menu_change")
+        if confirmation.used_at is not None and proposal.result_revision:
+            return {
+                "proposal_id": str(proposal.id),
+                "revision": proposal.result_revision,
+                "already_applied": True,
+            }
+        if confirmation.expires_at <= now or proposal.expires_at <= now:
+            proposal.status = "expired"
+            await session.commit()
+            raise ValueError("Подтверждение устарело")
+        if proposal.expected_revision != expected_revision:
+            raise ValueError("Предложение создано для другой ревизии")
+        site = await get_site(session, actor.restaurant_id)
+        raw = site.draft_config if site else default_site_config()
+        if site_revision(raw) != expected_revision:
+            raise ValueError("Оформление изменилось: создайте новое предложение")
+        changes = {
+            key: value for key, value in proposal.plan["changes"].items() if key in DESIGN_FIELDS
+        }
+        merged = _merged_config(raw, changes).model_dump(mode="json")
+        if site is None:
+            site = RestaurantSite(
+                restaurant_id=actor.restaurant_id,
+                draft_config=merged,
+                published_version=0,
+            )
+            session.add(site)
+        else:
+            site.draft_config = merged
+        site.updated_at = now
+        revision = site_revision(merged)
+        confirmation.used_at = now
+        proposal.status = "applied"
+        proposal.applied_at = now
+        proposal.result_revision = revision
+        request_id = _audit(
+            session,
+            actor,
+            "apply_design_change",
+            {"proposal_id": str(proposal.id), "revision": expected_revision},
+            "success",
+        )
+        await session.commit()
+    return {
+        "request_id": str(request_id),
+        "proposal_id": str(proposal.id),
+        "revision": revision,
+        "already_applied": False,
+        "published": False,
+        "note": "Изменения в черновике оформления. Опубликует человек в кабинете.",
     }

@@ -1,4 +1,4 @@
-// Signed-in extras over a public menu.
+// Signed-in extras over a public menu (P1-DOC-4 «Переключение режимов», P1-DOC-5 «Недавние»).
 // Kept outside the guest menu (features/guest plugs them in via session.ts and GuestMenu.tsx):
 // the menu itself never waits for login and never depends on them.
 import { useQuery, useQueryClient } from "@tanstack/react-query";

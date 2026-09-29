@@ -1,4 +1,4 @@
-"""«Синица проверила меню»: deterministic checks of a draft.
+"""«Синица проверила меню»: deterministic checks of a draft (P1-DOC-8 «Проверка меню»).
 
 The findings come from code only; the AI may later add a short summary and wording tips,
 never new findings.

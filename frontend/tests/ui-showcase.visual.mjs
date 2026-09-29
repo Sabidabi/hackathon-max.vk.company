@@ -1,4 +1,4 @@
-// Dev showcase `/__ui` on the Vite dev server: no horizontal scroll at
+// Dev showcase `/__ui` (P1-TASK-6) on the Vite dev server: no horizontal scroll at
 // 320/390/1280, touch targets ≥ 44×44, visible focus, reduced motion, Sheet focus handling.
 // Screenshots go to test-results/. Run: `BROWSER_CHANNEL=msedge npm run test:ui`.
 import assert from "node:assert/strict";
@@ -143,7 +143,7 @@ try {
   assert.equal(motion.shake, "0px");
   assert.equal(motion.skeleton, "none");
   assert.equal(motion.shimmer, "none", "Skeleton shimmer stops with reduced motion");
-  // the spec «Уменьшение движения»: the sheet appears with no transform animation, and a
+  // P1-DOC-18 «Уменьшение движения»: the sheet appears with no transform animation, and a
   // FLIP/fly/roll action moves nothing but still changes the result.
   await page.getByRole("button", { name: "Открыть панель" }).click();
   const reducedSheet = page.getByRole("dialog", { name: "Латте" });
@@ -173,7 +173,7 @@ try {
   }
   await context.close();
 
-  // Video of the reference animations.
+  // Video of the reference animations (P1-DOC-18 «Проверка моушна на ревью»).
   const videoDir = path.join(output, "motion-video");
   fs.rmSync(videoDir, { recursive: true, force: true });
   const videoContext = await browser.newContext({ viewport: { width: 390, height: 844 }, recordVideo: { dir: videoDir, size: { width: 390, height: 844 } } });
@@ -188,7 +188,7 @@ try {
   await videoPage.waitForTimeout(700);
   await videoPage.getByRole("button", { name: "Отменить" }).click();
   await videoPage.waitForTimeout(600);
-  // The stop-list toast stays ≥ 5 s so «Отменить» can be pressed.
+  // The stop-list toast stays ≥ 5 s so «Отменить» can be pressed (P1-DOC-17).
   await videoPage.getByRole("switch", { name: "Круассан — наличие" }).click();
   await videoPage.getByRole("button", { name: "Отменить" }).waitFor();
   await videoPage.waitForTimeout(5_000);

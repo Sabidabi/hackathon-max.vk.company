@@ -1,5 +1,5 @@
 """One gate for every AI call: availability, daily limits, cache, timeout, validation and
-per-venue accounting.
+per-venue accounting (P1-DOC-8 «Лимиты и стоимость», «Недоступность ИИ не ломает продукт»).
 """
 
 import asyncio
@@ -31,7 +31,7 @@ from app.models import AiUsage
 logger = logging.getLogger(__name__)
 
 Feature = Literal["guest_ask", "item_description", "menu_check", "import_structure", "menu_plan",
-           "weekly_summary", "import_descriptions"]
+           "weekly_summary", "import_descriptions", "design_plan"]
 GUEST_FEATURES = ("guest_ask",)
 
 

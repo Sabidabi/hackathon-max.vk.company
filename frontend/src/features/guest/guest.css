@@ -1,5 +1,5 @@
 /*
- * Guest menu 2.0. Colours come only from `--sinitsa-*` variables, which the menu
+ * Guest menu 2.0 (P1-PLAN-6). Colours come only from `--sinitsa-*` variables, which the menu
  * root redefines with the venue theme (theme.ts) — so the design components (Sheet, Chip,
  * Button, EmptyState) pick up the venue look without their own overrides. Classes are
  * prefixed `g-` and never style bare elements: the legacy global CSS still loads next to it.
@@ -125,8 +125,9 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  /* Opaque: the section titles must never show through the category rail. */
   background: var(--sinitsa-canvas);
-  box-shadow: 0 1px 0 var(--sinitsa-line);
+  box-shadow: 0 1px 0 var(--sinitsa-line), 0 10px 14px -12px color-mix(in srgb, var(--sinitsa-ink) 35%, transparent);
 }
 .g-sticky:empty { display: none; }
 .g-tabs {
@@ -154,15 +155,26 @@
 .g-tab[aria-selected="true"] { border-bottom-color: var(--sinitsa-blue); color: var(--sinitsa-ink); }
 .g-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--sinitsa-blue); }
 .g-rail {
+  position: relative;
   display: flex;
+  align-items: center;
   gap: var(--sinitsa-space-2);
   width: min(100%, var(--g-max));
   margin: 0 auto;
-  padding: var(--sinitsa-space-2) var(--g-gutter);
+  /* Room above and below so chip borders and the sliding indicator are never clipped. */
+  padding: 10px var(--g-gutter) 12px;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   scroll-padding-inline: var(--g-gutter);
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  /* Soft edges tell that the rail scrolls. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--g-gutter), #000 calc(100% - var(--g-gutter)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--g-gutter), #000 calc(100% - var(--g-gutter)), transparent 100%);
 }
+.g-rail > .s-chip { flex: none; scroll-snap-align: center; white-space: nowrap; }
 .g-rail::-webkit-scrollbar { display: none; }
 
 /* --- Sections and cards ------------------------------------------------------------------ */
@@ -180,20 +192,8 @@
 
 .g-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sinitsa-space-3); }
 @media (min-width: 720px) { .g-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sinitsa-space-4); } }
-/* Items without photos read as a printed menu: one surface per section, rows split by hairlines. */
-.g-rows {
-  display: grid;
-  border: 1px solid var(--sinitsa-line);
-  border-radius: var(--sinitsa-radius-card);
-  background: var(--sinitsa-surface);
-  overflow: hidden;
-}
-.g-rows .g-card--row { margin-bottom: -1px; border: 0; border-radius: 0; box-shadow: inset 0 -1px 0 var(--sinitsa-line); }
-@media (min-width: 720px) {
-  .g-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .g-rows .g-card--row:nth-child(odd) { box-shadow: inset 0 -1px 0 var(--sinitsa-line), inset -1px 0 0 var(--sinitsa-line); }
-}
-
+/* One position, one tile: a text-only tile takes the full row, never glued to its neighbour. */
+.g-grid > .g-card--row { grid-column: 1 / -1; }
 .g-card {
   position: relative;
   min-width: 0;
@@ -220,7 +220,7 @@
 .g-card__media img { width: 100%; height: 100%; object-fit: cover; }
 .g-card__body { display: grid; align-content: start; gap: var(--sinitsa-space-1); min-width: 0; padding: var(--sinitsa-space-3); }
 .g-card--photo:not(.g-card--off) .g-card__meta { min-height: var(--sinitsa-touch); padding-right: calc(var(--sinitsa-touch) + var(--sinitsa-space-1)); }
-.g-card--row .g-card__body { flex: 1 1 auto; padding: var(--sinitsa-space-3) calc(var(--sinitsa-touch) + var(--sinitsa-space-6)) var(--sinitsa-space-3) var(--sinitsa-space-4); }
+.g-card--row .g-card__body { flex: 1 1 auto; min-height: 76px; padding: var(--sinitsa-space-4) calc(var(--sinitsa-touch) + var(--sinitsa-space-6)) var(--sinitsa-space-4) var(--sinitsa-space-4); }
 .g-card__name { font-size: var(--sinitsa-text-body); font-weight: 700; line-height: 1.3; overflow-wrap: break-word; hyphens: auto; }
 .g-card__name mark { padding: 0 1px; border-radius: 3px; background: var(--sinitsa-sky); color: inherit; }
 .g-card__fav { display: inline-block; margin-left: 6px; vertical-align: -1px; color: var(--guest-accent, var(--sinitsa-blue)); }
@@ -487,7 +487,7 @@ label.g-option:has(input:disabled) { color: var(--sinitsa-muted); cursor: not-al
   .g-choice-bar__button, .g-choice-bar__count { animation: none; }
 }
 
-/* --- Motion: transform/opacity only; tokens with fallbacks ------------ */
+/* --- Motion (P1-DOC-18, «Гость»): transform/opacity only; tokens with fallbacks ------------ */
 .g-root--enter { animation: g-fade 120ms linear; }
 @keyframes g-fade { from { opacity: 0; } }
 
@@ -521,7 +521,7 @@ label.g-option:has(input:disabled) { color: var(--sinitsa-muted); cursor: not-al
 .g-size--on { background: transparent; }
 .g-options { background: var(--sinitsa-surface); }
 .g-option { background: transparent; }
-/* The radio dot changes its border at once: only transform/opacity are animated. */
+/* The radio dot changes its border at once: only transform/opacity are animated (P1-DOC-18). */
 label.g-option::after { transition: none; }
 
 /* Number roll: changed digits slide in from below. */
@@ -550,7 +550,7 @@ label.g-option::after { transition: none; }
   .g-card--row .g-card__add, .g-card--row .g-card__add:active { transform: translateY(-50%); }
 }
 
-/* --- Coffee-app patterns: the drink is the hero ------------ */
+/* --- Coffee-app patterns (P1-DOC-17 [decision] 29.09): the drink is the hero ------------ */
 .g-card__media { aspect-ratio: 1 / 1; }
 .g-card--photo .g-card__name { font-size: 17px; }
 .g-card--photo .g-card__price { font-size: 18px; white-space: nowrap; }
@@ -571,7 +571,7 @@ label.g-option::after { transition: none; }
   .g-item-footer__add.s-button { font-size: 16px; }
 }
 
-/* --- Admin «Редактировать» ------------- */
+/* --- Admin «Редактировать» (P1-DOC-4, shared hook from features/auth/guestMode) ------------- */
 .g-edit-fab .guest-edit-fab { z-index: 16; }
 .g-edit-fab--above-bar .guest-edit-fab { bottom: calc(88px + var(--sinitsa-safe-bottom)); }
 .g-root:has(.g-edit-fab) .g-footer:not(.g-footer--with-bar) { padding-bottom: calc(88px + var(--sinitsa-safe-bottom)); }
@@ -605,7 +605,7 @@ label.g-option::after { transition: none; }
   opacity: 0.8;
 }
 
-/* «Синица, что взять?»: entry pill under the search and its sheet, in the venue theme. */
+/* «Синица, что взять?» (P1-TASK-41): entry pill under the search and its sheet, in the venue theme. */
 .g-ask-entry {
   display: inline-flex;
   align-items: center;
@@ -731,7 +731,7 @@ label.g-option::after { transition: none; }
 .g-root .g-cover__title { font-size: clamp(24px, 6.4vw, 34px); font-weight: 700; }
 .g-cover__logo { width: 52px; height: 52px; border-radius: var(--sinitsa-radius-card); box-shadow: 0 0 0 2px var(--sinitsa-surface), var(--sinitsa-shadow-raised); }
 
-.g-sticky { backdrop-filter: saturate(1.4) blur(10px); background: color-mix(in srgb, var(--sinitsa-canvas) 92%, transparent); }
+
 
 .g-root .g-section__head h2 { font-size: 22px; font-weight: 700; }
 .g-section__head span { min-width: 24px; padding: 1px 8px; border-radius: var(--sinitsa-radius-pill); background: var(--sinitsa-sky); color: var(--sinitsa-muted); text-align: center; font-variant-numeric: tabular-nums; }
@@ -745,7 +745,6 @@ label.g-option::after { transition: none; }
 .g-card--photo .g-card__name { display: -webkit-box; align-self: start; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow-wrap: anywhere; }
 .g-card--row .g-card__name { overflow-wrap: anywhere; }
 .g-card__price { letter-spacing: -0.01em; }
-.g-rows { border-radius: 22px; }
 
 /* Add control: «+» when the position is not in «Мой выбор», «✓» (with the total quantity from 2) when it is. */
 .g-card__add { position: absolute; background: var(--sinitsa-blue); box-shadow: 0 4px 12px color-mix(in srgb, var(--sinitsa-blue) 35%, transparent); }
@@ -785,3 +784,35 @@ label.g-option::after { transition: none; }
   .g-card__count, .g-choice-line--leaving { animation: none; }
   .g-choice-line--leaving { opacity: 0; }
 }
+
+/* Text-only tile: its own surface, the same depth as a photo tile, an accent bar in the theme colour. */
+.g-card--row { border-color: transparent; border-radius: 20px; box-shadow: 0 1px 2px color-mix(in srgb, var(--sinitsa-ink) 8%, transparent), 0 6px 18px color-mix(in srgb, var(--sinitsa-ink) 5%, transparent); }
+.g-card--row::before { content: ""; position: absolute; inset: 14px auto 14px 0; width: 4px; border-radius: 0 4px 4px 0; background: var(--guest-accent, var(--sinitsa-blue)); opacity: 0.85; }
+.g-card--row.g-card--off::before { background: var(--sinitsa-line-strong); }
+.g-card--row .g-card__meta small { margin-top: 2px; }
+.g-card--photo .g-card__meta { align-items: baseline; }
+
+/* Quantity stepper on a tile: «−  N  +». */
+.g-stepper {
+  position: absolute;
+  right: var(--sinitsa-space-2);
+  bottom: var(--sinitsa-space-2);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: var(--sinitsa-touch);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-surface);
+  box-shadow: inset 0 0 0 2px var(--sinitsa-blue), 0 4px 12px color-mix(in srgb, var(--sinitsa-blue) 25%, transparent);
+  animation: g-count-in var(--motion-base, 240ms) var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+}
+.g-card--row .g-stepper { top: 50%; bottom: auto; right: var(--sinitsa-space-3); transform: translateY(-50%); }
+.g-stepper .g-stepper__btn { min-height: 0; min-width: 0; box-shadow: none; display: grid; place-items: center; width: var(--sinitsa-touch); height: var(--sinitsa-touch); padding: 0; border: 0; border-radius: var(--sinitsa-radius-pill); background: transparent; color: var(--sinitsa-blue); cursor: pointer; }
+.g-stepper .g-stepper__btn:active { background: var(--sinitsa-sky); }
+.g-stepper .g-stepper__btn:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.g-stepper__qty { min-width: 22px; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+/* With a stepper the price stays on its own line and the stepper sits below it. */
+.g-card--photo:has(.g-stepper) .g-card__meta { min-height: 0; padding-right: 0; }
+.g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: calc(var(--sinitsa-touch) + var(--sinitsa-space-3)); }
+.g-card--row:has(.g-stepper) .g-card__body { padding-right: calc(var(--sinitsa-touch) * 2 + 22px + var(--sinitsa-space-6)); }
+@media (prefers-reduced-motion: reduce) { .g-stepper { animation: none; } }

@@ -1,4 +1,4 @@
-/* «Добавить с ИИ». */
+/* «Добавить с ИИ» (P1-TASK-43: moved from admin.css onto the design tokens). */
 .ai-composer { display: grid; gap: var(--sinitsa-space-3); }
 .ai-composer .cabinet-muted { margin: 0; }
 .ai-composer__notice {

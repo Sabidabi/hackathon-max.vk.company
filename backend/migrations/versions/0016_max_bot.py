@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""MAX bot: dialog consent, bot outbox, item subscriptions, admin notification
+"""MAX bot (P1-PLAN-13): dialog consent, bot outbox, item subscriptions, admin notification
 settings, demand signals, support tickets and guest-to-point conversations.
 
 Number 0016 is reserved for the bot branch (0015 is left to the cloud session); on merge

@@ -13,7 +13,7 @@ export function GuestItemDialog({ item, publicId, onClose, editPath }: {
   item: MenuItem;
   publicId?: string;
   onClose: () => void;
-  /** Cabinet link for an admin of this venue. */
+  /** Cabinet link for an admin of this venue (P1-DOC-4 «Переключение режимов»). */
   editPath?: string;
 }) {
   const config = item.configuration ?? emptyConfiguration();

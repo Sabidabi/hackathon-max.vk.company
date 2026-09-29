@@ -1,4 +1,4 @@
-// Safe wrappers over the MAX Bridge.
+// Safe wrappers over the MAX Bridge (P1-DOC-12 «Используемые возможности Bridge»).
 // Contract: no function here throws or rejects — inside MAX they call the Bridge, and when a
 // method is missing, fails, or the app runs in a browser they take the documented fallback.
 

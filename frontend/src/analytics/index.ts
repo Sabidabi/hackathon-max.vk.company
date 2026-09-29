@@ -1,4 +1,4 @@
-// Product event tracker.
+// Product event tracker (P1-TASK-34, P1-DOC-10 «Событийная модель»).
 // Queue → batches (every 5 s or 20 events) → POST /api/v1/events; on hide the rest leaves with
 // `fetch keepalive`. A session_id per launch, a client_event_id per event (the server drops
 // repeats), platform from the MAX Bridge. Best effort: a network failure never reaches the UI.

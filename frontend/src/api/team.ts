@@ -1,4 +1,4 @@
-// Venue admins.
+// Venue admins (P1-DOC-4 «Много администраторов», «Приглашение ссылкой»).
 // One equal role `admin`; `is_creator` only protects the creator from removal.
 
 export interface TeamMember {
@@ -71,5 +71,5 @@ export const removeMember = (pointId: string, userId: string) => request<void>(`
 /** 409 for the last admin and for the creator: the detail explains why. */
 export const leaveVenue = (pointId: string) => request<void>(`/restaurants/${pointId}/leave`, "POST");
 export const previewInvite = (token: string) => request<InvitePreview>(`/invites/${token}/preview`);
-/** Token in the body, not in the URL path: it stays out of access logs. */
+/** Token in the body, not in the URL path: it stays out of access logs (P1-DOC-4 [decision]). */
 export const acceptInvite = (token: string) => request<TeamMember>("/invites/accept", "POST", { token });

@@ -1,4 +1,4 @@
-"""Support chat in the bot, against a mock Bot API — no real messages."""
+"""Support chat in the bot (P1-TASK-63), against a mock Bot API — no real messages."""
 
 import os
 import uuid

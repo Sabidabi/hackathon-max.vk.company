@@ -1,4 +1,4 @@
-// Analytics against the built app and the in-memory fixture. Browser fixture
+// Analytics (P1-TASK-34/36) against the built app and the in-memory fixture. Browser fixture
 // only: `/api/v1/events` and the report are intercepted, so this proves batching, the absence of
 // personal data and the screen states — not ingestion inside a real MAX client.
 const { chromium } = require("playwright");

@@ -1,6 +1,6 @@
 """Menu contents, drafts and publication; per-point routes kept for the current cabinet.
 
-Menus belong to the venue library. The per-point routes under
+Menus belong to the venue library (P1-DOC-15). The per-point routes under
 ``/restaurants/{id}/menu`` work with the point's *primary* menu — its first assignment —
 so the existing cabinet keeps working until the frontend moves to the library API.
 """
@@ -531,7 +531,7 @@ def item_has_price(item: MenuItemPayload) -> bool:
 
 
 def publish_problems(sections: list[MenuSectionResponse]) -> list[PublishProblem]:
-    """Everything that blocks publication.
+    """Everything that blocks publication (P1-DOC-7 «Публикация с проверкой»).
 
     Hidden positions (``is_available=False``) never block: the guest does not see them.
     """

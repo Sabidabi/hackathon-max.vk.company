@@ -1,4 +1,4 @@
-"""Guest subscriptions: consent, draft silence, quiet hours, weekly digest,
+"""Guest subscriptions (P1-TASK-46): consent, draft silence, quiet hours, weekly digest,
 back-in-stock and at-most-once delivery across a worker restart. Mock Bot API only."""
 
 import os

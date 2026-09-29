@@ -1,4 +1,4 @@
-"""Product analytics API.
+"""Product analytics API (P1-DOC-10).
 
 ``POST /events`` is public: a guest of a published point may send events without signing in;
 a MAX session, when present, only attaches ``user_id``. Admin events need a venue admin.

@@ -1,7 +1,7 @@
 """Version history of a library menu: list, «Что изменилось» and «Вернуть эту версию».
 
 Restore only rewrites the draft (with a revision check); the history is never changed and
-a restored version reaches guests only after an explicit publication.
+a restored version reaches guests only after an explicit publication (P1-DOC-15).
 """
 
 import uuid

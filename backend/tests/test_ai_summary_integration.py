@@ -1,4 +1,4 @@
-"""Weekly AI summary «Синица подводит неделю» against the API and PostgreSQL."""
+"""Weekly AI summary «Синица подводит неделю» (P1-TASK-44) against the API and PostgreSQL."""
 
 import os
 import uuid

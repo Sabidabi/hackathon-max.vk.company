@@ -1,5 +1,5 @@
 """Menu library of a venue: menus, their drafts, copies and publication to the assigned
-points. Publishing requires the admin to confirm exactly the points that will
+points (P1-DOC-15). Publishing requires the admin to confirm exactly the points that will
 show the new version; a stale draft revision answers 409 and nothing is lost.
 """
 

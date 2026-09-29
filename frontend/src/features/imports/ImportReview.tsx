@@ -9,7 +9,7 @@ import { showToast } from "../../design/toast";
 import { haptics } from "../../max";
 import { parsePrice } from "../menu/PriceInput";
 
-/** Below this the field is highlighted «Проверьте». */
+/** Below this the field is highlighted «Проверьте» (P1-DOC-8 «Импорт из фото»). */
 const DOUBT = 0.7;
 
 const emptyItem = (): ReviewItem => ({
@@ -96,7 +96,7 @@ function ReviewPrice({ label, minor, missing, doubt, emptyHint, onChange }: {
 }
 
 /**
- * Review of a recognised menu: doubtful fields are highlighted, everything can be
+ * Review of a recognised menu (P1-TASK-43): doubtful fields are highlighted, everything can be
  * fixed or deleted, «Применить в черновик» replaces the draft and never publishes. Positions
  * without a price go to the draft too — publication stays blocked until a price is entered;
  * a size without a price becomes unavailable (backend imports.py), the position still publishes.
@@ -215,6 +215,9 @@ export function ImportReview({ restaurantId, importId, onClose }: {
           {sections.some((section) => section.items.some((item) => item.description_source === "ai")) && (
             <p className="review-note" role="note"><Sparkles size={14} aria-hidden="true" /> Описания без текста в меню предложил ИИ — проверьте</p>
           )}
+          {sections.some((section) => section.items.some((item) => item.description_source === "auto")) && (
+            <p className="review-note" role="note">Где ИИ не помог, мы написали короткое описание по названию и разделу — поправьте, если нужно</p>
+          )}
           {review.data.unparsed_lines.length > 0 && (
             <details className="review-unparsed">
               <summary>Не распределили строк: {review.data.unparsed_lines.length}</summary>
@@ -272,6 +275,7 @@ export function ImportReview({ restaurantId, importId, onClose }: {
                         <div className="review-item__desc-row">
                           <TextInput label="Описание" maxLength={500} value={item.description} onChange={(event) => updateItem(sectionIndex, itemIndex, { description: event.target.value || null, description_source: event.target.value ? item.description_source ?? null : null })} />
                           {item.description_source === "ai" && <span className="review-badge review-badge--ai" title="Описание предложил ИИ — проверьте"><Sparkles size={14} aria-hidden="true" />ИИ</span>}
+                          {item.description_source === "auto" && <span className="review-badge" title="Короткое описание по названию и разделу — проверьте">Авто</span>}
                           <IconButton aria-label={`Убрать описание ${item.name}`} icon={<X size={20} />} onClick={() => updateItem(sectionIndex, itemIndex, { description: null, description_source: null })} />
                         </div>
                       )}

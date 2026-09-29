@@ -1,0 +1,219 @@
+/* ==========================================================================================
+   Soft menu (v3): tile constructor. Every value below is driven by data attributes on
+   `.g-root` (see `tileAttributes` in theme.ts): layout, card style, radius, photo ratio,
+   add-button kind, heading font, description/weight visibility.
+   ========================================================================================== */
+.g-root,
+.s-sheet {
+  --g-accent: var(--sinitsa-blue);
+  --g-r: 22px;
+  --g-ratio: 1 / 1;
+  --g-tint: color-mix(in srgb, var(--sinitsa-blue) 11%, var(--sinitsa-surface));
+  --g-tint-strong: color-mix(in srgb, var(--sinitsa-blue) 18%, var(--sinitsa-surface));
+  --g-shadow: 0 1px 2px color-mix(in srgb, var(--sinitsa-ink) 5%, transparent), 0 10px 24px -10px color-mix(in srgb, var(--sinitsa-ink) 16%, transparent);
+}
+.g-root[data-radius="sharp"] { --g-r: 10px; }
+.g-root[data-radius="round"] { --g-r: 30px; }
+.g-root[data-ratio="landscape"] { --g-ratio: 4 / 3; }
+.g-root[data-ratio="portrait"] { --g-ratio: 4 / 5; }
+/* Fonts: system stacks only (no network); the menu owner picks one for titles and one for text. */
+.g-root { --g-font-body: Arial, Helvetica, sans-serif; --g-font-head: var(--g-font-body); }
+.g-root[data-font="humanist"] { --g-font-body: "Avenir Next", "Segoe UI", "Trebuchet MS", Verdana, sans-serif; }
+.g-root[data-font="serif"] { --g-font-body: Georgia, "Times New Roman", serif; }
+.g-root[data-heading="sans"] { --g-font-head: Arial, Helvetica, sans-serif; }
+.g-root[data-heading="humanist"] { --g-font-head: "Avenir Next", "Segoe UI", "Trebuchet MS", Verdana, sans-serif; }
+.g-root[data-heading="rounded"] { --g-font-head: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Nunito", "Segoe UI", sans-serif; }
+.g-root[data-heading="serif"] { --g-font-head: Georgia, "Times New Roman", serif; }
+.g-root[data-heading="elegant"] { --g-font-head: "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", Georgia, serif; }
+.g-root[data-heading="mono"] { --g-font-head: "Courier New", ui-monospace, Menlo, monospace; }
+.g-root { font-family: var(--g-font-body); }
+.g-root :is(.g-cover__title, .g-section__head h2, .g-card__name, .g-card__price, .g-tab, .g-rail .s-chip, .g-card__mono, .g-card__add-label) { font-family: var(--g-font-head); }
+.g-root[data-heading="mono"] :is(.g-cover__title, .g-section__head h2, .g-card__name) { letter-spacing: -0.03em; }
+.g-root[data-heading="elegant"] :is(.g-cover__title, .g-section__head h2) { font-weight: 700; letter-spacing: 0; }
+
+/* --- Section titles ------------------------------------------------------------------- */
+.g-root .g-main { gap: 34px; padding-top: 22px; }
+.g-root .g-section { gap: 14px; }
+.g-root .g-section__head { align-items: center; }
+.g-root .g-section__head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.g-root .g-section__head span { min-width: 28px; padding: 2px 10px; background: var(--g-tint); color: var(--g-accent); font-weight: 700; }
+
+/* --- Category rail: soft chips --------------------------------------------------------- */
+.g-root .g-rail { gap: 8px; }
+.g-root .g-rail .s-chip {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--g-tint);
+  color: var(--sinitsa-ink);
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.g-root .g-rail .s-chip:hover:not(.s-chip--selected) { background: var(--g-tint-strong); }
+.g-root .g-rail .s-chip--selected { background: var(--g-accent); color: var(--sinitsa-on-blue); box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--g-accent) 70%, transparent); }
+.g-root .g-tabs { gap: 4px; }
+.g-root .g-tab { font-size: 16px; }
+
+/* --- Tiles: one surface per position ---------------------------------------------------- */
+.g-root .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+@media (min-width: 720px) { .g-root .g-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+.g-root .g-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--g-r);
+  background: var(--sinitsa-surface);
+  box-shadow: var(--g-shadow);
+  transition: transform var(--motion-fast, 140ms) var(--ease-out, ease), box-shadow var(--motion-base, 240ms) var(--ease-out, ease);
+}
+.g-root .g-card:active { transform: scale(0.985); }
+.g-root[data-card="outline"] .g-card { box-shadow: none; border: 1.5px solid var(--sinitsa-line-strong); }
+.g-root[data-card="flat"] .g-card { box-shadow: none; background: color-mix(in srgb, var(--sinitsa-blue) 6%, var(--sinitsa-surface)); }
+.g-root .g-card--off { opacity: 1; background: color-mix(in srgb, var(--sinitsa-surface) 60%, var(--sinitsa-canvas)); box-shadow: none; }
+.g-root .g-card--off .g-card__media img { filter: grayscale(1); opacity: 0.5; }
+.g-root .g-card--off .g-card__mono { opacity: 0.5; }
+.g-root .g-card--row::before, .g-root .g-card--photo::before { content: none; }
+
+.g-root .g-card__open { flex-direction: column; width: 100%; min-height: 0; }
+.g-root .g-card__media { display: block; margin: 8px 8px 0; aspect-ratio: var(--g-ratio); border-radius: calc(var(--g-r) - 8px); overflow: hidden; background: var(--sinitsa-skeleton); }
+.g-root .g-card__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.g-root .g-card__body { display: grid; grid-template-rows: none; align-content: start; gap: 4px; padding: 12px 16px 16px; }
+.g-root .g-card__name { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 16px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.g-root .g-card__desc { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--sinitsa-muted); font-size: 13px; line-height: 1.35; }
+.g-root[data-desc="off"] .g-card__desc, .g-root[data-weight="off"] .g-card__weight { display: none; }
+.g-root .g-card__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-height: 44px; margin-top: 6px; padding-right: 56px; }
+.g-root[data-add="pill"] .g-card__meta { padding-right: 0; }
+.g-root .g-card__price { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.g-root .g-card__meta small { font-size: 12px; }
+
+/* A position without a photo: a soft medallion with the first letter. */
+.g-root .g-card__mono {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  margin: 16px 0 0 16px;
+  border-radius: calc(var(--g-r) - 8px);
+  background: linear-gradient(140deg, var(--g-tint-strong), var(--g-tint));
+  color: var(--g-accent);
+  font-size: 24px;
+  font-weight: 800;
+}
+.g-root .g-card--row .g-card__open { flex-direction: row; align-items: flex-start; }
+.g-root .g-card--row .g-card__body { flex: 1 1 auto; min-width: 0; padding: 14px calc(14px + 44px + 10px) 14px 14px; }
+.g-root .g-card--row .g-card__meta { min-height: 0; margin-top: 2px; padding-right: 0; }
+.g-root .g-grid > .g-card--row { grid-column: 1 / -1; }
+
+/* --- Add button: soft tonal circle / pill ------------------------------------------------ */
+.g-root .g-card__add {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--g-tint-strong);
+  color: var(--g-accent);
+  box-shadow: none;
+  transform: none;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background var(--motion-fast, 140ms) ease, transform var(--motion-fast, 140ms) ease, color var(--motion-fast, 140ms) ease;
+}
+.g-root .g-card__add::before { content: ""; position: absolute; inset: -4px; border-radius: inherit; }
+.g-root .g-card__add:hover { background: color-mix(in srgb, var(--g-accent) 26%, var(--sinitsa-surface)); }
+.g-root .g-card__add:active { transform: scale(0.92); }
+.g-root .g-card__add[data-state="in"] { background: var(--g-accent); color: var(--sinitsa-on-blue); box-shadow: none; }
+.g-root .g-card__add-label { display: none; }
+.g-root[data-add="pill"] .g-card__add { width: auto; padding: 0 16px 0 12px; }
+.g-root[data-add="pill"] .g-card__add-label { display: inline; }
+.g-root .g-card--row .g-card__add { top: 50%; bottom: auto; right: 14px; transform: translateY(-50%); }
+.g-root .g-card--row .g-card__add:active { transform: translateY(-50%) scale(0.92); }
+.g-root .g-card__count { top: -6px; right: -6px; background: var(--sinitsa-ink); color: var(--sinitsa-surface); box-shadow: 0 0 0 2px var(--sinitsa-surface); }
+
+/* --- Stepper: «−  N  +» in the same soft tone --------------------------------------------- */
+.g-root .g-stepper {
+  right: 12px;
+  bottom: 12px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--g-tint-strong);
+  box-shadow: none;
+}
+.g-root .g-stepper .g-stepper__btn { width: 44px; height: 44px; color: var(--g-accent); }
+.g-root .g-stepper .g-stepper__btn:active { background: color-mix(in srgb, var(--g-accent) 22%, transparent); }
+.g-root .g-stepper__qty { min-width: 20px; color: var(--sinitsa-ink); font-size: 16px; }
+.g-root .g-card--row .g-stepper { top: 50%; bottom: auto; right: 14px; transform: translateY(-50%); }
+.g-root .g-card--photo:has(.g-stepper) .g-card__meta { min-height: 0; padding-right: 0; }
+.g-root .g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: 64px; }
+.g-root .g-card--row:has(.g-stepper) .g-card__body { padding-right: calc(14px + 44px * 2 + 22px + 10px); }
+
+/* --- Layout: list — one wide tile per row, photo on the left (like files in a folder) ------- */
+.g-root[data-layout="list"] .g-grid { grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .g-root[data-layout="list"] .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.g-root[data-layout="list"] .g-card__open { flex-direction: row; align-items: stretch; }
+.g-root[data-layout="list"] .g-card__media { flex: none; width: 112px; height: 112px; margin: 10px 0 10px 10px; aspect-ratio: auto; }
+.g-root[data-layout="list"] .g-card__mono { width: 112px; height: 112px; margin: 10px 0 10px 10px; font-size: 34px; }
+.g-root[data-layout="list"] .g-card__body { flex: 1 1 auto; min-width: 0; align-content: center; padding: 12px calc(14px + 44px + 8px) 12px 14px; }
+.g-root[data-layout="list"] .g-card__meta { min-height: 0; padding-right: 0; margin-top: 4px; }
+.g-root[data-layout="list"] .g-card__add, .g-root[data-layout="list"] .g-stepper { top: auto; bottom: 14px; right: 14px; transform: none; }
+.g-root[data-layout="list"][data-add="pill"] .g-card__body { padding-right: 14px; padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--photo:has(.g-stepper) .g-card__body { padding-right: 14px; padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--row:has(.g-stepper) .g-card__body { padding-right: 14px; padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--row .g-card__add:active { transform: scale(0.92); }
+
+/* --- Layout: large — one big photo tile per row ----------------------------------------------- */
+.g-root[data-layout="large"] .g-grid { grid-template-columns: 1fr; gap: 18px; }
+@media (min-width: 900px) { .g-root[data-layout="large"] .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.g-root[data-layout="large"] .g-card__media { aspect-ratio: 16 / 11; }
+.g-root[data-layout="large"] .g-card__body { padding: 14px 18px 18px; }
+.g-root[data-layout="large"] .g-card__name { font-size: 19px; }
+.g-root[data-layout="large"] .g-card__price { font-size: 19px; }
+.g-root[data-layout="large"] .g-card__desc { font-size: 14px; }
+.g-root[data-layout="large"] .g-card__add, .g-root[data-layout="large"] .g-stepper { right: 16px; bottom: 16px; }
+.g-root[data-layout="large"] .g-card--row .g-card__open { flex-direction: row; }
+
+/* Pill: the button gets its own line under the text, so it never covers the price. */
+.g-root[data-add="pill"] .g-card__meta { min-height: 0; }
+.g-root[data-add="pill"] .g-card--photo .g-card__body,
+.g-root[data-add="pill"] .g-card--row .g-card__body { padding-bottom: 64px; }
+.g-root[data-add="pill"] .g-card--row .g-card__body { padding-right: 14px; }
+.g-root[data-add="pill"] .g-card--row .g-card__add,
+.g-root[data-add="pill"] .g-card--row .g-stepper { top: auto; bottom: 12px; right: 12px; transform: none; }
+.g-root[data-add="pill"] .g-card--row .g-card__add:active { transform: scale(0.94); }
+
+@media (prefers-reduced-motion: reduce) { .g-root .g-card, .g-root .g-card__add { transition: none; } }
+
+/* Bottom of a photo tile: the price has its own line, the weight shares the line with the button,
+   so a long price ("от 190 ₽") never slips under «+» on a 320 px screen. */
+.g-root .g-card--photo .g-card__meta { display: grid; grid-template-rows: auto 44px; align-items: center; justify-items: start; gap: 0; min-height: 0; margin-top: 4px; padding-right: 0; }
+.g-root .g-card--photo .g-card__weight { padding-right: 56px; }
+.g-root .g-card--photo .g-card__body { padding-bottom: 12px; }
+.g-root .g-card--photo.g-card--off .g-card__meta { grid-template-rows: auto; }
+.g-root .g-card--photo.g-card--off .g-card__body { padding-bottom: 16px; }
+.g-root .g-card--photo:has(.g-stepper) .g-card__meta { grid-template-rows: auto 44px; }
+.g-root .g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: 12px; }
+.g-root .g-card--photo:has(.g-stepper) .g-card__weight { padding-right: 0; }
+/* Other layouts keep the flat meta line. */
+.g-root[data-layout="list"] .g-card--photo .g-card__meta,
+.g-root[data-add="pill"] .g-card--photo .g-card__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.g-root[data-layout="list"] .g-card--photo .g-card__weight,
+.g-root[data-add="pill"] .g-card--photo .g-card__weight,
+.g-root[data-layout="list"] .g-card--photo:has(.g-stepper) .g-card__weight { padding-right: 0; }
+.g-root[data-layout="list"] .g-card--photo .g-card__body { padding-bottom: 12px; }
+.g-root[data-add="pill"] .g-card--photo .g-card__body,
+.g-root[data-layout="list"][data-add="pill"] .g-card--photo .g-card__body { padding-bottom: 64px; }
+.g-root[data-layout="list"] .g-card--photo:has(.g-stepper) .g-card__body { padding-bottom: 64px; }
+.g-root[data-layout="large"] .g-card--photo .g-card__meta { grid-template-rows: auto 44px; }

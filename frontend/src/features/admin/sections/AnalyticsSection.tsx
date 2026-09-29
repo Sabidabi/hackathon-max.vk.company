@@ -62,7 +62,7 @@ const SUMMARY_NOTE: Record<Exclude<SummaryState, "ok">, string> = {
   ai_limit: "ИИ сейчас недоступен",
 };
 
-/** «Синица подводит неделю»: text only from the model, numbers stay in the report. */
+/** «Синица подводит неделю» (P1-TASK-44): text only from the model, numbers stay in the report. */
 export function WeeklySummary({ summary }: { summary: AiSummary }) {
   return (
     <div className="cabinet-card an-summary" aria-label="Синица подводит неделю">
@@ -93,7 +93,7 @@ const STEPS: Record<string, string> = {
 const number = new Intl.NumberFormat("ru-RU");
 const shortDay = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", timeZone: "UTC" });
 
-/** «Аналитика»: only real events of the period; empty periods show an action. */
+/** «Аналитика» (P1-DOC-10): only real events of the period; empty periods show an action. */
 export function AnalyticsSection({ context, onOpenMenu }: { context: CabinetContext; onOpenMenu: () => void }) {
   const [period, setPeriod] = useState<Period>("7d");
   const [scope, setScope] = useState<string | null>(null);

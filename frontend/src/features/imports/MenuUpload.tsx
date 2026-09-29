@@ -10,7 +10,6 @@ import { haptics } from "../../max";
 import { ImportReview } from "./ImportReview";
 import "./imports.css";
 
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const ACTIVE: ImportJob["status"][] = ["uploaded", "queued", "extracting", "ocr", "structuring"];
 
 const statusLabels: Record<ImportJob["status"], string> = {
@@ -38,7 +37,7 @@ function jobMeta(job: ImportJob): string {
 }
 
 /**
- * «Импорт PDF или фото»: upload → OCR/text → structuring (AI when it
+ * «Импорт PDF или фото» (P1-DOC-8, P1-TASK-43): upload → OCR/text → structuring (AI when it
  * is available, otherwise the parser) → review sheet → «Применить в черновик». Nothing is
  * published automatically.
  */
@@ -84,11 +83,6 @@ export function MenuUpload({ restaurantId }: { restaurantId: string }) {
       setSelectedFile(null);
       return;
     }
-    if (file.size > MAX_FILE_BYTES) {
-      setSelectedFile(null);
-      setSelectionError("Файл должен быть не больше 20 МБ");
-      return;
-    }
     setSelectedFile(file);
   }
 
@@ -111,7 +105,7 @@ export function MenuUpload({ restaurantId }: { restaurantId: string }) {
         <FileUp size={28} aria-hidden="true" />
         <span className="import-drop__text">
           <strong>{selectedFile ? selectedFile.name : "Выбрать PDF или фото"}</strong>
-          <small>{selectedFile ? formatFileSize(selectedFile.size) : "PDF до 30 страниц · JPG · PNG · до 20 МБ"}</small>
+          <small>{selectedFile ? formatFileSize(selectedFile.size) : "PDF до 30 страниц · JPG · PNG"}</small>
         </span>
       </label>
       {error && <p className="cabinet-error" role="alert">{error}</p>}

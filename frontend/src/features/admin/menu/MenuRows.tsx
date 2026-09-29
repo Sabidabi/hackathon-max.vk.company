@@ -73,7 +73,7 @@ export function ItemRow({ item, state, pointName, onOpen, onToggle, onActions }:
   );
 }
 
-/** «Латте 190» + Enter: the position is created and the field is ready for the next one. */
+/** «Латте 190» + Enter: the position is created and the field is ready for the next one (P1-DOC-17). */
 export function QuickAdd({ section, onAdd, disabled }: { section: MenuSection; onAdd: (name: string, price: number) => void; disabled?: boolean }) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);

@@ -112,7 +112,7 @@ class ReviewItem(BaseModel):
     weight_text: str | None = Field(default=None, max_length=100)
     description: str | None = Field(default=None, max_length=2000)
     # «document» — text from the menu, «ai» — a draft suggested by the AI (to be checked).
-    description_source: Literal["document", "ai"] | None = None
+    description_source: Literal["document", "ai", "auto"] | None = None
     source_line: str | None = Field(default=None, max_length=2000)
     source_confidence: float | None = Field(default=None, ge=0, le=1)
     # The price was not readable in the source: shown as «Проверьте цену»; with price 0 the

@@ -1,4 +1,4 @@
-/* «Аналитика»: one hue (brand blue) for magnitude, text in ink tokens. */
+/* «Аналитика» (P1-TASK-36): one hue (brand blue) for magnitude, text in ink tokens. */
 .an-head { display: flex; align-items: center; gap: var(--sinitsa-space-3); flex-wrap: wrap; }
 .an-demo {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;

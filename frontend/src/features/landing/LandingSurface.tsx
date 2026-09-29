@@ -7,7 +7,7 @@ const DEMO_PUBLIC_ID = "demo-sever";
 
 /**
  * `/` in an ordinary browser. Interim landing for the router milestone; the full
- * product landing with a live demo is the Landing epic.
+ * product landing with a live demo is the Landing epic (E3, P1-DOC-5).
  */
 export default function LandingSurface() {
   return (

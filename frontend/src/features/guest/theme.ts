@@ -1,4 +1,4 @@
-// Venue theme → design tokens. The guest menu is dressed in
+// Venue theme → design tokens (P1-DOC-3 «Темы меню заведения»). The guest menu is dressed in
 // the venue's published colours: the same `--sinitsa-*` variables the design components read
 // are redefined on the menu root (and on <body> while the menu is open, for portalled sheets),
 // never on :root — the brand palette of the rest of the app stays intact.
@@ -80,5 +80,20 @@ export function themeVariables(site: SiteConfig | null | undefined): Record<stri
     "--sinitsa-focus-ring": `0 0 0 2px ${toHex(surface)}, 0 0 0 4px ${toHex(primary)}`,
     "--guest-accent": toHex(ensureContrast(parseHex(site.icon_color) ?? primary, surface, 3)),
     "color-scheme": dark ? "dark" : "light",
+  };
+}
+
+/** «Плитки» of a published theme as data attributes on the menu root; CSS does the rest. */
+export function tileAttributes(site: SiteConfig | null | undefined): Record<string, string> {
+  return {
+    "data-layout": site?.menu_layout ?? "grid",
+    "data-card": site?.card_style ?? "soft",
+    "data-radius": site?.card_radius ?? "soft",
+    "data-ratio": site?.image_ratio ?? "square",
+    "data-add": site?.add_button ?? "round",
+    "data-heading": site?.heading_font ?? "sans",
+    "data-font": site?.body_font ?? "sans",
+    "data-desc": (site?.show_description ?? true) ? "on" : "off",
+    "data-weight": (site?.show_weight ?? true) ? "on" : "off",
   };
 }

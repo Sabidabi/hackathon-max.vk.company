@@ -8,7 +8,7 @@ import type { MaxContext } from "../../max";
 import { useRecordRecentVisit, useVenueAdmin } from "../auth/guestMode";
 
 /**
- * Product events of the guest menu. `src/analytics` listens to
+ * Product events of the guest menu (P1-DOC-10 dictionary). `src/analytics` listens to
  * `sinitsa:event` on window and sends batches; props carry no personal data.
  */
 export type GuestEventName =
@@ -47,7 +47,7 @@ export function useGuestSession(publicId: string, maxContext: MaxContext, publis
 
   const signedIn = Boolean(currentUser.data);
 
-  // Shared signed-in extras: Home «Недавние» and «Редактировать» for venue admins.
+  // Shared signed-in extras (P1-PLAN-4): Home «Недавние» and «Редактировать» for venue admins.
   useRecordRecentVisit(publicId, currentUser.data, published);
   const isAdmin = useVenueAdmin(publicId, currentUser.data);
 

@@ -39,7 +39,7 @@ export function MaxLaunchProvider({ children }: { children: ReactNode }) {
     };
   }, [launch.resolved]);
 
-  // the spec «Сигнал готовности»: after the first commit (launch screen, skeleton or
+  // P1-DOC-12 «Сигнал готовности»: after the first commit (launch screen, skeleton or
   // surface) tell MAX to drop its splash. Idempotent; a no-op outside MAX.
   useEffect(() => {
     if (launch.context.available) ready();

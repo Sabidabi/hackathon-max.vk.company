@@ -1,4 +1,4 @@
-// Contrast of the venue theme. The same pairs and thresholds as the
+// Contrast of the venue theme (P1-DOC-3 «Контраст»). The same pairs and thresholds as the
 // server (backend/app/sites/contrast.py): text 4.5:1 on cards and on the page background,
 // the accent 3:1 on cards. «Исправить» moves the foreground to the nearest readable colour.
 

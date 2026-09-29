@@ -1,6 +1,6 @@
 /*
- * First-launch intro «Что умеет Синица». Brand zone: «Синица» tokens only.
- * Motion: transform/opacity on the motion tokens; with reduced motion the tokens
+ * First-launch intro «Что умеет Синица» (P1-TASK-62). Brand zone: «Синица» tokens only.
+ * Motion (P1-DOC-18): transform/opacity on the motion tokens; with reduced motion the tokens
  * are 0 ms, so every transition below becomes an instant change.
  */
 .intro {

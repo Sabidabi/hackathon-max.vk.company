@@ -18,6 +18,7 @@ import { haptics } from "../../../max";
 import type { CabinetContext } from "../shell/CabinetShell";
 import { contrastIssues, fixIssue, type ThemeColors } from "./contrast";
 import { ThemePreview } from "./ThemePreview";
+import { TileSettings } from "./TileSettings";
 import "./design.css";
 
 interface ThemePreset {
@@ -27,7 +28,7 @@ interface ThemePreset {
   dark: ThemeColors & { icon_color: string };
 }
 
-/** Venue themes: each with a light and a dark variant. */
+/** Venue themes (P1-DOC-3 «Темы меню заведения»): each with a light and a dark variant. */
 export const THEMES: ThemePreset[] = [
   {
     id: "modern",
@@ -62,7 +63,6 @@ const COLOR_FIELDS: Array<{ key: keyof ThemeColors; label: string }> = [
   { key: "background_color", label: "Фон" },
 ];
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const AUTOSAVE_MS = 800;
 
 function MediaSlot({ kind, label, url, busy, onUpload, onRemove }: {
@@ -86,7 +86,7 @@ function MediaSlot({ kind, label, url, busy, onUpload, onRemove }: {
 }
 
 /**
- * «Оформление»: venue theme, light/dark, colours with a WCAG check and
+ * «Оформление» (P1-DOC-7, P1-DOC-3): venue theme, light/dark, colours with a WCAG check and
  * «Исправить», cover and logo, text size; the live preview shows the draft through the guest
  * menu styles. Changes autosave to the draft; guests see them after «Опубликовать оформление».
  */
@@ -130,7 +130,6 @@ export function DesignSection({ context }: { context: CabinetContext }) {
 
   const upload = useMutation({
     mutationFn: ({ kind, file }: { kind: SiteImageKind; file: File }) => {
-      if (file.size > MAX_IMAGE_BYTES) throw new Error("Изображение должно быть не больше 8 МБ");
       return uploadSiteMedia(point.id, kind, file);
     },
     onSuccess: (media, { kind }) => patch(kind === "logo" ? { logo_url: media.url } : { cover_url: media.url }),
@@ -242,6 +241,8 @@ export function DesignSection({ context }: { context: CabinetContext }) {
             </div>
           </section>
 
+          <TileSettings config={config} patch={patch} />
+
           <section aria-labelledby="design-colors-title" className="design-block">
             <h2 id="design-colors-title">Цвета</h2>
             <div className="design-colors">
@@ -275,7 +276,7 @@ export function DesignSection({ context }: { context: CabinetContext }) {
               <MediaSlot kind="logo" label="Логотип" url={config.logo_url} busy={upload.isPending} onUpload={(kind, file) => upload.mutate({ kind, file })} onRemove={() => patch({ logo_url: null })} />
             </div>
             {upload.isError && <p className="cabinet-error" role="alert">{upload.error.message}</p>}
-            <p className="cabinet-muted">JPG или PNG до 8 МБ.</p>
+            <p className="cabinet-muted">JPG или PNG. Большие фото уменьшим сами.</p>
           </section>
 
           <section aria-labelledby="design-text-title" className="design-block">
@@ -301,7 +302,7 @@ export function DesignSection({ context }: { context: CabinetContext }) {
         </span>
         <Button
           status={publishState}
-          disabled={publishState === "idle" && (issues.length > 0 || !menuPublished || save.isError)}
+          disabled={publishState !== "idle" || issues.length > 0 || !menuPublished || save.isError}
           onClick={() => { haptics.impact("light"); publish.mutate(); }}
         >
           Опубликовать оформление

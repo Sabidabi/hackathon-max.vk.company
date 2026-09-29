@@ -143,7 +143,8 @@ export function maxDeepLink(launchUrl: string | null | undefined, startPayload?:
 }
 
 /**
- * Outside MAX, for anything that needs a signed-in user: a deep link into the mini app, a QR of this page for the phone and link copying.
+ * Outside MAX, for anything that needs a signed-in user (P1-DOC-4 «Вне MAX без обходного
+ * входа»): a deep link into the mini app, a QR of this page for the phone and link copying.
  * No password, e-mail or user-id login is offered.
  */
 export function OpenInMax({ launchUrl, startPayload, title = "Откройте в MAX", children }: {

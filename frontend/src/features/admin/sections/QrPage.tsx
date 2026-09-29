@@ -44,7 +44,7 @@ function wrapLines(context: CanvasRenderingContext2D, text: string, maxWidth: nu
 }
 
 /**
- * Table tent A6 as PNG: venue logo, name, the QR of the guest
+ * Table tent A6 as PNG (P1-DOC-7 «QR для печати»): venue logo, name, the QR of the guest
  * link and «Меню и советы в MAX». Drawn locally; the QR carries only the guest link.
  */
 export async function renderTableTent({ link, title, logoUrl }: { link: string; title: string; logoUrl: string | null }): Promise<string> {
@@ -97,7 +97,7 @@ export async function renderTableTent({ link, title, logoUrl }: { link: string; 
 }
 
 /**
- * «QR и ссылка»: the QR of the guest link (MAX `startapp=r_<id>` or the web link),
+ * «QR и ссылка» (P1-DOC-7): the QR of the guest link (MAX `startapp=r_<id>` or the web link),
  * copy/share, PNG download and the A6 table tent for printing. The QR never carries admin
  * rights — only the public guest link.
  */

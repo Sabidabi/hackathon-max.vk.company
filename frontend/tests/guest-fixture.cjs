@@ -1,7 +1,7 @@
-// In-memory public API for guest menu 2.0 tests. Test fixture only — never a
+// In-memory public API for guest menu 2.0 tests (P1-PLAN-6). Test fixture only — never a
 // production backend. Serves only `/api/*`; the page itself comes from the Vite dev server
 // (`guest-preview.html`). Points:
-//   test-point format: `menus[]` with two tabs («Основное», «Завтраки»), light theme;
+//   test-point   — P1-PLAN-7 format: `menus[]` with two tabs («Основное», «Завтраки»), light theme;
 //   single-point — older format without `menus[]` (one menu), dark theme, no photos;
 //   draft-point  — nothing published (404 «Site not published»);
 //   closed-point — published, but no menu is shown now (`menus: []`, `version: null`).
@@ -43,6 +43,10 @@ function createState() {
   // Long texts: the name, description and price must never overlap (tile with a photo and a row).
   const longTile = item("Сезонный авторский флэт уайт на альтернативном молоке с карамелью и морской солью", 34000, { description: "Двойной ристретто, альтернативное молоко собственной обжарки, домашняя солёная карамель и щепотка морской соли, подаётся в тёплой чашке", image_url: media("Латте"), weight_text: "300 мл" });
   const longRow = item("Большой фермерский завтрак с омлетом, картофелем по-деревенски и двумя видами сыра", 45000, { description: "Три яйца, запечённый картофель с розмарином, деревенская колбаска, свежие овощи, два вида сыра и тост на закваске с маслом", weight_text: "420 г" });
+  // FIXTURE_RICH=1 (screenshots only): every position gets a picture; the smoke tests keep the mixed section.
+  if (process.env.FIXTURE_RICH) {
+    for (const entry of [flat, americano, croissant, cinnabon, eclair, tea, cocoa, syrniki, omelette]) entry.image_url = media(entry.name);
+  }
   const mainSections = [
     { id: randomUUID(), name: "Кофе", items: [latte, cappuccino, flat, americano] },
     { id: randomUUID(), name: "Выпечка", items: [croissant, cinnabon, eclair] },
@@ -134,9 +138,10 @@ function ask(menus, question) {
 
 // Stand-in for a venue's uploaded photo, explicitly labelled as a test image: the repository
 // has no real dish photos. Only items that «have a photo» get one; the rest have none.
+const { illustration } = require("./illustrations.cjs");
+// Drawings for the visual fixture (not photos of real dishes).
 function mediaSvg(name) {
-  const safe = name.replace(/[<>&"]/g, "");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect width="400" height="400" fill="#3b2a20"/><rect x="0" y="290" width="400" height="110" fill="#2a1d15"/><text x="60" y="336" font-family="Arial" font-size="28" font-weight="700" fill="#f6efe8">${safe}</text><text x="60" y="370" font-family="Arial" font-size="18" fill="#cdbfb3">Тестовое фото</text></svg>`;
+  return illustration(name);
 }
 
 function createGuestFixture({ port = Number(process.env.GUEST_FIXTURE_PORT || 5391) } = {}) {

@@ -1,4 +1,4 @@
-// End-to-end smoke against a LIVE backend: real PostgreSQL, Alembic, the demo
+// End-to-end smoke against a LIVE backend (P1-TASK-51): real PostgreSQL, Alembic, the demo
 // seed «Кофейня Север», uvicorn with the development login and the built SPA behind
 // `vite preview` with the /api proxy. Unlike the other smoke tests there is no fixture.
 //

@@ -6,8 +6,9 @@ import { flyToTarget, pop, prefersReducedMotion } from "../../design/motion";
 import { haptics } from "../../max";
 
 /*
- * Live mini-demos of the intro: real design-system components on demo data,
- * not pictures. Each demo plays its key moment once when it appears and hands over to the user on the first touch. With reduced
+ * Live mini-demos of the intro (P1-TASK-62): real design-system components on demo data,
+ * not pictures. Each demo plays its key moment once when it appears (P1-DOC-18: motion =
+ * meaning, no endless loops) and hands over to the user on the first touch. With reduced
  * motion nothing plays by itself; the demo stays interactive and changes instantly.
  */
 

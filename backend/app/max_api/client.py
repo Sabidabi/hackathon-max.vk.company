@@ -130,7 +130,7 @@ async def register_max_webhook(settings: Settings) -> dict[str, Any]:
     return payload
 
 
-# --- Bot API used by the bot outbox and commands ---
+# --- Bot API used by the bot outbox and commands (P1-PLAN-13) ---
 
 BOT_COMMANDS: tuple[tuple[str, str], ...] = (
     ("start", "Открыть Синицу"),

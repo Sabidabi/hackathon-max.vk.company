@@ -7,7 +7,7 @@ import { askSinitsa, formatMoney, GuestApiError, type AskAnswer, type AskPick, t
 import { MotionSheet } from "./MotionSheet";
 import { trackGuestEvent } from "./session";
 
-/** Ready-made wishes: one tap asks. */
+/** Ready-made wishes: one tap asks (P1-DOC-8 «Заземлённая подсказка гостю»). */
 export const ASK_CHIPS = ["Без кофеина", "Сладкое", "Что-то тёплое"] as const;
 
 type AskState =

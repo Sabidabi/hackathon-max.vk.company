@@ -1,4 +1,4 @@
-"""Synthetic events for the demo venue only.
+"""Synthetic events for the demo venue only (P1-TASK-36, P1-DOC-10 «Демо-данные помечены»).
 
 Refuses any venue that does not own a demo point. Every row is ``is_synthetic`` — the
 cabinet shows «демо-данные» — and all sessions are anonymous web sessions (no fake MAX

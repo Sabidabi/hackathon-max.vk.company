@@ -1,4 +1,4 @@
-"""Daily AI request counters per venue, feature and subject.
+"""Daily AI request counters per venue, feature and subject (P1-DOC-8 «Лимиты»).
 
 Revision ID: 0018
 Revises: 0017

@@ -1,4 +1,4 @@
-// «Уведомления», «Ещё → Сообщения» and the guest bot buttons against the built
+// «Уведомления», «Ещё → Сообщения» and the guest bot buttons (P1-TASK-48/64) against the built
 // app, the in-memory fixture and route mocks for the bot API. Browser fixture only: it proves
 // the screens and the requests they send, not delivery inside a real MAX client.
 const { chromium } = require("playwright");

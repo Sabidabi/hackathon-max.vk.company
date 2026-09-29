@@ -27,10 +27,10 @@ export function draftProblem(sections: MenuSection[]): string | null {
 const snapshotOf = (sections: MenuSection[]) => JSON.stringify(libraryPayload(sections));
 
 /**
- * Draft of one library menu with autosave.
+ * Draft of one library menu with autosave (P1-DOC-7 «Автосохранение со статусом»).
  * Local edits live here until the server accepts them: a stale revision (409
  * `revision_conflict`) stops autosave and keeps every local change until the admin decides
- *. `seen_version` travels with each save, so the
+ * (P1-DOC-7 «Защита от конкурентных правок»). `seen_version` travels with each save, so the
  * conflict says what others changed since the version this device saw.
  */
 export function useMenuDraft(menuId: string | null, publishedVersion: number | null) {

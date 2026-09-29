@@ -668,7 +668,7 @@ class ImportJob(Base):
 
 
 class AiUsage(Base):
-    """Daily AI request counters.
+    """Daily AI request counters (P1-DOC-8 «Лимиты и стоимость»).
 
     One row per day × venue × feature × subject (``user:<uuid>`` for a signed-in person,
     ``guest:<hash>`` for an anonymous browser, ``worker`` for imports). ``calls`` counts
@@ -679,7 +679,7 @@ class AiUsage(Base):
     __table_args__ = (
         CheckConstraint(
             "feature IN ('guest_ask', 'item_description', 'menu_check', 'import_structure', "
-            "'menu_plan', 'weekly_summary', 'import_descriptions')",
+            "'menu_plan', 'weekly_summary', 'import_descriptions', 'design_plan')",
             name="ck_ai_usage_feature",
         ),
         CheckConstraint(
@@ -1008,7 +1008,7 @@ EVENT_PLATFORMS = ("max_ios", "max_android", "max_web", "web")
 
 
 class AnalyticsEvent(Base):
-    """Append-only product event. ``props`` never carries
+    """Append-only product event (P1-DOC-10 «Событийная модель»). ``props`` never carries
     personal data; ``client_event_id`` makes a repeated batch a no-op. Synthetic events exist
     only in the demo venue and are flagged."""
 

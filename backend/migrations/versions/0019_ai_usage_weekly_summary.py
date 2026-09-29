@@ -1,4 +1,4 @@
-"""Allow the weekly AI summary feature in ai_usage.
+"""Allow the weekly AI summary feature in ai_usage (P1-TASK-44).
 
 Revision ID: 0019
 Revises: 0018

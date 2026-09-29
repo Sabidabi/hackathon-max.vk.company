@@ -25,7 +25,7 @@ async function waitForFixture() {
 
 async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
   const context = await browser.newContext();
-  // Home is expected at `/`: the first-launch intro is covered by intro.smoke.cjs.
+  // Home is expected at `/`: the first-launch intro (P1-TASK-62) is covered by intro.smoke.cjs.
   await context.addInitScript(() => { try { window.localStorage.setItem("sinitsa.intro.v1", "1"); } catch {} });
   const page = await context.newPage();
   const initData = new URLSearchParams({
@@ -57,7 +57,10 @@ async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
     await page.goto(`${baseUrl}/${launchHash}`);
     await page.getByRole("heading", { name: "Здравствуйте, Демо", exact: true }).waitFor();
     assert.equal(new URL(page.url()).pathname, "/", "Home inside MAX lives at /");
-    await page.getByRole("link", { name: "Кабинет «Кофейня Север»" }).click();
+    await page.getByRole("link", { name: "Точка «Кофейня Север»" }).click();
+    // Home opens the page of the point (not the menu editor); «Меню» is one tap away.
+    await page.getByRole("list", { name: "Разделы точки" }).waitFor();
+    await page.getByRole("button", { name: /^Меню Позиции/ }).click();
     await page.getByRole("button", { name: "Действия с меню" }).waitFor();
     assert.match(new URL(page.url()).pathname, /^\/manage\/test-point$/);
     assert.deepEqual(received, [initData], "MAX signed payload must be sent exactly once");
@@ -70,7 +73,7 @@ async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
 }
 
 // Guest inside MAX: start_param from signed initData opens the menu, and the native
-// «Назад» closes the item card.
+// «Назад» closes the item card (P1-DOC-12 «Нативная кнопка „Назад“»).
 async function verifyMaxGuestBackButton(browser, baseUrl) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
@@ -143,7 +146,7 @@ async function verifyOutsideMax(browser, baseUrl) {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), "Landing has horizontal overflow at 390 px");
     await page.screenshot({ path: path.join(output, "landing-mobile.png") });
     await page.getByRole("link", { name: "Кабинет заведения" }).click();
-    // the spec «Вне MAX без обходного входа»: «Откройте в MAX», not an endless loader or a login form.
+    // P1-DOC-4 «Вне MAX без обходного входа»: «Откройте в MAX», not an endless loader or a login form.
     await page.getByRole("heading", { name: "Откройте в MAX", exact: true }).waitFor({ timeout: 5_000 });
     assert.equal(new URL(page.url()).pathname, "/manage");
     assert.equal(loginAttempts, 0, "No MAX login should be attempted without signed launch data");
@@ -209,11 +212,13 @@ async function verifyPublicStartParam(browser, baseUrl) {
     });
 
     await page.goto(`${baseUrl}/manage`);
+    await page.waitForURL(`${baseUrl}/manage/test-point/point`);
+    await page.getByRole("button", { name: /^Меню Позиции/ }).click();
     await page.waitForURL(`${baseUrl}/manage/test-point/menu`);
     const status = page.locator(".menu-status");
     const saved = () => status.filter({ hasText: "Сохранено" }).waitFor();
     await saved();
-    // The only accent button of the section is «Опубликовать изменения».
+    // The only accent button of the section is «Опубликовать изменения» (P1-DOC-17).
     assert.deepEqual(
       await page.locator("#cabinet-content .s-button--primary").evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-label"))),
       ["Опубликовать изменения: 6"],
@@ -272,7 +277,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
     assert.equal(await latteRow.evaluate((row) => row === document.activeElement), true, "Focus returns to the row");
 
 
-    // Toasts never cover the sticky publish bar or an open sheet's footer.
+    // Toasts never cover the sticky publish bar or an open sheet's footer (P1-PLAN-8 review).
     // Waits until the toast and the bar/sheet have finished moving instead of a fixed pause.
     const waitSettled = () => page.waitForFunction(() => {
       const toast = document.getElementById("app-toast");
@@ -352,7 +357,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
     const draftAfter = await (await fetch(`${baseUrl}/api/v1/menus/${menuId}/draft`)).json();
     assert.ok(draftAfter.sections[0].items.some((item) => item.name === "Эспрессо" && item.price_minor === 12000), "Local edit survived the conflict");
 
-    // History: publish v2, then «Вернуть эту версию» v1 — only into the draft.
+    // History (P1-TASK-29): publish v2, then «Вернуть эту версию» v1 — only into the draft.
     await page.getByRole("button", { name: /^Опубликовать изменения: \d+$/ }).click();
     await page.getByRole("dialog", { name: "Что изменится" }).getByRole("button", { name: "Опубликовать", exact: true }).click();
     await page.getByText(/^Опубликовано · версия 2$/).waitFor();
@@ -425,7 +430,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
     await page.screenshot({ path: path.join(output, "item-card-390.png") });
     await page.getByRole("dialog", { name: "Латте" }).getByRole("button", { name: /^Добавки/ }).click();
     await page.screenshot({ path: path.join(output, "item-card-addons-390.png") });
-    // «Написать описание» on the labelled mock — a suggestion into the form
+    // P1-TASK-42: «Написать описание» on the labelled mock — a suggestion into the form
     // (autosaved to the draft), undo from the toast restores the text.
     const aiCard = page.getByRole("dialog", { name: "Латте" });
     await aiCard.getByRole("button", { name: /^Основное/ }).click();
@@ -474,7 +479,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
 
     await page.getByRole("button", { name: "Оформление", exact: true }).click();
     await page.waitForURL(`${baseUrl}/manage/test-point/design`);
-    // «Оформление»: four themes, live preview through the guest menu styles,
+    // «Оформление» (P1-TASK-31): four themes, live preview through the guest menu styles,
     // contrast warning blocks publication until «Исправить».
     const themes = page.getByRole("radiogroup", { name: "Тема меню" }).getByRole("radio");
     await themes.first().waitFor();
@@ -635,11 +640,11 @@ async function verifyPublicStartParam(browser, baseUrl) {
     await newPoint.getByLabel("Часовой пояс").selectOption("Europe/Moscow");
     assert.equal(await newPoint.getByLabel("Меню точки").locator("option:checked").textContent(), "Основное");
     await newPoint.getByRole("button", { name: "Создать точку" }).click();
-    // «QR сразу»: the new point opens on its QR page.
+    // «QR сразу» (P1-DOC-17): the new point opens on its QR page.
     await page.waitForURL(/\/manage\/[a-f0-9]{12}\/more\/qr$/);
     await page.getByRole("button", { name: /^Точка: Тверская/ }).waitFor();
     await page.getByRole("heading", { name: "QR и ссылка" }).waitFor();
-    // The same section on another point, without a reload.
+    // The same section on another point, without a reload (P1-DOC-15 «Быстрое переключение»).
     await page.getByRole("button", { name: "Ещё", exact: true }).click();
     await page.getByRole("button", { name: /^Точка: Тверская/ }).click();
     await page.getByRole("dialog", { name: "Точки «Кофейня Север»" }).getByRole("button", { name: /Кофейня Север/ }).click();
@@ -677,7 +682,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Team overflows: ${wide.join(" | ")}`);
     await page.screenshot({ path: path.join(output, "team-mobile.png"), fullPage: true });
 
-    // Video of the cabinet motion: tab indicator, row → card
+    // Video of the cabinet motion (P1-DOC-18 «Проверка моушна на ревью»): tab indicator, row → card
     // shared element, stop-list switch with the undo toast, quick add growing a row, publish morph.
     {
       const videoDir = path.join(output, "cabinet-video");
@@ -716,7 +721,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
       await recording.saveAs(path.join(output, "cabinet-motion-390.webm"));
     }
 
-    // import review in the new design — AI badge, doubtful fields highlighted,
+    // P1-TASK-43: import review in the new design — AI badge, doubtful fields highlighted,
     // missing price stays empty, delete with undo, «Применить в черновик» (never publishes).
     await page.evaluate(() => {
       window.__importEvents = [];

@@ -1,5 +1,5 @@
 // Unit checks for the MAX layer (src/max): start_param parser and the «never throws, always
-// falls back» contract of the Bridge wrappers. Runs in Node without a browser:
+// falls back» contract of the Bridge wrappers (P1-DOC-12). Runs in Node without a browser:
 // Vite bundles src/max/index.ts, the test fakes window/document/navigator per scenario.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -211,7 +211,7 @@ assert.equal(bridgeCalls.filter((call) => call === "ready").length, 1, "ready() 
   window.WebApp.shareMaxContent = saved;
 }
 
-// --- BackButton stack: screen with an item card, then a Sheet on top ----------
+// --- BackButton stack: screen with an item card, then a Sheet on top (P1-DOC-12) ----------
 {
   const log = [];
   let listeners = [];

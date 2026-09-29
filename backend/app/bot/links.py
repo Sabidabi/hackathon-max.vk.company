@@ -1,6 +1,6 @@
 """Buttons and ``startapp`` payloads of bot messages.
 
-A payload is navigation only: the mini-app still checks every right on the
+A payload is navigation only (P1-DOC-12): the mini-app still checks every right on the
 server. Payloads use only ``[A-Za-z0-9_-]`` and stay within 512 characters.
 """
 

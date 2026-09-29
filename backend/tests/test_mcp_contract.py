@@ -67,7 +67,16 @@ async def test_mcp_exposes_only_draft_tools_with_strict_plan_schema():
         "propose_menu_change",
         "apply_menu_change",
         "get_change_result",
+        "get_design_context",
+        "propose_design_change",
+        "apply_design_change",
     }
     assert "publish" not in " ".join(tools)
+    design_schema = tools["propose_design_change"].input_schema["$defs"]
+    assert design_schema["DesignChangePlan"]["additionalProperties"] is False
+    # Media, blocks and contacts are not reachable through a design plan.
+    assert set(design_schema["DesignPatch"]["properties"]).isdisjoint(
+        {"logo_url", "cover_url", "blocks", "phone", "booking_url", "gallery_urls"}
+    )
     plan_schema = tools["propose_menu_change"].input_schema["$defs"]["MenuChangePlan"]
     assert plan_schema["additionalProperties"] is False

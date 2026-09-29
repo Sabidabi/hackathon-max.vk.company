@@ -1,5 +1,5 @@
 /*
- * «Синица» design tokens. The first block is a verbatim copy of
+ * «Синица» design tokens (P1-DOC-3). The first block is a verbatim copy of
  * brandbook-sinitsa/tokens/sinitsa.css v1.0.1 — change it only together with the brandbook.
  * Everything below «Производные» is derived for the product UI; contrast is WCAG 2.x,
  * measured against --sinitsa-surface (#FFFFFF) unless stated otherwise.
@@ -21,7 +21,7 @@
   :root { --sinitsa-duration-fast: 0ms; --sinitsa-duration-standard: 0ms; }
 }
 
-/* Производные. */
+/* Производные (не из брендбука; согласованы в P1-TASK-5). */
 :root {
   /* Pressed/hover primary. White text on it: 7.61:1. */
   --sinitsa-blue-press: #1B3FD9;
@@ -87,7 +87,7 @@
 }
 
 /*
- * Движение. Components use only these tokens — no literal durations or curves.
+ * Движение (P1-DOC-18). Components use only these tokens — no literal durations or curves.
  * Only transform/opacity are animated (clip-path only for the shared element of a sheet).
  * `--ease-spring` is a sampled spring (stiffness 380, damping 32, mass 1: ~1.1 % overshoot,
  * settles in ~440 ms of physical time) squeezed into the token duration; browsers without

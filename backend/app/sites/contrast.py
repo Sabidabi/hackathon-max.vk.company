@@ -1,4 +1,4 @@
-"""WCAG contrast of the venue theme.
+"""WCAG contrast of the venue theme (P1-DOC-3 «Контраст»).
 
 The same formula as ``frontend/src/features/site/contrast.ts``: text needs 4.5:1 on the
 surface and on the page background, the accent (buttons, prices, icons) 3:1 on the surface.

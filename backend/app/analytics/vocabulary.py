@@ -1,4 +1,4 @@
-"""Event dictionary of the spec and the rules that keep personal data out of ``props``."""
+"""Event dictionary of P1-DOC-10 and the rules that keep personal data out of ``props``."""
 
 import re
 from typing import Literal
@@ -56,7 +56,7 @@ ALLOWED_PROP_KEYS = frozenset({
     "kind",
     "available",
 })
-# Named explicitly so the refusal says why.
+# Named explicitly so the refusal says why (P1-DOC-10 «Без персональных данных»).
 FORBIDDEN_PROP_KEYS = frozenset({
     "name",
     "first_name",

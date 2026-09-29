@@ -1,4 +1,4 @@
-// Bot button payloads → in-app paths. The server
+// Bot button payloads (P1-DOC-11 «Глубокая ссылка на экран») → in-app paths. The server
 // builds them in backend/app/bot/links.py; this checks the mini-app understands each one.
 import assert from "node:assert/strict";
 import fs from "node:fs";

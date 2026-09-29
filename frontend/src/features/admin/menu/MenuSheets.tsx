@@ -56,7 +56,7 @@ function pointCount(ids: string[]): string {
 }
 
 /**
- * Library of the venue's menus: pick the menu to edit, «Новое меню»,
+ * Library of the venue's menus (P1-DOC-15): pick the menu to edit, «Новое меню»,
  * «Сделать копию», «Назначить точкам» and the tab order of this point.
  */
 export function LibrarySheet({ open, onClose, menus, currentId, point, onPick, onCreate, onCopy, onAssign }: {
@@ -185,7 +185,7 @@ const PRESETS: Array<{ label: string; from: string | null; to: string | null }> 
 ];
 
 /**
- * «Назначить точкам»: chips of the venue's points and optional show hours.
+ * «Назначить точкам»: chips of the venue's points and optional show hours (P1-DOC-15).
  * Removing a point is undoable from the toast.
  */
 export function AssignSheet({ open, menu, points, currentPoint, onClose }: {
@@ -310,7 +310,7 @@ function ChangesList({ changes }: { changes: MenuChanges }) {
 }
 
 /**
- * 409 on a stale revision: nothing is lost —
+ * 409 on a stale revision (P1-DOC-7 «Защита от конкурентных правок»): nothing is lost —
  * the local edits stay on this device until the admin applies them over the new draft,
  * takes the other version or downloads a copy.
  */
@@ -325,7 +325,7 @@ export function ConflictSheet({ open, conflict, sections, busy, error, onApplyMi
   onClose: () => void;
 }) {
   const publication = conflict?.last_publication;
-  // Overwriting other admins' draft edits needs an explicit second step.
+  // Overwriting other admins' draft edits needs an explicit second step (P1-DOC-15 «Безопасность правок»).
   const [confirming, setConfirming] = useState(false);
   useEffect(() => { if (!open) setConfirming(false); }, [open]);
   const hasTheirChanges = Boolean(conflict?.changes && conflict.changes.total_changes > 0);

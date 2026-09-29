@@ -8,23 +8,33 @@ from pydantic import AnyHttpUrl
 from app.config import get_settings
 from app.mcp_server.security import DatabaseTokenVerifier, actor_from_access_token
 from app.mcp_server.service import (
+    apply_design_change as apply_design_change_service,
+)
+from app.mcp_server.service import (
     apply_menu_change as apply_menu_change_service,
 )
 from app.mcp_server.service import (
     get_change_result as get_change_result_service,
 )
 from app.mcp_server.service import (
+    get_design_context as get_design_context_service,
+)
+from app.mcp_server.service import (
     get_menu_context as get_menu_context_service,
+)
+from app.mcp_server.service import (
+    propose_design_change as propose_design_change_service,
 )
 from app.mcp_server.service import (
     propose_menu_change as propose_menu_change_service,
 )
 from app.menu_commands.schemas import MenuChangePlan
+from app.sites.design_plan import DesignChangePlan
 
 settings = get_settings()
 mcp = MCPServer(
     "MAX Menu Editor",
-    description="Safe draft-only tools for restaurant menus",
+    description="Safe draft-only tools for restaurant menus and their design",
     version="0.1.0",
     token_verifier=DatabaseTokenVerifier(),
     auth=AuthSettings(
@@ -68,6 +78,30 @@ async def apply_menu_change(
 async def get_change_result(proposal_id: uuid.UUID) -> dict[str, object]:
     """Read the status and resulting revision of a token-bound proposal."""
     return await get_change_result_service(_actor(), proposal_id)
+
+
+@mcp.tool()
+async def get_design_context() -> dict[str, object]:
+    """Read the draft design (colours, tiles, fonts), allowed values and contrast issues."""
+    return await get_design_context_service(_actor())
+
+
+@mcp.tool()
+async def propose_design_change(
+    expected_revision: str,
+    plan: DesignChangePlan,
+) -> dict[str, object]:
+    """Validate a design change and return a short-lived confirmation token."""
+    return await propose_design_change_service(_actor(), expected_revision, plan)
+
+
+@mcp.tool()
+async def apply_design_change(
+    confirmation_token: str,
+    expected_revision: str,
+) -> dict[str, object]:
+    """Apply one confirmed design proposal to the draft. This tool cannot publish."""
+    return await apply_design_change_service(_actor(), confirmation_token, expected_revision)
 
 
 app = mcp.streamable_http_app(

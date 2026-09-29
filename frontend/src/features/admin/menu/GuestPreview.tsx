@@ -5,8 +5,8 @@ import { hasPrice } from "./MenuStart";
 const price = (item: MenuItem) => (hasPrice(item) ? displayPrice(item) : "Нет цены");
 
 /**
- * «Как увидит гость»: the draft laid out by the guest-menu rule of the spec
- * ( 29.09) — a position with a photo is a tile (two per row), one without a photo is
+ * «Как увидит гость» (P1-DOC-17): the draft laid out by the guest-menu rule of P1-DOC-6
+ * ([decision] 29.09) — a position with a photo is a tile (two per row), one without a photo is
  * a row; a mixed section shows the tiles first, then the rows; no invented pictures. Colours
  * are neutral: the venue theme is applied in the real guest menu and in «Оформление».
  */

@@ -1,4 +1,4 @@
-/* «Уведомления» and the bot entry points: brand tokens only. */
+/* «Уведомления» (P1-TASK-48) and the bot entry points: brand tokens only (P1-DOC-3). */
 .nt-screen {
   min-height: 100dvh;
   padding: calc(var(--sinitsa-safe-top) + var(--sinitsa-space-3)) calc(var(--sinitsa-safe-right) + var(--sinitsa-space-4)) calc(var(--sinitsa-safe-bottom) + var(--sinitsa-space-6)) calc(var(--sinitsa-safe-left) + var(--sinitsa-space-4));

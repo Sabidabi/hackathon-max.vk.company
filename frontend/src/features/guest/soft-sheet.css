@@ -1,0 +1,107 @@
+/* ==========================================================================================
+   Soft item sheet: a photo hero, big name and price, cups for sizes, chips for choices,
+   quantity + one clear button. Same tokens as the tiles (`--g-*` from soft-tiles.css).
+   ========================================================================================== */
+.g-hero { position: relative; }
+.g-hero .g-item__photo {
+  display: block;
+  width: 100%;
+  max-height: none;
+  aspect-ratio: 1 / 0.86;
+  border-radius: 0;
+  object-fit: cover;
+  background: var(--sinitsa-skeleton);
+}
+.g-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 96px;
+  background: linear-gradient(180deg, transparent, var(--sinitsa-surface));
+  pointer-events: none;
+}
+.g-hero__mono { display: grid; place-items: center; background: linear-gradient(140deg, var(--g-tint-strong), var(--g-tint)); color: var(--g-accent, var(--sinitsa-blue)); font-size: 120px; font-weight: 800; }
+.g-hero__heart.s-icon-button { position: absolute; z-index: 6; left: 14px; top: 12px; width: 44px; height: 44px; border-radius: 50%; background: rgb(255 255 255 / 88%); color: #151821; box-shadow: 0 2px 10px rgb(0 0 0 / 22%); backdrop-filter: blur(8px); }
+.g-hero__heart.g-heart--on.s-icon-button { color: #E5484D; }
+
+.g-item--hero { gap: 0; }
+.g-item__content { position: relative; z-index: 1; display: grid; gap: 18px; margin-top: -30px; padding: 0 20px 6px; }
+.g-item__head { display: grid; gap: 4px; }
+.g-item__title { margin: 0; font-size: 28px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; overflow-wrap: anywhere; font-family: var(--g-font-head, inherit); }
+.g-item__price { display: flex; align-items: baseline; gap: 10px; margin: 0; font-size: 22px; font-weight: 800; color: var(--g-accent, var(--sinitsa-blue)); font-variant-numeric: tabular-nums; }
+.g-item__price small { color: var(--sinitsa-muted); font-size: 14px; font-weight: 500; }
+.g-item__tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.g-item__tags li { padding: 4px 12px; border-radius: 999px; background: var(--g-tint); color: var(--sinitsa-ink); font-size: 13px; font-weight: 600; }
+.g-item__desc { margin: 0; color: var(--sinitsa-muted); font-size: 16px; line-height: 1.5; }
+.g-item__meta { margin: 0; color: var(--sinitsa-muted); font-size: 13px; }
+
+/* Groups: a title with a soft «Обязательно» pill. */
+.g-item .g-group { gap: 10px; }
+.g-item .g-group__legend { align-items: center; margin-bottom: 4px; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.g-item .g-group__rule { padding: 3px 10px; border-radius: 999px; background: var(--g-tint); color: var(--sinitsa-muted); font-size: 12px; font-weight: 600; }
+.g-item .g-group__rule--required { background: var(--g-tint-strong); color: var(--g-accent, var(--sinitsa-blue)); font-weight: 700; }
+.g-item .g-group--required .g-options { box-shadow: none; }
+.g-item .g-group--required .g-group__legend .g-group__rule--required { background: var(--sinitsa-danger-bg); color: var(--sinitsa-danger); }
+.g-item .g-group__hint { font-size: 13px; }
+
+/* Sizes: cups that grow with the size. */
+.g-item .g-sizes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; }
+.g-item .g-size {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 96px;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--g-tint);
+  text-align: center;
+  transition: transform var(--motion-fast, 140ms) ease, background var(--motion-fast, 140ms) ease;
+}
+.g-item .g-size:active { transform: scale(0.97); }
+.g-size__cup { display: grid; place-items: end center; height: 34px; color: var(--sinitsa-muted); }
+.g-item .g-size--on { background: var(--g-accent, var(--sinitsa-blue)); box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--g-accent, var(--sinitsa-blue)) 70%, transparent); }
+.g-item .g-size--on, .g-item .g-size--on .g-size__cup, .g-item .g-size--on .g-size__price { color: var(--sinitsa-on-blue); }
+.g-item .g-size__name { font-size: 15px; font-weight: 700; }
+.g-item .g-size__price { font-size: 13px; }
+.g-item .g-size .g-indicator { display: none; }
+
+/* Single choice: chips with a check; multi choice: soft rows with a stepper. */
+.g-item .g-options { display: flex; flex-wrap: wrap; gap: 8px; border: 0; border-radius: 0; overflow: visible; background: transparent; }
+.g-item .g-option { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--g-tint); font-size: 15px; font-weight: 600; cursor: pointer; transition: background var(--motion-fast, 140ms) ease, transform var(--motion-fast, 140ms) ease; }
+.g-item .g-option + .g-option { border-top: 0; }
+.g-item .g-option:active { transform: scale(0.97); }
+.g-item label.g-option::after { content: none; }
+.g-item .g-option__name { flex: 0 1 auto; }
+.g-item .g-option__price { color: var(--sinitsa-muted); font-size: 13px; font-weight: 500; }
+.g-item .g-option--on { background: var(--g-accent, var(--sinitsa-blue)); color: var(--sinitsa-on-blue); }
+.g-item .g-option--on .g-option__price { color: var(--sinitsa-on-blue); opacity: 0.85; }
+.g-item .g-option--off { opacity: 0.55; }
+.g-option__check { flex: none; }
+.g-item .g-options .g-indicator { display: none; }
+.g-item .g-option--stepper { display: flex; flex: 1 1 100%; justify-content: space-between; min-height: 56px; padding: 6px 8px 6px 18px; border-radius: 20px; cursor: default; }
+.g-item .g-option--stepper .g-option__name { flex: 1 1 auto; }
+.g-item .g-option--stepper .g-stepper { gap: 0; padding: 2px; border-radius: 999px; background: var(--sinitsa-surface); }
+.g-item .g-option--stepper .g-stepper button { display: grid; place-items: center; width: 44px; height: 44px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--g-accent, var(--sinitsa-blue)); }
+.g-item .g-option--stepper .g-stepper output { min-width: 26px; font-size: 16px; }
+
+/* Footer: quantity + the main button. */
+.g-item-footer { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.g-qty { display: inline-flex; align-items: center; height: 56px; padding: 4px; border-radius: 999px; background: var(--g-tint); }
+.g-qty__btn { display: grid; place-items: center; width: 48px; height: 48px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--g-accent, var(--sinitsa-blue)); cursor: pointer; }
+.g-qty__btn:active { background: var(--sinitsa-surface); }
+.g-qty__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.g-qty__btn:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.g-qty__value { min-width: 28px; font-size: 18px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.g-item-footer .g-item-footer__add.s-button { min-height: 56px; border-radius: 999px; background: var(--g-accent, var(--sinitsa-blue)); color: var(--sinitsa-on-blue); font-size: 17px; box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--g-accent, var(--sinitsa-blue)) 80%, transparent); }
+.g-item-footer .g-item-footer__add.s-button:disabled { background: var(--sinitsa-line-strong); box-shadow: none; color: var(--sinitsa-surface); opacity: 1; }
+.s-sheet__panel--hero .s-sheet__footer { border-top: 0; box-shadow: 0 -12px 24px -16px rgb(21 24 33 / 22%); background: var(--sinitsa-surface); }
+
+@media (min-width: 768px) {
+  .g-hero .g-item__photo { aspect-ratio: 16 / 10; }
+}
+@media (prefers-reduced-motion: reduce) { .g-item .g-size, .g-item .g-option { transition: none; } }
+
+/* Option steppers inside the sheet reuse the tile stepper class: strip its tile look. */
+.g-item .g-option--stepper .g-stepper { position: static; transform: none; box-shadow: none; height: auto; animation: none; z-index: auto; }

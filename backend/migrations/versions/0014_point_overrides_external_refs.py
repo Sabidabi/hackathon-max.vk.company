@@ -3,7 +3,7 @@
 ``point_item_overrides`` keys a point's stop-list and optional price by the stable
 ``item_key``; it applies to guests at once, without publishing a menu version.
 
-``external_refs`` stores identifiers of an external POS apart from
+``external_refs`` stores identifiers of an external POS (iiko, P1-DOC-16) apart from
 internal IDs. ``UNIQUE (provider, entity_type, external_id)`` is stricter than the
 per-venue tuple of the spec and thereby guarantees that one external ID is never linked
 to entities of two venues. The table is created empty; there is no integration code.

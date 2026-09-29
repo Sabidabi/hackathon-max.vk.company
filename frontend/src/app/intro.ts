@@ -3,7 +3,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { deviceStorage } from "../max/platform";
 
 /*
- * «Показать интро один раз». The flag lives in MAX
+ * «Показать интро один раз» (P1-TASK-62, P1-DOC-12 DeviceStorage). The flag lives in MAX
  * DeviceStorage with a localStorage fallback; it stores no personal data. The decision is
  * taken once per launch and kept in memory: once the intro is on screen it stays until the
  * user leaves it, even though the flag is written as soon as it appears.

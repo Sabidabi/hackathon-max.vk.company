@@ -1,4 +1,4 @@
-"""AI features over HTTP: the guest's «Синица, что взять?», the item
+"""AI features over HTTP (P1-DOC-8): the guest's «Синица, что взять?», the item
 description and «Синица проверила меню» for admins.
 
 AI only suggests: nothing here writes a menu. The guest answer is grounded on the

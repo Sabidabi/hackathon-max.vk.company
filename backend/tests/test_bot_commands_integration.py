@@ -1,4 +1,4 @@
-"""Bot commands: JSON contract of the Bot API calls, against a mock API."""
+"""Bot commands (P1-TASK-45): JSON contract of the Bot API calls, against a mock API."""
 
 import json
 import os
@@ -77,6 +77,7 @@ async def test_commands_contract(monkeypatch: pytest.MonkeyPatch) -> None:
             [welcome] = api.messages()
             assert welcome["params"] == {"chat_id": str(guest_max + 1)}
             assert "Синица" in welcome["body"]["text"]
+            assert "Открыть Синицу" in welcome["body"]["text"]
             assert buttons_of(welcome) == [
                 {"type": "open_app", "text": "Открыть Синицу", "web_app": "SinitsaBot"}
             ]

@@ -1,4 +1,4 @@
-"""Venue → points + menu library → assignments against the real API.
+"""Venue → points + menu library → assignments (P1-DOC-15) against the real API.
 
 Scenarios: second point, shared menu published with confirmed points, independent copy,
 show hours in the point's time zone, assignment revisions, archive rules, isolation of

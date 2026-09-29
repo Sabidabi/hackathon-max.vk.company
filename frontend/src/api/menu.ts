@@ -1,3 +1,4 @@
+import { prepareImageForUpload, TOO_LARGE_MESSAGE } from "../lib/image";
 import { errorDetail } from "./errors";
 export interface ItemVariant { id: string; name: string; price_minor: number; weight_text: string | null; is_available: boolean }
 export interface ModifierOption { id: string; name: string; price_minor: number; min_quantity: number; max_quantity: number; default_quantity: number; is_available: boolean; price_by_variant: Record<string, number> }
@@ -8,7 +9,7 @@ export const emptyConfiguration = (): ItemConfiguration => ({ variants: [], defa
 export interface MenuItem {
   configuration: ItemConfiguration;
   id: string;
-  /** Stable identity of a position across versions; absent for new ones. */
+  /** Stable identity of a position across versions (point stop-list, P1-DOC-15); absent for new ones. */
   item_key?: string | null;
   name: string;
   description: string | null;
@@ -155,12 +156,13 @@ export async function uploadMenuMedia(
   file: File,
 ): Promise<MenuMediaResult> {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", await prepareImageForUpload(file));
   const response = await fetch(`/api/v1/restaurants/${restaurantId}/menu/media`, {
     method: "POST",
     credentials: "include",
     body: form,
   });
+  if (response.status === 413) throw new Error(TOO_LARGE_MESSAGE);
   return parseJson<MenuMediaResult>(response, "Не удалось загрузить фотографию блюда");
 }
 

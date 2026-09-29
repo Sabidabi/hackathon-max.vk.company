@@ -13,7 +13,7 @@ const timeFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "sh
 const inviteLink = (invite: CreatedInvite) => invite.max_deep_link ?? invite.web_url;
 
 /**
- * «Администраторы»: equal admins, the
+ * «Администраторы» (P1-DOC-4 «Приглашение», «Много администраторов»): equal admins, the
  * creator is marked and cannot be removed; «Пригласить» creates a one-time link for 24 h and
  * shares it through MAX (or copies it). Removing and leaving ask for a confirmation.
  */

@@ -13,7 +13,7 @@ import "./home.css";
 const NAME_LIMIT = 200;
 
 /**
- * «Подключить своё заведение»: one field, then the
+ * «Подключить своё заведение» (P1-DOC-4 «Главная», `startapp=connect`): one field, then the
  * signed-in user becomes the venue's creator-admin and lands in its cabinet.
  */
 function ConnectForm() {
@@ -32,7 +32,7 @@ function ConnectForm() {
         current && !current.some((item) => item.id === venue.id) ? [...current, venue] : current);
       void queryClient.invalidateQueries({ queryKey: ["restaurants"] });
       void queryClient.invalidateQueries({ queryKey: HOME_QUERY_KEY });
-      navigate(`/manage/${venue.public_id}`, { replace: true });
+      navigate(`/manage/${venue.public_id}/menu`, { replace: true });
     },
     onError: () => haptics.notify("error"),
   });

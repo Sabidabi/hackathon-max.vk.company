@@ -131,7 +131,7 @@ export function AccountShell({
         </LoadError>
       );
     }
-    // Signed-out outside MAX: no password or user-id login, only the way into MAX.
+    // Signed-out outside MAX: no password or user-id login (P1-DOC-4), only the way into MAX.
     if (!maxContext.available && !bootstrap.data?.development_auth) return <OpenInMax launchUrl={bootstrap.data?.max_launch_url} startPayload={startPayload} />;
     // Inside MAX (or with the development login) the login effect starts right after this render.
     return <Splash label={pendingLabel} />;

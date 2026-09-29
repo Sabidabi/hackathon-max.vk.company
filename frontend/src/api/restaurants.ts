@@ -8,7 +8,7 @@ export interface Restaurant {
   role: "admin";
   /** The creator cannot be removed by other admins. */
   is_creator: boolean;
-  /** Venue (brand) of this point; points of one venue share admins and menus. */
+  /** Venue (brand) of this point (P1-DOC-15); points of one venue share admins and menus. */
   venue_id: string;
   venue_name: string;
   timezone: string;

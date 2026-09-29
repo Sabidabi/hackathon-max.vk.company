@@ -1,4 +1,4 @@
-"""Webhook updates of the bot: commands, callback buttons, free messages.
+"""Webhook updates of the bot: commands, callback buttons, free messages (P1-DOC-11).
 
 ``handle_update`` changes the database (dialog consent, subscriptions, conversations and
 their outbox rows) and returns the immediate answers; the route commits and sends them.
@@ -50,10 +50,24 @@ HELP_TEXT = (
     "/stop — отписаться от рассылок\n"
     "/help — эта подсказка"
 )
-WELCOME_TEXT = (
-    "Это Синица: меню кофеен и пекарен прямо в MAX. Сообщения от бота теперь разрешены — "
-    "уведомления включаются в настройках."
+WELCOME_BODY = (
+    "Я Синица, маленькая птичка с большим меню. 🐦\n\n"
+    "☕ Открываю меню кофеен и пекарен по QR: без установки и регистрации\n"
+    "🥛 Показываю размеры, молоко и добавки, а итоговую цену считаю точно\n"
+    "♡ Запоминаю любимые места и подсказываю, когда там новинки\n\n"
+    "Если у вас своя кофейня или пекарня: соберу меню из фото за пару минут, "
+    "красиво оформлю и дам QR для стойки.\n\n"
+    "Жмите «Открыть Синицу» — там всё самое вкусное. 👇"
 )
+
+
+def welcome_text(name: str = "") -> str:
+    """The first message of the dialog: a friendly hello and a push to the mini app."""
+    clean = " ".join(name.split())[:40]
+    return f"Привет, {clean}! {WELCOME_BODY}" if clean else f"Привет! {WELCOME_BODY}"
+
+
+WELCOME_TEXT = welcome_text()
 MAX_LIST_BUTTONS = 8
 
 
@@ -202,7 +216,7 @@ def help_reply() -> Reply:
 
 async def start_reply(
     session: AsyncSession, dialog: BotDialog, user: User | None, payload: str | None,
-    now: datetime,
+    now: datetime, name: str = "",
 ) -> Reply:
     if payload and STARTAPP_PAYLOAD_PATTERN.fullmatch(payload):
         if payload == "support":
@@ -224,7 +238,7 @@ async def start_reply(
                 )
         if payload.startswith(("inv_", "manage_")):
             return open_app_reply("Откройте Синицу, чтобы продолжить.", "Открыть", payload)
-    return open_app_reply(WELCOME_TEXT)
+    return open_app_reply(welcome_text(name))
 
 
 async def my_reply(session: AsyncSession, user: User | None) -> Reply:
@@ -558,7 +572,9 @@ async def handle_update(
 
     replies: list[Reply] = []
     if incoming.kind == "started":
-        replies = [await start_reply(session, dialog, user, incoming.payload, now)]
+        replies = [
+            await start_reply(session, dialog, user, incoming.payload, now, incoming.name)
+        ]
     elif incoming.kind == "callback":
         notice, replies = await handle_callback(
             session, dialog, user, incoming.payload or "", now
@@ -567,7 +583,9 @@ async def handle_update(
     else:
         command, argument = split_command(incoming.text)
         if command in {"start", "menu"}:
-            replies = [await start_reply(session, dialog, user, argument or None, now)]
+            replies = [
+                await start_reply(session, dialog, user, argument or None, now, incoming.name)
+            ]
         elif command == "my":
             replies = [await my_reply(session, user)]
         elif command == "settings":

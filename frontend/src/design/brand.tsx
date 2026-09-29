@@ -1,4 +1,5 @@
-// Logos are the brandbook files copied verbatim to public/brand; never redraw or recolour them in code.
+// Logos are the brandbook files copied verbatim to public/brand (P1-DOC-3 «Логотип только из
+// брендбука»); never redraw or recolour them in code.
 
 /** App icon (blue tile with the white bird). Minimum 32 px. */
 export function BrandMark({ size = 64, className }: { size?: number; className?: string }) {

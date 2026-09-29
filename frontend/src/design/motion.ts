@@ -1,4 +1,4 @@
-// Motion utilities of «Синица» on the Web Animations API — no dependencies.
+// Motion utilities of «Синица» (P1-DOC-18) on the Web Animations API — no dependencies.
 // Durations and curves come from the tokens in tokens.css (`--motion-*`, `--ease-*`,
 // `--stagger`), so changing a token changes every animation. Only `transform` and `opacity`
 // are animated (plus `clip-path` for the shared element of a sheet). Every helper is
@@ -163,7 +163,7 @@ export function stagger(elements: ArrayLike<Element>, keyframes: Keyframe[] = [
   });
 }
 
-/** Error: two short horizontal cycles. */
+/** Error: two short horizontal cycles (P1-DOC-18 «Ошибка поля»). */
 export function shake(element: Element | null | undefined): Animation | null {
   const distance = 6;
   return play(element, [

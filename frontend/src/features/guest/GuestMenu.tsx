@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BellOff, Check, Clock3, Heart, MapPin, Plus, Search, SearchX, Share2, X } from "lucide-react";
+import { Bell, BellOff, Check, Clock3, Heart, MapPin, Minus, Plus, Search, SearchX, Share2, X } from "lucide-react";
 import { Fragment, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { ButtonLink, Chip, EmptyState, IconButton, showToast } from "../../design";
@@ -15,9 +15,11 @@ import { bumpBar, easeSpring, flyToBar, heartBurst, prefersReducedMotion, slideI
 import { MotionSheet, type SheetOrigin } from "./MotionSheet";
 import { searchItems } from "./search";
 import { favoriteKey, trackGuestEvent, useGuestSession, useItemFavorites } from "./session";
-import { themeVariables } from "./theme";
+import { themeVariables, tileAttributes } from "./theme";
 import { useChoice } from "./useChoice";
 import "./guest.css";
+import "./soft-tiles.css";
+import "./soft-sheet.css";
 import { WriteToPointButton } from "../notifications/GuestButtons";
 
 interface Selected {
@@ -25,6 +27,15 @@ interface Selected {
   sectionName: string;
   linked: boolean;
   origin: SheetOrigin | null;
+}
+
+/**
+ * A point may show several menus at once («Основное» and «Завтраки» by hours). Guests get one
+ * list: the sections of every active menu, no tab bar on top.
+ */
+function mergeTabs(tabs: GuestMenuTab[]): GuestMenuTab[] {
+  if (tabs.length < 2) return tabs;
+  return [{ ...tabs[0], title: "Меню", sections: tabs.flatMap((candidate) => candidate.sections) }];
 }
 
 function sectionDomId(tabId: string, sectionId: string) {
@@ -60,11 +71,18 @@ function Highlighted({ text, ranges }: { text: string; ranges?: Array<[number, n
 
 type OpenItem = (item: GuestItem, sectionName: string, origin?: HTMLElement | null) => void;
 type QuickAdd = (item: GuestItem, sectionName: string, from: Rect) => void;
+type QuickRemove = (item: GuestItem) => void;
 
-/** First build of the catalog: up to 8 cards cascade in once, never on scroll. */
+/** First letter(s) of a position without a photo: a soft medallion instead of a grey stub. */
+function monogram(name: string): string {
+  const letters = name.trim().match(/[\p{L}\p{N}]/gu) ?? [];
+  return (letters[0] ?? "•").toUpperCase();
+}
+
+/** First build of the catalog: up to 8 cards cascade in once (P1-DOC-18), never on scroll. */
 const CASCADE_LIMIT = 8;
 
-function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, onQuickAdd, enterIndex }: {
+function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, onQuickAdd, onQuickRemove, enterIndex }: {
   item: GuestItem;
   /** Total quantity of this position in «Мой выбор» over all sizes and add-on variants. */
   inChoice: number;
@@ -73,6 +91,7 @@ function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, o
   favorite: boolean;
   onOpen: OpenItem;
   onQuickAdd: QuickAdd;
+  onQuickRemove: QuickRemove;
   enterIndex?: number;
 }) {
   const mediaRef = useRef<HTMLSpanElement>(null);
@@ -91,50 +110,49 @@ function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, o
         aria-describedby={detailsId}
         onClick={() => onOpen(item, sectionName, mediaRef.current)}
       >
-        {withPhoto && (
+        {withPhoto ? (
           <span className="g-card__media" ref={mediaRef}>
             <img src={item.image_url!} alt="" loading="lazy" decoding="async" />
           </span>
-        )}
-        {withPhoto ? (
-          <span className="g-card__body" id={detailsId}>
-            <span className="g-card__name">
-              <Highlighted text={item.name} ranges={highlights} />
-              {favorite && <Heart className="g-card__fav" size={14} fill="currentColor" aria-label="В любимом" />}
-            </span>
-            <span className="g-card__meta">
-              {item.is_available
-                ? <><b className="g-card__price">{fromPrice(item)}</b>{item.weight_text && <small>{item.weight_text}</small>}</>
-                : <span className="g-badge g-badge--muted">Нет в наличии</span>}
-            </span>
-          </span>
         ) : (
-          // Without a photo: a menu-board line — name and price on one line, details below.
-          <span className="g-card__body" id={detailsId}>
-            <span className="g-card__line">
-              <span className="g-card__name">
-                <Highlighted text={item.name} ranges={highlights} />
-                {favorite && <Heart className="g-card__fav" size={14} fill="currentColor" aria-label="В любимом" />}
-              </span>
-              {item.is_available && <b className="g-card__price">{fromPrice(item)}</b>}
-            </span>
-            {item.description && <span className="g-card__desc">{item.description}</span>}
-            {(!item.is_available || item.weight_text) && (
-              <span className="g-card__meta">
-                {!item.is_available && <span className="g-badge g-badge--muted">Нет в наличии</span>}
-                {item.weight_text && <small>{item.weight_text}</small>}
-              </span>
-            )}
-          </span>
+          <span className="g-card__mono" aria-hidden="true">{monogram(item.name)}</span>
         )}
+        <span className="g-card__body" id={detailsId}>
+          <span className="g-card__name">
+            <Highlighted text={item.name} ranges={highlights} />
+            {favorite && <Heart className="g-card__fav" size={14} fill="currentColor" aria-label="В любимом" />}
+          </span>
+          {item.description && <span className="g-card__desc">{item.description}</span>}
+          <span className="g-card__meta">
+            {item.is_available
+              ? <><b className="g-card__price">{fromPrice(item)}</b>{item.weight_text && <small className="g-card__weight">{item.weight_text}</small>}</>
+              : <span className="g-badge g-badge--muted">Нет в наличии</span>}
+          </span>
+        </span>
       </button>
-      {item.is_available && (
+      {item.is_available && inChoice > 0 && quick && (
+        <div className="g-stepper" role="group" aria-label={`${item.name}: в выборе ${inChoice}`}>
+          <button type="button" className="g-stepper__btn" aria-label={`Убрать одну: ${item.name}`} onClick={() => onQuickRemove(item)}>
+            <Minus size={18} aria-hidden="true" />
+          </button>
+          <b key={inChoice} className="g-stepper__qty" aria-live="polite">{inChoice}</b>
+          <button
+            type="button"
+            className="g-stepper__btn"
+            aria-label={`Добавить ещё: ${item.name}`}
+            onClick={(event) => onQuickAdd(item, sectionName, toRect(event.currentTarget.getBoundingClientRect()))}
+          >
+            <Plus size={18} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      {item.is_available && !(inChoice > 0 && quick) && (
         <button
           type="button"
           className="g-card__add"
           data-state={inChoice > 0 ? "in" : "out"}
           aria-label={inChoice > 0
-            ? `${item.name}: в выборе ${inChoice}. ${quick ? "Добавить ещё" : "Изменить"}`
+            ? `${item.name}: в выборе ${inChoice}. Изменить`
             : quick ? `Добавить ${item.name} в мой выбор` : `Выбрать параметры: ${item.name}`}
           onClick={(event) => {
             if (!quick) {
@@ -144,8 +162,8 @@ function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, o
             onQuickAdd(item, sectionName, toRect(event.currentTarget.getBoundingClientRect()));
           }}
         >
-          {/* The icon is a pure function of the choice: «✓» while the position is in it, else «+». */}
-          {inChoice > 0 ? <Check size={20} aria-hidden="true" /> : <Plus size={20} aria-hidden="true" />}
+          {inChoice > 0 ? <Check size={20} strokeWidth={2.5} aria-hidden="true" /> : <Plus size={20} strokeWidth={2.5} aria-hidden="true" />}
+          <span className="g-card__add-label" aria-hidden="true">{inChoice > 0 ? "В выборе" : quick ? "Добавить" : "Выбрать"}</span>
           {inChoice > 1 && <b key={inChoice} className="g-card__count" aria-hidden="true">{inChoice}</b>}
         </button>
       )}
@@ -153,20 +171,19 @@ function ItemCard({ item, sectionName, highlights, favorite, inChoice, onOpen, o
   );
 }
 
-function ItemGrid({ items, sectionName, favorites, counts, onOpen, onQuickAdd, highlights, cascade }: {
+function ItemGrid({ items, sectionName, favorites, counts, onOpen, onQuickAdd, onQuickRemove, highlights, cascade }: {
   items: GuestItem[];
   sectionName: string | ((item: GuestItem) => string);
   favorites: Set<string>;
   counts: Map<string, number>;
   onOpen: OpenItem;
   onQuickAdd: QuickAdd;
+  onQuickRemove: QuickRemove;
   highlights?: Map<string, Array<[number, number]>>;
   /** Hands out cascade indices during the first build; undefined afterwards. */
   cascade?: () => number | undefined;
 }) {
   const nameOf = (item: GuestItem) => (typeof sectionName === "function" ? sectionName(item) : sectionName);
-  const photos = items.filter((item) => item.image_url);
-  const rows = items.filter((item) => !item.image_url);
   const card = (item: GuestItem) => (
     <ItemCard
       key={item.id}
@@ -177,14 +194,13 @@ function ItemGrid({ items, sectionName, favorites, counts, onOpen, onQuickAdd, h
       inChoice={counts.get(item.id) ?? 0}
       onOpen={onOpen}
       onQuickAdd={onQuickAdd}
+      onQuickRemove={onQuickRemove}
       enterIndex={cascade?.()}
     />
   );
   return (
-    <>
-      {photos.length > 0 && <div className="g-grid">{photos.map(card)}</div>}
-      {rows.length > 0 && <div className="g-rows">{rows.map(card)}</div>}
-    </>
+    // One grid in the owner's order: a photo tile takes a column, a text-only tile the full row.
+    <div className="g-grid">{items.map(card)}</div>
   );
 }
 
@@ -227,7 +243,7 @@ export interface GuestSurfaceProps {
   onLinkedItemClose?: () => void;
 }
 
-/** Guest menu 2.0: the whole `/r/:publicId` screen. */
+/** Guest menu 2.0 (P1-PLAN-6): the whole `/r/:publicId` screen. */
 export function GuestSurface({ publicId, itemId = null, maxContext, onLinkedItemClose }: GuestSurfaceProps) {
   const menu = useQuery({
     queryKey: ["guest-menu", publicId],
@@ -243,7 +259,11 @@ export function GuestSurface({ publicId, itemId = null, maxContext, onLinkedItem
 }
 
 function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose }: GuestSurfaceProps & { data: GuestMenuData }) {
-  const { restaurant, site, tabs } = data;
+  const { restaurant, site } = data;
+  const tabs = useMemo(() => mergeTabs(data.tabs), [data.tabs]);
+  // Analytics keep the menu each position really belongs to.
+  const menuByItem = useMemo(() => new Map(data.tabs.flatMap((candidate) => candidate.sections.flatMap((section) =>
+    section.items.map((item): [string, string] => [item.id, candidate.menu_id])))), [data.tabs]);
   const variables = useMemo<Record<string, string>>(() => ({ ...themeVariables(site), "--g-spring": easeSpring() }), [site]);
   useBodyTheme(variables);
   const rootStyle = useMemo(() => {
@@ -306,7 +326,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   const sectionOf = useMemo(() => new Map(catalog.map((entry) => [entry.item.id, entry.sectionName])), [catalog]);
   const hits = useMemo(() => (query ? searchItems(catalog.map((entry) => entry.item), query) : []), [catalog, query]);
 
-  // an item address opens its card; an unknown item says so
+  // P1-TASK-18 / P1-PLAN-4 [decision]: an item address opens its card; an unknown item says so
   // and returns to the menu.
   useEffect(() => {
     if (!itemId || linkedHandled.current === itemId) return;
@@ -321,7 +341,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
     setSelected({ item: entry.item, sectionName: entry.sectionName, linked: true, origin: null });
   }, [catalog, itemId, onLinkedItemClose]);
 
-  // The category rail follows the scroll.
+  // The category rail follows the scroll (P1-DOC-6 «Липкие категории»).
   const sectionKey = sections.map((section) => section.id).join(":");
   useEffect(() => {
     if (query || !sections.length || !tab) {
@@ -352,7 +372,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
     return () => observer.disconnect();
   }, [sectionKey, tab?.menu_id, query, Math.round(stickyHeight / 8)]);
 
-  // The active chip background slides to the new category (FLIP).
+  // The active chip background slides to the new category (FLIP), P1-DOC-18.
   useLayoutEffect(() => {
     const rail = railRef.current;
     const chip = activeSection ? rail?.querySelector<HTMLElement>(`[data-category-id="${activeSection}"]`) ?? null : null;
@@ -381,7 +401,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
     window.scrollTo({ top, behavior: reduce ? "auto" : "smooth" });
   }, [publicId, stickyHeight, tab]);
 
-  // Analytics: a search is reported once the guest stops typing — length and
+  // Analytics (P1-TASK-34): a search is reported once the guest stops typing — length and
   // count only; the phrase goes with `search_empty` to the empty-search aggregate alone.
   const hitCount = hits.length;
   useEffect(() => {
@@ -404,11 +424,11 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   const openItem = useCallback((item: GuestItem, sectionName: string, origin?: HTMLElement | null) => {
     haptics.selection();
     trackGuestEvent("item_view", {
-      public_id: publicId, menu_id: menuId, item_key: item.item_key ?? null, item_name: item.name,
+      public_id: publicId, menu_id: menuByItem.get(item.id) ?? menuId, item_key: item.item_key ?? null, item_name: item.name,
       section_name: sectionName, available: item.is_available,
     });
     setSelected({ item, sectionName, linked: false, origin: origin ? { element: origin, image: item.image_url } : null });
-  }, [menuId, publicId]);
+  }, [menuByItem, menuId, publicId]);
 
   const selectedRef = useRef<Selected | null>(null);
   selectedRef.current = selected;
@@ -419,10 +439,10 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   }, [onLinkedItemClose]);
 
   // «В мой выбор»: haptics at once, then the thumbnail flies to the bar (mounted by now) and
-  // the bar bumps. The bar and total are already updated — motion never waits.
+  // the bar bumps (P1-DOC-18). The bar and total are already updated — motion never waits.
   const added = useCallback((item: GuestItem, from: Rect | null) => {
     haptics.notify("success");
-    trackGuestEvent("item_add", { public_id: publicId, menu_id: menuId, item_key: item.item_key ?? null, item_name: item.name });
+    trackGuestEvent("item_add", { public_id: publicId, menu_id: menuByItem.get(item.id) ?? menuId, item_key: item.item_key ?? null, item_name: item.name });
     const accent = getComputedStyle(document.body).getPropertyValue("--sinitsa-blue").trim() || "currentColor";
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!from) {
@@ -437,6 +457,21 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
     choice.add(quickLine(item, sectionName));
     added(item, from);
   }, [added, choice]);
+
+  const quickRemove = useCallback((item: GuestItem) => {
+    const lines = choice.lines.filter((line) => line.itemId === item.id || (item.item_key && line.itemKey === item.item_key));
+    const line = lines[lines.length - 1];
+    if (!line) return;
+    haptics.selection();
+    if (line.qty > 1) {
+      choice.setQty(line.lineId, line.qty - 1);
+      return;
+    }
+    const index = choice.lines.findIndex((entry) => entry.lineId === line.lineId);
+    trackGuestEvent("item_remove", { public_id: publicId });
+    choice.remove(line.lineId);
+    showToast(`${line.name} убрано из выбора`, { action: { label: "Отменить", onClick: () => choice.restore(line, index) } });
+  }, [choice, publicId]);
 
   /** Returns true when the item has just become a favourite (the ♡ bursts). */
   const toggleItemFavorite = useCallback((item: GuestItem) => {
@@ -508,7 +543,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   const cascadeNext = cascading ? () => (cascadeCount < CASCADE_LIMIT ? cascadeCount++ : undefined) : undefined;
 
   return (
-    <div className={`g-root g-root--enter g-template--${site.template}`} style={rootStyle}>
+    <div className={`g-root g-root--enter g-template--${site.template}`} style={rootStyle} {...tileAttributes(site)}>
       <header className={`g-cover${site.cover_url ? " g-cover--image" : ""}`} style={coverStyle}>
         <div className="g-cover__row">
           {site.logo_url && <img className="g-cover__logo" src={site.logo_url} alt="" width={48} height={48} />}
@@ -585,26 +620,6 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
           </div>
 
           <div className="g-sticky" ref={stickyRef}>
-            {tabs.length > 1 && (
-              <div className="g-tabs" role="tablist" aria-label="Меню точки">
-                {tabs.map((candidate) => (
-                  <button
-                    key={candidate.menu_id}
-                    type="button"
-                    role="tab"
-                    aria-selected={candidate.menu_id === tab?.menu_id}
-                    className="g-tab"
-                    onClick={() => {
-                      haptics.selection();
-                      setTabId(candidate.menu_id);
-                      window.scrollTo({ top: 0 });
-                    }}
-                  >
-                    {candidate.title}
-                  </button>
-                ))}
-              </div>
-            )}
             {!query && sections.length > 1 && (
               <nav className="g-rail" aria-label="Категории меню" ref={railRef}>
                 <span className="g-indicator g-rail__indicator" ref={railIndicator} aria-hidden="true" />
@@ -639,6 +654,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
                     highlights={new Map(hits.map((hit) => [hit.item.id, hit.highlights]))}
                     onOpen={openItem}
                     onQuickAdd={quickAdd}
+                    onQuickRemove={quickRemove}
                   />
                 </section>
               ) : (
@@ -699,6 +715,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
                     counts={counts}
                         onOpen={openItem}
                         onQuickAdd={quickAdd}
+                    onQuickRemove={quickRemove}
                         cascade={cascadeNext}
                       />
                     </section>

@@ -1,4 +1,4 @@
-"""Guest ↔ point dialogs through the bot: isolation, both directions over a
+"""Guest ↔ point dialogs through the bot (P1-TASK-64): isolation, both directions over a
 mock Bot API, antispam, blocking and closing."""
 
 import os

@@ -1,6 +1,15 @@
+import { prepareImageForUpload, TOO_LARGE_MESSAGE } from "../lib/image";
+
 export type SiteTemplate = "modern" | "classic" | "cafe" | "noir";
 export type SiteThemeMode = "light" | "dark";
 export type SiteBlockKind = "hero" | "about" | "menu" | "gallery" | "contacts";
+export type MenuLayout = "grid" | "list" | "large";
+export type CardStyle = "soft" | "outline" | "flat";
+export type CardRadius = "sharp" | "soft" | "round";
+export type ImageRatio = "square" | "landscape" | "portrait";
+export type AddButton = "round" | "pill";
+export type HeadingFont = "sans" | "humanist" | "rounded" | "serif" | "elegant" | "mono";
+export type BodyFont = "sans" | "humanist" | "serif";
 export type SiteImageKind = "logo" | "cover" | "gallery" | "background";
 
 export interface SiteBlock {
@@ -20,6 +29,16 @@ export interface SiteConfig {
   background_image_url: string | null;
   background_overlay: number;
   font_scale: number;
+  /** «Плитки»: optional so configs saved before the constructor keep working (defaults below). */
+  menu_layout?: MenuLayout;
+  card_style?: CardStyle;
+  card_radius?: CardRadius;
+  image_ratio?: ImageRatio;
+  add_button?: AddButton;
+  heading_font?: HeadingFont;
+  body_font?: BodyFont;
+  show_description?: boolean;
+  show_weight?: boolean;
   tagline: string | null;
   about: string | null;
   phone: string | null;
@@ -99,11 +118,12 @@ export async function uploadSiteMedia(
   file: File,
 ): Promise<SiteMediaResult> {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", await prepareImageForUpload(file, { kind: kind === "logo" ? "logo" : "photo" }));
   const response = await fetch(`/api/v1/restaurants/${restaurantId}/site/media/${kind}`, {
     method: "POST",
     credentials: "include",
     body: form,
   });
+  if (response.status === 413) throw new Error(TOO_LARGE_MESSAGE);
   return parseJson<SiteMediaResult>(response, "Не удалось загрузить изображение");
 }

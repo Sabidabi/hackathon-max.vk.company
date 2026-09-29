@@ -27,9 +27,9 @@
     border-color var(--sinitsa-duration-fast) var(--sinitsa-easing),
     transform var(--motion-instant) var(--ease-out);
 }
-.s-button { position: relative; }
+.s-button { position: relative; overflow-wrap: normal; word-break: keep-all; hyphens: none; }
 .s-button:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
-/* Press: shrink to --press-scale in --motion-instant. */
+/* Press: shrink to --press-scale in --motion-instant (P1-DOC-18 «Осязаемость»). */
 .s-button:active:not(:disabled) { transform: scale(var(--press-scale)); }
 /* Morph «кнопка → прогресс → галочка»: the label keeps the width, the status sits on top. */
 .s-button__content {
@@ -54,7 +54,8 @@
 .s-button.s-button--success,
 .s-button.s-button--success:hover { background: var(--sinitsa-success); border-color: var(--sinitsa-success); color: var(--sinitsa-on-blue); }
 /* In progress the button keeps its colour (the legacy `button:disabled` fades everything). */
-.s-button--loading:disabled { opacity: 1; }
+.s-button--loading:disabled,
+.s-button--success:disabled { opacity: 1; }
 @keyframes s-pop-in { from { opacity: 0; transform: scale(0.4); } }
 .s-button:disabled { cursor: not-allowed; }
 .s-button--full { width: 100%; }
@@ -219,7 +220,7 @@
 .s-input:hover:not(:disabled) { border-color: var(--sinitsa-ink); }
 .s-input:focus-visible { outline: none; border-color: var(--sinitsa-blue); box-shadow: 0 0 0 1px var(--sinitsa-blue); }
 .s-input[aria-invalid="true"] { border-color: var(--sinitsa-danger); }
-/* A new error shakes the control twice; reduced motion: --shake-distance is 0. */
+/* A new error shakes the control twice (P1-DOC-18); reduced motion: --shake-distance is 0. */
 .s-field--invalid .s-input,
 .s-field--invalid .s-select { animation: s-shake var(--motion-slow) var(--ease-out); }
 @keyframes s-shake {
@@ -555,3 +556,13 @@
 .s-qr { display: block; max-width: 100%; height: auto; }
 .s-qr__background { fill: var(--sinitsa-surface); }
 .s-qr__modules { fill: var(--sinitsa-ink); }
+
+/* Hero sheet: the photo is the top of the sheet; grip and close float over it. */
+.s-sheet__panel--hero { overflow: hidden; }
+.s-sheet__panel--hero .s-sheet__handle { position: absolute; inset: 0 0 auto 0; z-index: 4; height: 64px; pointer-events: auto; }
+.s-sheet__panel--hero .s-sheet__grip { width: 44px; height: 5px; margin-top: 10px; background: rgb(255 255 255 / 85%); box-shadow: 0 1px 4px rgb(0 0 0 / 25%); }
+.s-sheet__panel--hero .s-sheet__header { position: absolute; top: 12px; right: 12px; padding: 0; }
+.s-sheet__panel--hero .s-sheet__title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.s-sheet__panel--hero .s-sheet__header .s-icon-button { width: 44px; height: 44px; border-radius: 50%; background: rgb(255 255 255 / 88%); color: #151821; box-shadow: 0 2px 10px rgb(0 0 0 / 22%); backdrop-filter: blur(8px); }
+.s-sheet__panel--hero .s-sheet__body { padding: 0 0 var(--sinitsa-space-5); }
+@media (min-width: 768px) { .s-sheet__panel--hero .s-sheet__grip { display: none; } }

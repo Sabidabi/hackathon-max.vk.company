@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 /**
- * Number roll: characters that changed since the last value slide in from below,
+ * Number roll (P1-DOC-18): characters that changed since the last value slide in from below,
  * the rest stay put. The text content is always the plain value (screen readers and tests
  * read «240 ₽»); reduced motion turns the slide off in CSS.
  */

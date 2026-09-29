@@ -1,4 +1,4 @@
-"""Analytics report of a venue or one point by local calendar days.
+"""Analytics report of a venue or one point by local calendar days (P1-TASK-35).
 
 A period is ``[local midnight of the first day, local midnight after today)`` in the time zone
 of every point, so an event at 21:30 UTC in UTC+3 belongs to the next local day. Raw events

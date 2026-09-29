@@ -1,4 +1,4 @@
-"""Product analytics against the real API and PostgreSQL."""
+"""Product analytics (P1-PLAN-10) against the real API and PostgreSQL."""
 
 import os
 import uuid
@@ -218,7 +218,7 @@ async def test_report_funnel_local_day_empty_and_rollup() -> None:
                 daily = await session.get(AnalyticsDaily, (point.id, now.date()))
                 assert daily is not None
                 assert daily.metrics["sessions_by_event"]["menu_view"] == 100
-                # Second call recalculates last 2 days, so returns >= 2
+                # Second call recalculates last 2 days, so returns >= 2 (new behavior, P1-TASK-65)
                 assert await rollup_days(session, now + timedelta(days=1)) >= 2
                 assert await purge_raw_events(session, now + timedelta(days=181)) >= 102
                 await session.rollback()
@@ -235,7 +235,7 @@ async def test_report_funnel_local_day_empty_and_rollup() -> None:
 
 @pytest.mark.asyncio
 async def test_events_rejected_for_unpublished_point() -> None:
-    """Events for points without published menus should return 404."""
+    """Events for points without published menus should return 404 (P1-TASK-65)."""
     user_ids: list[uuid.UUID] = []
     try:
         async with AsyncExitStack() as stack:
@@ -266,7 +266,7 @@ async def test_events_rejected_for_unpublished_point() -> None:
 
 @pytest.mark.asyncio
 async def test_rollup_recalculates_last_two_days() -> None:
-    """Rollup should recalculate last 2 days to include late-arriving events."""
+    """Rollup should recalculate last 2 days to include late-arriving events (P1-TASK-65)."""
     user_ids: list[uuid.UUID] = []
     try:
         async with AsyncExitStack() as stack:
@@ -369,7 +369,7 @@ async def test_demo_events_only_for_demo_venue(monkeypatch: pytest.MonkeyPatch) 
 
 @pytest.mark.asyncio
 async def test_admin_events_accepted_for_unpublished_point_with_admin() -> None:
-    """Admin events from a venue admin should be accepted for unpublished points."""
+    """Admin events from a venue admin should be accepted for unpublished points (P1-TASK-65)."""
     user_ids: list[uuid.UUID] = []
     try:
         async with AsyncExitStack() as stack:

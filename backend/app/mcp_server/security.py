@@ -11,7 +11,16 @@ from app.config import get_settings
 from app.database import SessionFactory
 from app.models import McpAccessToken
 
-ALLOWED_SCOPES = frozenset({"menu:read", "menu:propose", "menu:write"})
+ALLOWED_SCOPES = frozenset(
+    {
+        "menu:read",
+        "menu:propose",
+        "menu:write",
+        "design:read",
+        "design:propose",
+        "design:write",
+    }
+)
 
 
 def hash_secret(secret: str) -> str:

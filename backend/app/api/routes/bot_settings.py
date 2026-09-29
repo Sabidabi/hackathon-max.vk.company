@@ -1,4 +1,4 @@
-"""Notification settings of the signed-in user and guest subscriptions.
+"""Notification settings of the signed-in user and guest subscriptions (P1-DOC-11).
 
 Guest notifications need explicit consent per point or per position; admin types А1–А8
 are on by default and switched off per venue. Every change applies on the server at once.

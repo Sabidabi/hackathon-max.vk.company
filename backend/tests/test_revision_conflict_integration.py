@@ -1,4 +1,4 @@
-"""the spec «Безопасность правок»: two admins of one venue edit and publish one menu.
+"""P1-DOC-15 «Безопасность правок»: two admins of one venue edit and publish one menu.
 
 The one who is late gets 409 with a structured ``detail`` (current revision, the last
 publication and its author, what changed since the version the client saw) and loses

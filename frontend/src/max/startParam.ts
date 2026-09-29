@@ -1,4 +1,4 @@
-// Parser for the MAX `startapp` payload.
+// Parser for the MAX `startapp` payload (P1-DOC-12 «Диплинки», P1-DOC-4 «Маршрутизация»).
 // The payload is navigation only: it never grants access, the server checks every right.
 // Kept free of imports so `tests/max-layer.unit.mjs` can load it with Node type stripping.
 
@@ -10,7 +10,7 @@ export type StartTarget =
   | { kind: "connect" }
   | { kind: "settings" };
 
-/** Cabinet screens a bot button may open: `manage_<publicId>_s_<section>`. */
+/** Cabinet screens a bot button may open: `manage_<publicId>_s_<section>` (P1-DOC-11). */
 export type ManageSection = "menu" | "analytics" | "team" | "import" | "messages" | "notifications";
 const MANAGE_SECTION = /^manage_([A-Za-z0-9_-]+)_s_(menu|analytics|team|import|messages|notifications)$/;
 const MANAGE_PATHS: Record<ManageSection, string> = {
@@ -32,7 +32,7 @@ const INVITE = /^inv_([A-Za-z0-9_-]{30,128})$/;
 /**
  * Returns null for an empty, oversized, unsafe or unknown payload — the caller opens Home.
  * No trimming: a payload with spaces (`r_<id>%20x`, ` r_<id>`) is broken and rejected whole
- *.
+ * (P1-DOC-12 «Валидный стартовый параметр»).
  */
 export function parseStartParam(raw: string | null | undefined): StartTarget | null {
   if (typeof raw !== "string") return null;

@@ -1,4 +1,5 @@
-// Venue, its points, menu library, assignments and the point stop-list. Rights are checked by the server on every call; foreign ids answer 404.
+// Venue, its points, menu library, assignments and the point stop-list (P1-DOC-15,
+// API of P1-PLAN-7). Rights are checked by the server on every call; foreign ids answer 404.
 import { ApiError, parseApiJson } from "./errors";
 import type { MenuItem, MenuSection } from "./menu";
 import type { Restaurant } from "./restaurants";
@@ -203,7 +204,7 @@ export { ApiError };
 export const renameVenue = (venueId: string, name: string) =>
   request<Venue>(`/api/v1/venues/${venueId}`, "Не удалось переименовать заведение", send("PATCH", { name }));
 
-// --- Publication check, history and templates ---------------------------------
+// --- Publication check, history and templates (P1-PLAN-9) ---------------------------------
 
 export interface DiffItem { item_key: string; name: string; section: string }
 export interface MenuDiff {

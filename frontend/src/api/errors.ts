@@ -22,7 +22,7 @@ export interface MenuChanges {
   total_changes: number;
 }
 
-/** Structured 409 of a stale draft revision. */
+/** Structured 409 of a stale draft revision (P1-PLAN-7). */
 export interface RevisionConflict {
   code: "revision_conflict";
   message: string;

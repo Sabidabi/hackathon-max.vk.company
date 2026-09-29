@@ -51,6 +51,43 @@ def _import(text: str) -> dict[str, Any]:
     return {"sections": sections}
 
 
+_DESIGN_RULES: list[tuple[tuple[str, ...], dict[str, Any], str]] = [
+    (("тёмн", "темн", "ночь", "ночн"), {"theme_mode": "dark"}, "тёмная тема"),
+    (("светл", "дневн"), {"theme_mode": "light"}, "светлая тема"),
+    (("списк", "строк", "файл"), {"menu_layout": "list"}, "плитки списком"),
+    (("сетк", "два в ряд", "2 в ряд"), {"menu_layout": "grid"}, "плитки сеткой"),
+    (("крупн", "больш", "одна в ряд"), {"menu_layout": "large"}, "крупные плитки"),
+    (("засечк", "классическ"), {"heading_font": "serif"}, "шрифт с засечками"),
+    (("изящн", "элегант"), {"heading_font": "elegant"}, "изящный шрифт"),
+    (("округл", "мягкий шрифт"), {"heading_font": "rounded"}, "округлый шрифт"),
+    (("печатн", "машинк"), {"heading_font": "mono"}, "печатный шрифт"),
+    (("круглые", "скругл"), {"card_radius": "round"}, "круглые углы"),
+    (("острые", "строг"), {"card_radius": "sharp"}, "острые углы"),
+    (("контур", "рамк"), {"card_style": "outline"}, "карточки с контуром"),
+    (("заливк", "плоск"), {"card_style": "flat"}, "плоские карточки"),
+    (("подпис", "кнопка с текстом"), {"add_button": "pill"}, "кнопка «Добавить» с подписью"),
+    (("без описан",), {"show_description": False}, "без описаний"),
+    (("без веса", "без объём"), {"show_weight": False}, "без веса и объёма"),
+]
+
+
+def _design(data: dict[str, Any]) -> dict[str, Any]:
+    request = str(data.get("request") or "").lower()
+    patch: dict[str, Any] = {}
+    notes: list[str] = []
+    for words, values, note in _DESIGN_RULES:
+        if any(word in request for word in words):
+            patch.update(values)
+            notes.append(note)
+    if not patch:
+        return {
+            "summary": "Демо-ИИ не понял, что менять: назовите тему, раскладку, шрифт или углы.",
+            "patch": {},
+            "warnings": [],
+        }
+    return {"summary": "Демо-план: " + ", ".join(notes) + ".", "patch": patch, "warnings": []}
+
+
 class MockAIProvider:
     name = "mock"
     model = "mock-v1"
@@ -88,5 +125,13 @@ class MockAIProvider:
         if task.name == "import_structure":
             return _import(data["text"])
         if task.name == "import_descriptions":
-            return {"descriptions": []}  # the demo never writes descriptions
+            # The labelled demo writes a plain draft for every item (checked by the review).
+            return {
+                "descriptions": [
+                    {"index": item["index"], "description": _describe(item)}
+                    for item in data["items"]
+                ]
+            }
+        if task.name == "design_plan":
+            return _design(data)
         raise ValueError(f"unknown task {task.name}")

@@ -1,10 +1,11 @@
-import { Clock3, MapPin } from "lucide-react";
+import { Clock3, MapPin, Plus } from "lucide-react";
 import { useMemo, type CSSProperties } from "react";
 
 import type { MenuItem, MenuSection } from "../../../api/menu";
 import type { SiteConfig } from "../../../api/site";
-import { themeVariables } from "../../guest/theme";
+import { themeVariables, tileAttributes } from "../../guest/theme";
 import "../../guest/guest.css";
+import "../../guest/soft-tiles.css";
 import { displayPrice } from "../../menu/configuration";
 
 const SAMPLE: MenuSection[] = [
@@ -20,7 +21,7 @@ const SAMPLE: MenuSection[] = [
 ];
 
 /**
- * «Глазами гостя»: the draft theme on the classes of the new guest menu
+ * «Глазами гостя» (P1-DOC-7, P1-DOC-17): the draft theme on the classes of the new guest menu
  * (`features/guest/guest.css`, only imported) with the same colour mapping (`themeVariables`).
  * The variables live on this frame only — the cabinet keeps the «Синица» palette.
  */
@@ -41,7 +42,7 @@ export function ThemePreview({ config, title, address, sections }: {
   const coverStyle = config.cover_url ? ({ "--g-cover": `url("${config.cover_url.replace(/"/g, "%22")}")` } as CSSProperties) : undefined;
   return (
     <div className="design-phone" aria-label="Предпросмотр: так увидит гость">
-      <div className={`g-root design-phone__screen g-template--${config.template}`} style={style} inert>
+      <div className={`g-root design-phone__screen g-template--${config.template}`} style={style} {...tileAttributes(config)} inert>
         <header className={`g-cover${config.cover_url ? " g-cover--image" : ""}`} style={coverStyle}>
           <div className="g-cover__row">
             {config.logo_url && <img className="g-cover__logo" src={config.logo_url} alt="" width={48} height={48} />}
@@ -59,20 +60,31 @@ export function ThemePreview({ config, title, address, sections }: {
           {shown.map((section) => (
             <section key={section.id} className="g-section">
               <div className="g-section__head"><h2>{section.name}</h2></div>
-              <div className="g-rows">
-                {section.items.map((item) => (
-                  <article key={item.id} className={`g-card g-card--row${item.is_available ? "" : " g-card--off"}`}>
-                    <span className="g-card__open">
-                      <span className="g-card__body">
-                        <span className="g-card__line">
+              <div className="g-grid">
+                {section.items.map((item) => {
+                  const withPhoto = Boolean(item.image_url);
+                  return (
+                    <article key={item.id} className={`g-card ${withPhoto ? "g-card--photo" : "g-card--row"}${item.is_available ? "" : " g-card--off"}`}>
+                      <span className="g-card__open">
+                        {withPhoto
+                          ? <span className="g-card__media"><img src={item.image_url!} alt="" /></span>
+                          : <span className="g-card__mono" aria-hidden="true">{(item.name.trim()[0] ?? "•").toUpperCase()}</span>}
+                        <span className="g-card__body">
                           <span className="g-card__name">{item.name}</span>
-                          {item.is_available && <b className="g-card__price">{item.price_minor || item.configuration?.variants.length ? displayPrice(item) : "—"}</b>}
+                          {item.description && <span className="g-card__desc">{item.description}</span>}
+                          <span className="g-card__meta">
+                            {item.is_available
+                              ? <><b className="g-card__price">{item.price_minor || item.configuration?.variants.length ? displayPrice(item) : "—"}</b>{item.weight_text && <small className="g-card__weight">{item.weight_text}</small>}</>
+                              : <span className="g-badge g-badge--muted">Нет в наличии</span>}
+                          </span>
                         </span>
-                        {item.description && <span className="g-card__desc">{item.description}</span>}
                       </span>
-                    </span>
-                  </article>
-                ))}
+                      {item.is_available && (
+                        <span className="g-card__add" data-state="out" aria-hidden="true"><Plus size={20} strokeWidth={2.5} /><span className="g-card__add-label">Добавить</span></span>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ))}

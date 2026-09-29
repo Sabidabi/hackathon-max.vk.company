@@ -7,7 +7,7 @@ let aiProposal = null;
 let importApplied = false;
 let favorite = {is_favorite:false,notifications_enabled:false};
 let campaigns = [];
-// Venue (brand) → points → library menus. The first venue's «Основное» menu keeps
+// Venue (brand) → points → library menus (P1-DOC-15). The first venue's «Основное» menu keeps
 // its content in the legacy globals below (`sections`, `published`, `revision`), so the old
 // `/restaurants/:id/menu/*` routes and the new `/menus/:id/*` routes see the same draft.
 const VENUE_ID = randomUUID();
@@ -15,7 +15,7 @@ let venues = [{ id: VENUE_ID, name: "Кофейня Север", is_creator: tru
 let restaurant = { id: randomUUID(), public_id: "test-point", name: "Кофейня Север", venue_id: VENUE_ID, venue_name: "Кофейня Север", timezone: "Europe/Moscow", address: "Москва, Покровка, 12", description: "Кофе и свежая выпечка", role: "admin", is_creator: true, menu_id: randomUUID(), draft_version_id: randomUUID(), current_published_version_id: null };
 const MAIN_MENU_ID = restaurant.menu_id;
 let restaurants = [restaurant]; let invites = [];
-// Admins of the fixture venue: the signed-in creator and one more admin.
+// Admins of the fixture venue: the signed-in creator and one more admin (P1-DOC-4).
 let members = [{user_id:"test-user",max_user_id:1,display_name:"Демо",role:"admin",is_creator:true},{user_id:"second-admin",max_user_id:2,display_name:"Анна",role:"admin",is_creator:false}];
 // Invitation tokens the smoke tests open: valid, already used, addressed to another account, already admin.
 const INVITE_TOKENS = {valid:"fixture-invite-valid-000000000000000001",used:"fixture-invite-used-0000000000000000001",foreign:"fixture-invite-foreign-00000000000000001",admin:"fixture-invite-admin-000000000000000001"};
@@ -35,7 +35,7 @@ let sections = [{id:randomUUID(),name:"Кофе",items:[latte,item("Капучи
 let published = process.env.FIXTURE_PUBLISHED === "1" ? structuredClone(sections) : [];
 if (published.length) restaurant.current_published_version_id = randomUUID();
 let site = {template:"modern",theme_mode:"light",primary_color:"#171717",background_color:"#F3F3EF",surface_color:"#FFFFFF",text_color:"#171717",icon_color:"#FF5C35",background_image_url:null,background_overlay:12,font_scale:1,tagline:null,about:null,phone:null,hours:"Ежедневно 09:00–21:00",booking_url:null,logo_url:null,cover_url:null,gallery_urls:[],blocks:["hero","menu","about","gallery","contacts"].map(kind=>({kind,visible:true,title:null}))};
-// --- Library of menus, assignments and the point stop-list -------------------
+// --- Library of menus, assignments and the point stop-list (P1-PLAN-7 API) -------------------
 let mainVersion = published.length ? 2 : 0;
 const mainState = { id: MAIN_MENU_ID, venue_id: VENUE_ID, title: "Основное", created_at: new Date().toISOString(),
   get sections() { return sections; }, set sections(value) { sections = value; },
@@ -122,7 +122,7 @@ function libraryRoute(req, p, body, json) {
       if (body.expected_revision !== rev(state.revision)) return json(revisionConflict(state, body.seen_version), 409);
       state.revision += 1; state.sections = keyed(body.sections); return json(draftResponse(state));
     }
-    // AI of the cabinet on a labelled mock: the suggestion is not written anywhere.
+    // AI of the cabinet on a labelled mock (P1-TASK-42): the suggestion is not written anywhere.
     if (tail === "/ai/description" && req.method === "POST") {
       if (body.expected_revision !== rev(state.revision)) return json(revisionConflict(state, body.seen_version), 409);
       const source = body.item ?? {};
@@ -215,7 +215,7 @@ function libraryRoute(req, p, body, json) {
   }
   return undefined;
 }
-// Same rules as the server: hidden positions never block.
+// Same rules as the server (P1-DOC-7 «Публикация с проверкой»): hidden positions never block.
 function publishProblems(content) {
   const all = flatItems(content); const problems = [];
   if (!all.some((x) => x.item.is_available)) problems.push({ code: "empty", message: "Добавьте хотя бы одну доступную позицию перед публикацией", item_key: null, item_name: null, section: null });
@@ -289,7 +289,7 @@ const server = http.createServer(async (req,res)=>{
       if(p.endsWith("/menu/qr")){res.writeHead(200,{"Content-Type":"image/png"});return res.end(fs.readFileSync(path.join(__dirname,"fixtures/menu-qr.png")));}
       if(p.endsWith("/site/draft")){if(req.method==="PUT"){if(body.expected_revision!==rev(siteRevision))return json({detail:"Оформление изменилось"},409);const {expected_revision,...next}=body;site=next;siteRevision++;}return json({restaurant_id:restaurant.id,config:site,revision:rev(siteRevision),published_version:sitePublished,published_at:null});}
       if(p.endsWith("/site/publish")){if(body.expected_revision!==rev(siteRevision))return json({detail:"Оформление изменилось"},409);const lum=(h)=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4);return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];};const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((m,n)=>n-m);return (x+0.05)/(y+0.05);};if(ratio(site.text_color,site.surface_color)<4.5||ratio(site.text_color,site.background_color)<4.5||ratio(site.primary_color,site.surface_color)<3)return json({detail:"Исправьте контраст"},409);sitePublished+=1;return json({published_version:sitePublished,published_at:new Date().toISOString()});}
-      // Import of a PDF on a labelled mock: one recognised job to review.
+      // Import of a PDF on a labelled mock (P1-TASK-43): one recognised job to review.
       {const m=p.match(/^\/api\/v1\/restaurants\/([^/]+)\/imports(?:\/([^/]+)\/(review|apply))?$/);if(m){
         const job={id:"fixture-import",restaurant_id:m[1],original_name:"menu-autumn.pdf",mime_type:"application/pdf",size_bytes:245760,sha256:"0".repeat(64),status:importApplied?"completed":"needs_review",progress:100,page_count:2,item_count:4,error_message:null,error_code:null,extraction_method:"embedded_text",ocr_confidence:null,parser:"llm-v1",created_at:new Date().toISOString()};
         if(!m[2])return json([job]);

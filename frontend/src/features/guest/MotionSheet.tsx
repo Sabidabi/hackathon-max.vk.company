@@ -55,7 +55,7 @@ function visibleRect(element: HTMLElement | null): Rect | null {
 }
 
 /**
- * The design-system Sheet with the guest-menu motion: springs up, a card photo
+ * The design-system Sheet with the guest-menu motion (P1-DOC-18): springs up, a card photo
  * morphs into the sheet photo, drag down on the header closes it with resistance, and every
  * close (✕, backdrop, Escape, MAX «Назад») animates out from wherever the sheet is — an
  * opening sheet can be closed at once. Reduced motion: a short fade, no movement.

@@ -16,7 +16,7 @@ const expiryFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "
 
 type Problem = { icon: ReactNode; title: string; text: string; retry?: boolean };
 
-/** One message per failure the server can answer with. */
+/** One message per failure the server can answer with (P1-DOC-4 «Приглашение ссылкой»). */
 function inviteProblem(error: unknown): Problem {
   const status = error instanceof TeamRequestError ? error.status : 0;
   if (status === 404 || status === 410 || status === 422) {

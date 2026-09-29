@@ -29,7 +29,7 @@ function rubles(value: number) {
 }
 
 /**
- * «Описать словами»: the admin describes positions, the server returns a typed
+ * «Описать словами» (P1-DOC-8): the admin describes positions, the server returns a typed
  * plan, the admin sees exactly what will be added and applies it to the draft. Without the
  * AI key the sheet says so and the menu stays editable by hand.
  */

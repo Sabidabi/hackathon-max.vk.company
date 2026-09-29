@@ -1,7 +1,8 @@
 """Picks without AI: a small keyword matcher over the published menu.
 
-Used when the AI is unavailable, over its limit or answered nothing usable, and by the labelled
-mock provider. It only ever returns IDs of the candidates it was given.
+Used when the AI is unavailable, over its limit or answered nothing usable (P1-DOC-8
+«Недоступность ИИ не ломает продукт»), and by the labelled mock provider. It only ever
+returns IDs of the candidates it was given.
 """
 
 import re

@@ -7,7 +7,7 @@ interface RollingNumberProps {
 }
 
 /**
- * Number roll: when `value` changes, the old number slides out and the new one
+ * Number roll (P1-DOC-18): when `value` changes, the old number slides out and the new one
  * slides in — up when it grows, down when it falls. Only transform/opacity; with reduced
  * motion the change is instant. Screen readers get the current value only.
  */

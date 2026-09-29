@@ -1,4 +1,4 @@
-"""AI features against the real API and PostgreSQL: no key, limits (429),
+"""AI features against the real API and PostgreSQL (P1-DOC-8): no key, limits (429),
 grounding and ID filter, stop-list, prompt injection, description only as a suggestion."""
 
 import os

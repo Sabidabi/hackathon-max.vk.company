@@ -1,4 +1,4 @@
-"""Product analytics: append-only events, empty-search aggregate, daily roll-up.
+"""Product analytics (P1-PLAN-10): append-only events, empty-search aggregate, daily roll-up.
 
 New tables only; nothing existing is touched.
 

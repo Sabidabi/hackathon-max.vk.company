@@ -17,7 +17,7 @@ import {
   preloadIntro,
 } from "./surfaces";
 
-// Dev-only component showcase. `import.meta.env.DEV` is false in `vite build`,
+// Dev-only component showcase (P1-TASK-6). `import.meta.env.DEV` is false in `vite build`,
 // so the route and its chunk are dropped from the production bundle.
 const UiShowcase = import.meta.env.DEV ? lazy(() => import("../design/Showcase")) : null;
 
@@ -29,7 +29,7 @@ function LaunchRedirect({ to }: { to: string }) {
 
 /**
  * `/`: a valid start parameter routes straight to its screen (menu by QR skips Home and the
- * intro); otherwise, inside MAX, the intro on the very first launch and Home
+ * intro); otherwise, inside MAX, the intro on the very first launch (P1-TASK-62) and Home
  * afterwards; the product landing in an ordinary browser.
  */
 function RootRoute() {

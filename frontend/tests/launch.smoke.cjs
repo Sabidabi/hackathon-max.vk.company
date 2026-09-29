@@ -1,4 +1,4 @@
-// Invitation screen, Home and start_param routing against the built app and the
+// Invitation screen, Home and start_param routing (P1-PLAN-4) against the built app and the
 // in-memory fixture API. Browser fixture only: it proves screens and HTTP contracts, not MAX.
 const { chromium } = require("playwright");
 const { launchChromium } = require("./browser.cjs");
@@ -117,7 +117,7 @@ async function verifyInviteScreens(browser) {
   }
 }
 
-// --- MAX launch -------------------------------------------------------------------
+// --- MAX launch (P1-TASK-11) -------------------------------------------------------------------
 
 /** Marks the first-launch intro as already seen (localStorage fallback of DeviceStorage). */
 function presetIntroSeen() {
@@ -148,7 +148,7 @@ async function maxPage(browser, width, { startParam = null, mode = "bridge", sca
   const context = await browser.newContext({ viewport: { width, height: 844 } });
   await context.route("https://st.max.ru/js/max-web-app.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: script }));
   await context.addInitScript((value) => { window.__scanResult = value; }, scanResult);
-  // The first-launch intro is covered by intro.smoke.cjs; here Home is expected.
+  // The first-launch intro (P1-TASK-62) is covered by intro.smoke.cjs; here Home is expected.
   if (introSeen) await context.addInitScript(presetIntroSeen);
   const page = await context.newPage();
   const errors = [];
@@ -169,12 +169,12 @@ async function verifyStartParamRouting(browser) {
   const cases = [
     { startParam: "r_test-point", mode: "fragment", path: "/r/test-point", ready: (page) => page.getByLabel("Поиск по меню").waitFor({ timeout: 5_000 }) },
     { startParam: `r_test-point_i_${shortId}`, mode: "bridge", path: `/r/test-point/i/${shortId}`, ready: (page) => page.getByRole("dialog", { name: "Латте" }).waitFor({ timeout: 5_000 }) },
-    { startParam: "manage_test-point", mode: "bridge", path: "/manage/test-point", ready: (page) => page.getByRole("button", { name: "Действия с меню" }).waitFor({ timeout: 5_000 }) },
+    { startParam: "manage_test-point", mode: "bridge", path: "/manage/test-point", ready: (page) => page.getByRole("list", { name: "Разделы точки" }).waitFor({ timeout: 5_000 }) },
     { startParam: `inv_${TOKENS.valid}`, mode: "bridge", path: `/invite/${TOKENS.valid}`, ready: (page) => page.getByRole("heading", { name: "Вас приглашают администратором «Пекарня Юг»" }).waitFor({ timeout: 5_000 }) },
     { startParam: "connect", mode: "bridge", path: "/connect", ready: (page) => page.getByRole("heading", { name: "Подключить заведение" }).waitFor({ timeout: 5_000 }) },
     // Late Bridge: the start parameter arrives with `window.WebApp` after the first render.
     { startParam: "r_test-point", mode: "late", path: "/r/test-point", ready: (page) => page.getByLabel("Поиск по меню").waitFor({ timeout: 5_000 }) },
-    // Broken or missing parameter: Home, never an error.
+    // Broken or missing parameter: Home, never an error (P1-DOC-12 «Валидный стартовый параметр»).
     { startParam: "r_test-point x", mode: "fragment", path: "/", ready: (page) => page.getByRole("heading", { name: "Здравствуйте, Демо" }).waitFor({ timeout: 5_000 }) },
     { startParam: " r_test-point", mode: "bridge", path: "/", ready: (page) => page.getByRole("heading", { name: "Здравствуйте, Демо" }).waitFor({ timeout: 5_000 }) },
     { startParam: null, mode: "bridge", path: "/", ready: (page) => page.getByRole("heading", { name: "Здравствуйте, Демо" }).waitFor({ timeout: 5_000 }) },
@@ -241,7 +241,7 @@ async function verifyStartParamRouting(browser) {
   }
 }
 
-// --- Home --------------------------------------------------------------------------
+// --- Home (P1-TASK-12) --------------------------------------------------------------------------
 
 const EMPTY_HOME = { display_name: "Ира Новикова", first_name: "Ира", is_admin: false, admin_venues: [], recent: [], favorites: [] };
 const venue = (publicId, name, extra = {}) => ({ id: `id-${publicId}`, public_id: publicId, name, is_creator: true, has_published_menu: true, unpublished_changes: 0, points: [{ id: `id-${publicId}`, public_id: publicId, name, address: null }], ...extra });
@@ -267,7 +267,10 @@ async function verifyHome(browser) {
         await page.getByRole("button", { name: "Подключить своё заведение" }).waitFor();
         if (name === "empty") {
           await page.getByRole("heading", { name: "Сканируйте QR на столе или кассе" }).waitFor();
-          for (const title of ["Мои заведения", "Недавние", "Избранные"]) assert.equal(await page.getByRole("heading", { name: title }).count(), 0, `${title} hidden when empty`);
+          for (const title of ["Мои заведения", "Недавние"]) assert.equal(await page.getByRole("heading", { name: title }).count(), 0, `${title} hidden when empty`);
+          // The favourites collection is always there: an empty one explains how to fill it.
+          await page.getByRole("heading", { name: "Избранные точки" }).waitFor();
+          await page.getByText("нажмите сердечко у названия").waitFor();
         } else {
           assert.equal(await page.getByRole("heading", { name: "Сканируйте QR на столе или кассе" }).count(), 0);
           const cards = page.locator(".home-venues > li");
@@ -275,7 +278,7 @@ async function verifyHome(browser) {
           await page.getByText("Не опубликовано: 3").waitFor();
           await page.getByText("Меню не опубликовано").waitFor();
           await page.getByRole("heading", { name: "Недавние" }).waitFor();
-          await page.getByRole("heading", { name: "Избранные" }).waitFor();
+          await page.getByRole("heading", { name: "Избранные точки" }).waitFor();
           await page.getByLabel("Уведомления включены").waitFor();
         }
         assert.ok(await noOverflow(page), `Home (${name}) overflows at ${width}px`);
@@ -283,8 +286,8 @@ async function verifyHome(browser) {
         await settled(page);
         await page.screenshot({ path: path.join(output, `home-${name}-${width}.png`), fullPage: true });
         if (name === "admin") {
-          await page.getByRole("link", { name: "Кабинет «Кофейня Север»" }).click();
-          await page.waitForURL(`${baseUrl}/manage/test-point`);
+          await page.getByRole("link", { name: "Точка «Кофейня Север»" }).click();
+          await page.waitForURL(`${baseUrl}/manage/test-point/point`);
         }
         assert.deepEqual(errors, []);
       } finally {
@@ -293,9 +296,9 @@ async function verifyHome(browser) {
     }
   }
 
-  // Motion: the entrance is recorded on video; reduced motion keeps a fade without movement.
+  // Motion (P1-DOC-18): the entrance is recorded on video; reduced motion keeps a fade without movement.
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, recordVideo: { dir: path.join(output, "video"), size: { width: 390, height: 844 } } });
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, ...(process.env.SKIP_VIDEO ? {} : { recordVideo: { dir: path.join(output, "video"), size: { width: 390, height: 844 } } }) });
     const bridge = `window.WebApp = { initData: ${JSON.stringify(initDataFor(null))}, platform: "android", ready() {}, expand() {} };`;
     await context.route("https://st.max.ru/js/max-web-app.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: bridge }));
     await context.addInitScript(presetIntroSeen);
@@ -312,9 +315,9 @@ async function verifyHome(browser) {
       assert.equal(moving, "home-rise");
       await settled(page);
       await page.waitForTimeout(300);
-      const video = page.video();
+      const video = process.env.SKIP_VIDEO ? null : page.video();
       await context.close();
-      fs.renameSync(await video.path(), path.join(output, "home-entrance-390.webm"));
+      if (video) fs.renameSync(await video.path(), path.join(output, "home-entrance-390.webm"));
     } finally {
       await context.close().catch(() => undefined);
     }
@@ -332,7 +335,7 @@ async function verifyHome(browser) {
     }
   }
 
-  // /me/home fails: reason and «Попробовать снова», never a blank screen.
+  // /me/home fails: reason and «Попробовать снова», never a blank screen (P1-DOC-17 «Ноль тупиков»).
   for (const width of widths) {
     const { context, page, url } = await maxPage(browser, width);
     let calls = 0;
@@ -403,7 +406,7 @@ async function verifyHome(browser) {
       await page.screenshot({ path: path.join(output, "connect-320.png"), fullPage: true });
       await page.getByLabel("Название").fill("Чайная Восток");
       await page.getByRole("button", { name: "Создать заведение" }).click();
-      await page.waitForURL(/\/manage\/[a-f0-9]{12}$/, { timeout: 5_000 });
+      await page.waitForURL(/\/manage\/[a-f0-9]{12}\/menu$/, { timeout: 5_000 });
       await page.getByRole("button", { name: "Действия с меню" }).waitFor({ timeout: 5_000 });
       await page.getByRole("button", { name: /^Заведение: Чайная Восток/ }).first().waitFor();
 
@@ -444,7 +447,7 @@ async function verifyHome(browser) {
   }
 }
 
-// --- Mode switching ----------------------------------------------------------------
+// --- Mode switching (P1-TASK-13) ----------------------------------------------------------------
 
 async function verifyModeSwitch(browser) {
   for (const width of widths) {

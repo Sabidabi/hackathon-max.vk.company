@@ -1,4 +1,4 @@
-/* Invitation screen. «Синица» tokens only. */
+/* Invitation screen (P1-DOC-4 «Приглашение ссылкой»). «Синица» tokens only. */
 .invite-screen {
   display: grid;
   align-content: start;
@@ -72,7 +72,7 @@
   .invite-card { padding: var(--sinitsa-space-6); }
 }
 
-/* Motion: the card cross-fades from the skeleton
+/* Motion (P1-DOC-18 with fallbacks until P1-TASK-58): the card cross-fades from the skeleton
    and its content assembles in a short cascade; buttons press to 0.97. Reduced motion: fade only. */
 @keyframes invite-rise {
   from { opacity: 0; transform: translateY(8px); }

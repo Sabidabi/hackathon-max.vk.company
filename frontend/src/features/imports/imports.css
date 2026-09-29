@@ -1,4 +1,4 @@
-/* Import of a PDF / photo and its review on the design tokens of src/design. */
+/* Import of a PDF / photo and its review (P1-TASK-43) on the design tokens of src/design. */
 .import { display: grid; gap: var(--sinitsa-space-4); max-width: 720px; }
 .import-intro { display: flex; align-items: flex-start; gap: var(--sinitsa-space-3); margin: 0; }
 .import-intro p { margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); line-height: 1.45; }

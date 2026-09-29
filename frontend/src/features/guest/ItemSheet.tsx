@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Minus, Pencil, Plus } from "lucide-react";
+import { Check, Coffee, Heart, Minus, Pencil, Plus } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 
@@ -38,7 +38,7 @@ export function groupProblem(group: ModifierGroup, quantities: Quantities): bool
     || group.options.some((option) => (quantities[option.id] ?? 0) < option.min_quantity || (quantities[option.id] ?? 0) > option.max_quantity);
 }
 
-/** «Выберите молоко»: the required choice is explained next to the group. */
+/** «Выберите молоко»: the required choice is explained next to the group (P1-DOC-6). */
 export function requiredHint(group: ModifierGroup): string {
   const name = group.name.trim();
   const lowered = name ? name[0].toLocaleLowerCase("ru") + name.slice(1) : "вариант";
@@ -82,7 +82,7 @@ export function quickLine(item: GuestItem, sectionName: string): ChoiceLine {
 
 /**
  * Highlight that flows to the selected choice inside its parent (sizes, a single-choice
- * group) — FLIP on transform only.
+ * group) — FLIP on transform only (P1-DOC-18 «перетекание radio-индикатора»).
  */
 function FlowIndicator({ watch, selector }: { watch: unknown; selector: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -109,7 +109,7 @@ function optionPrice(option: ModifierGroup["options"][number], variantId: string
 }
 
 /**
- * Item card as a bottom sheet: photo, description, sizes, add-on groups with the
+ * Item card as a bottom sheet (P1-TASK-18): photo, description, sizes, add-on groups with the
  * required ones explained, a price from the server only, ♡ and «В мой выбор».
  */
 export function ItemSheet({
@@ -132,13 +132,14 @@ export function ItemSheet({
   favorite: boolean;
   onToggleFavorite: () => boolean;
   origin?: SheetOrigin | null;
-  /** Cabinet link for an admin of this venue. */
+  /** Cabinet link for an admin of this venue (P1-DOC-4 «Переключение режимов»). */
   editPath?: string;
 }) {
   const config = item.configuration;
   const groups = config?.modifier_groups ?? [];
   const [variantId, setVariantId] = useState<string | null>(() => initialVariant(item));
   const [quantities, setQuantities] = useState<Quantities>(() => initialQuantities(item));
+  const [qty, setQty] = useState(1);
 
   const modifiers = useMemo(
     () => Object.entries(quantities).filter(([, quantity]) => quantity > 0).map(([option_id, quantity]) => ({ option_id, quantity })),
@@ -169,39 +170,40 @@ export function ItemSheet({
     if (!complete) return;
     const photo = document.querySelector<HTMLElement>(".g-item__photo");
     const source = (photo ?? event.currentTarget).getBoundingClientRect();
-    onAdd(buildLine(item, sectionName, variantId, quantities, price), { left: source.left, top: source.top, width: source.width, height: source.height });
+    onAdd({ ...buildLine(item, sectionName, variantId, quantities, price), qty }, { left: source.left, top: source.top, width: source.width, height: source.height });
   }
 
   // The price lives in the main button: «В мой выбор · 240 ₽» (server quote only).
   const priceLabel = !complete || quoteBlocked || (quote.isError && price === null)
     ? ""
     : price !== null
-      ? formatMoney(price)
+      ? formatMoney(price * qty)
       : "…";
+  const chosenVariant = config?.variants.find((variant) => variant.id === variantId) ?? null;
+  const headPrice = price !== null ? price : chosenVariant ? chosenVariant.price_minor : item.price_minor;
+  const monogram = (item.name.trim().match(/[\p{L}\p{N}]/u)?.[0] ?? "•").toUpperCase();
 
   return (
     <MotionSheet
       open
+      hero
       origin={origin}
       onClose={onClose}
       title={item.name}
       closeLabel="Закрыть карточку"
       footer={(
         <div className="g-item-footer">
-          <IconButton
-            variant="tonal"
-            aria-label={favorite ? "Убрать из любимого" : "В любимое"}
-            aria-pressed={favorite}
-            className={favorite ? "g-heart g-heart--on" : "g-heart"}
-            icon={<Heart size={22} fill={favorite ? "currentColor" : "none"} />}
-            onClick={(event) => {
-              const target = event.currentTarget;
-              if (onToggleFavorite()) heartBurst(target, getComputedStyle(target).color);
-            }}
-          />
+          <span className="g-qty" role="group" aria-label="Количество">
+            <button type="button" className="g-qty__btn" aria-label="Меньше" disabled={qty <= 1} onClick={() => { haptics.selection(); setQty((current) => Math.max(1, current - 1)); }}>
+              <Minus size={20} aria-hidden="true" />
+            </button>
+            <output className="g-qty__value" aria-live="polite">{qty}</output>
+            <button type="button" className="g-qty__btn" aria-label="Больше" disabled={qty >= 9} onClick={() => { haptics.selection(); setQty((current) => Math.min(9, current + 1)); }}>
+              <Plus size={20} aria-hidden="true" />
+            </button>
+          </span>
           <Button
             className="g-item-footer__add"
-            icon={<Plus size={20} />}
             disabled={!complete || quoteBlocked}
             onClick={add}
           >
@@ -212,17 +214,39 @@ export function ItemSheet({
       )}
     >
       <div className="guest-item-dialog g-item">
-        {item.image_url && <img className="g-item__photo" src={item.image_url} alt="" />}
-        {!item.is_available && <p className="g-badge g-badge--muted g-item__status">Нет в наличии</p>}
-        {!item.is_available && <NotifyWhenBackButton publicId={publicId} itemKey={item.item_key} enabled />}
-        {(item.description || item.weight_text) && (
-          <div className="g-item__intro">
-            {item.description && <p>{item.description}</p>}
-            {item.weight_text && <small>{item.weight_text}</small>}
-          </div>
-        )}
-        {item.ingredients && <p className="g-item__meta">Состав: {item.ingredients}</p>}
-        {item.allergens.length > 0 && <p className="g-item__meta">Аллергены: {item.allergens.join(", ")}</p>}
+        <div className="g-hero">
+          {item.image_url
+            ? <img className="g-item__photo" src={item.image_url} alt="" />
+            : <div className="g-item__photo g-hero__mono" aria-hidden="true">{monogram}</div>}
+          <IconButton
+            variant="tonal"
+            aria-label={favorite ? "Убрать из любимого" : "В любимое"}
+            aria-pressed={favorite}
+            className={favorite ? "g-heart g-heart--on g-hero__heart" : "g-heart g-hero__heart"}
+            icon={<Heart size={22} fill={favorite ? "currentColor" : "none"} />}
+            onClick={(event) => {
+              const target = event.currentTarget;
+              if (onToggleFavorite()) heartBurst(target, getComputedStyle(target).color);
+            }}
+          />
+        </div>
+        <div className="g-item__content">
+          <header className="g-item__head">
+            <h3 className="g-item__title">{item.name}</h3>
+            <p className="g-item__price">
+              <RollingText value={formatMoney(headPrice)} />
+              {item.weight_text && <small>{item.weight_text}</small>}
+            </p>
+          </header>
+          {!item.is_available && <p className="g-badge g-badge--muted g-item__status">Нет в наличии</p>}
+          {!item.is_available && <NotifyWhenBackButton publicId={publicId} itemKey={item.item_key} enabled />}
+          {item.allergens.length > 0 && (
+            <ul className="g-item__tags" aria-label="Аллергены">
+              {item.allergens.map((allergen) => <li key={allergen}>{allergen}</li>)}
+            </ul>
+          )}
+          {item.description && <p className="g-item__desc">{item.description}</p>}
+          {item.ingredients && <p className="g-item__meta">Состав: {item.ingredients}</p>}
         {editPath && (
           <Link className="g-item__edit" to={editPath}>
             <Pencil size={16} aria-hidden="true" />
@@ -235,7 +259,7 @@ export function ItemSheet({
             <legend className="g-group__legend"><span>Размер</span></legend>
             <div className="g-sizes">
               <FlowIndicator watch={variantId} selector=".g-size--on" />
-              {config!.variants.map((variant) => (
+              {config!.variants.map((variant, sizeIndex) => (
                 <label key={variant.id} className={`g-size${variantId === variant.id ? " g-size--on" : ""}${variant.is_available ? "" : " g-size--off"}`}>
                   <input
                     type="radio"
@@ -248,6 +272,7 @@ export function ItemSheet({
                       setVariantId(variant.id);
                     }}
                   />
+                  <span className="g-size__cup" aria-hidden="true"><Coffee size={20 + sizeIndex * 6} strokeWidth={1.8} /></span>
                   <span className="g-size__name">{variant.name}</span>
                   <span className="g-size__price">{variant.is_available ? formatMoney(variant.price_minor) : "Нет"}</span>
                 </label>
@@ -307,6 +332,7 @@ export function ItemSheet({
                         />
                         <span className="g-option__name">{option.name}</span>
                         <span className="g-option__price">{priceText}</span>
+                        {value > 0 && <Check className="g-option__check" size={16} strokeWidth={3} aria-hidden="true" />}
                       </label>
                     );
                   }
@@ -343,6 +369,7 @@ export function ItemSheet({
 
         {quote.isError && !quoteBlocked && <p className="g-item__error" role="alert">{quote.error.message}</p>}
         {quoteBlocked && <p className="g-item__error" role="alert">Позиция недоступна или меню обновилось</p>}
+        </div>
       </div>
     </MotionSheet>
   );

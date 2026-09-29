@@ -10,7 +10,7 @@ import { haptics } from "../../../max";
 const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" });
 
 /**
- * «Рассылки»: only to guests who subscribed to this point, through the outbox —
+ * «Рассылки» (P1-DOC-11): only to guests who subscribed to this point, through the outbox —
  * at most once in 72 hours and never at night; the server decides when sending is allowed.
  */
 export function NotificationsPage({ pointId }: { pointId: string }) {

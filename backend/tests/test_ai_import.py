@@ -1,4 +1,4 @@
-"""LLM structuring of an import: conversion guards without a database, then the
+"""LLM structuring of an import (P1-TASK-43): conversion guards without a database, then the
 worker + review + apply against PostgreSQL: injection in the PDF publishes nothing, an
 unreadable price stays empty and blocks publication, no key → the heuristic parser."""
 
@@ -167,7 +167,9 @@ async def test_llm_import_goes_only_to_review_and_draft(tmp_path, monkeypatch) -
             assert items["Croissant"]["description_source"] == "document"
             assert items["Latte"]["description"] == "Классический кофе с молочной пенкой"
             assert items["Latte"]["description_source"] == "ai"
-            assert items["Cappuccino"]["description"] is None  # failed the fact check
+            # Failed the fact check: replaced by a neutral draft made by code, marked «auto».
+            assert items["Cappuccino"]["description_source"] == "auto"
+            assert items["Cappuccino"]["description"].startswith("Cappuccino")
             assert items[INJECTION]["price_minor"] in (0, 100)  # at most a position to review
             # Nothing reached guests or the draft before «Применить».
             assert _ok(await admin.get(
@@ -192,7 +194,7 @@ async def test_llm_import_goes_only_to_review_and_draft(tmp_path, monkeypatch) -
             ]
             assert by_name["Croissant"]["price_minor"] == 0
             assert by_name["Latte"]["description"] == "Классический кофе с молочной пенкой"
-            assert by_name["Cappuccino"]["description"] is None
+            assert by_name["Cappuccino"]["description"].startswith("Cappuccino")
             assert _ok(await admin.get(
                 f"{API}/public/restaurants/{point['public_id']}/menu"
             )) == public_before  # applied to the draft only, never published
@@ -293,14 +295,17 @@ async def test_batch_descriptions_are_checked_one_by_one(monkeypatch) -> None:
         Settings(_env_file=None), structured, uuid.uuid4(), uuid.uuid4()
     )
     items = structured["sections"][0]["items"]
-    assert added == 1 and [t.name for t in calls] == ["import_descriptions"]
+    assert added == 2 and [t.name for t in calls] == ["import_descriptions"]
     assert [i["index"] for i in calls[0].data["items"]] == [0, 1]  # «Эклер» already has text
-    assert items[0]["description_source"] == "ai" and items[1].get("description") is None
+    assert items[0]["description_source"] == "ai"
+    # The invented one is dropped and replaced by a neutral draft made by code.
+    assert items[1]["description_source"] == "auto"
+    assert items[1]["description"].startswith("Чизкейк")
     assert items[2]["description"] == "из меню" and "description_source" not in items[2]
 
 
 @pytest.mark.asyncio
-async def test_no_ai_leaves_the_import_without_generated_descriptions(monkeypatch) -> None:
+async def test_no_ai_still_gives_every_item_a_neutral_draft(monkeypatch) -> None:
     from app.ai.provider import AIUnavailable
     from app.ai.service import AILimitExceeded
     from app.imports import llm
@@ -313,10 +318,10 @@ async def test_no_ai_leaves_the_import_without_generated_descriptions(monkeypatc
         structured = _structured()
         assert await llm.add_ai_descriptions(
             Settings(_env_file=None), structured, uuid.uuid4(), uuid.uuid4()
-        ) == 0
-        assert all(
-            not i.get("description_source") for i in structured["sections"][0]["items"]
-        )
+        ) == 2  # «Эклер» already has text
+        described = structured["sections"][0]["items"]
+        assert [i["description_source"] for i in described[:2]] == ["auto", "auto"]
+        assert all(i["description"] for i in described)
 
 
 @pytest.mark.asyncio

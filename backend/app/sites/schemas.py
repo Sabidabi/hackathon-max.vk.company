@@ -42,6 +42,16 @@ class SiteConfig(BaseModel):
     background_image_url: str | None = None
     background_overlay: int = Field(default=12, ge=0, le=80)
     font_scale: float = Field(default=1, ge=0.9, le=1.15)
+    # «Плитки» (constructor of the guest menu look). Defaults keep every stored config valid.
+    menu_layout: Literal["grid", "list", "large"] = "grid"
+    card_style: Literal["soft", "outline", "flat"] = "soft"
+    card_radius: Literal["sharp", "soft", "round"] = "soft"
+    image_ratio: Literal["square", "landscape", "portrait"] = "square"
+    add_button: Literal["round", "pill"] = "round"
+    heading_font: Literal["sans", "humanist", "rounded", "serif", "elegant", "mono"] = "sans"
+    body_font: Literal["sans", "humanist", "serif"] = "sans"
+    show_description: bool = True
+    show_weight: bool = True
     tagline: str | None = Field(default=None, max_length=200)
     about: str | None = Field(default=None, max_length=2000)
     phone: str | None = Field(default=None, max_length=50)

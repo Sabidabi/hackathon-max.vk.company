@@ -1,7 +1,7 @@
-"""Demo venue «Кофейня Север»: real-looking data, clearly a demo.
+"""Demo venue «Кофейня Север» (P1-TASK-49): real-looking data, clearly a demo.
 
 No photos (there are no real ones), no synthetic analytics events or recommendations
-. Every ID below is derived from a fixed
+(post-MVP by the owner's decision on P1-DOC-14). Every ID below is derived from a fixed
 namespace so re-running the seed is idempotent.
 """
 

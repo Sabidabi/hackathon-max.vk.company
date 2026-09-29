@@ -34,7 +34,7 @@ const PAGES: Page[] = [
   { key: "import", title: "Импорт меню", hint: "PDF или фото меню в черновик", icon: <Upload size={22} /> },
 ];
 
-/** «Ещё»: everything that is not the daily menu work, one tap away. */
+/** «Ещё» (P1-DOC-7): everything that is not the daily menu work, one tap away. */
 export function MoreSection({ context, page, onOpen, onPoint }: {
   context: CabinetContext;
   page: string | null;

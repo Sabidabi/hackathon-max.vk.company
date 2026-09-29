@@ -126,7 +126,7 @@ export function useChoice(publicId: string, tabs: GuestMenuTab[] | null) {
     let availableCount = 0;
     for (const view of views) {
       if (view.state.kind === "ok") {
-        // Temporary client-side sum of server line totals until the batch quote.
+        // Temporary client-side sum of server line totals until the batch quote (P1-TASK-61).
         total += view.state.totalPriceMinor;
         availableCount += view.line.qty;
       } else if (view.state.kind === "pending") pending = true;

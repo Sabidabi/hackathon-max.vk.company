@@ -45,7 +45,7 @@ const output = path.resolve(process.env.TEST_OUTPUT || "test-results");
       await page.goto(`${baseUrl}/r/test-point`);
       await page.getByRole("button", { name: "Открыть Латте", exact: true }).waitFor();
       assert.equal(await page.getByText("Меню пока недоступно", { exact: true }).count(), 0);
-      // the spec «Раздельные чанки»: the guest menu never downloads the cabinet.
+      // P1-DOC-13 «Раздельные чанки»: the guest menu never downloads the cabinet.
       assert.ok(scripts.some((script) => /\/GuestSurface-[^/]+\.js$/.test(script)), "Guest chunk must be loaded");
       assert.deepEqual(scripts.filter((script) => /\/(AdminSurface|AccountShell|HomeSurface|LandingSurface)-/.test(script)), [], "Guest route must not load cabinet, Home or landing chunks");
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `No horizontal overflow at ${width}px`);

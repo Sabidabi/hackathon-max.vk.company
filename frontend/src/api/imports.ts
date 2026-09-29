@@ -33,8 +33,8 @@ export interface ReviewItem {
   currency: string;
   weight_text: string | null;
   description: string | null;
-  /** "document" — text from the menu; "ai" — a draft suggested by the AI, to be checked. */
-  description_source?: "document" | "ai" | null;
+  /** "document" — text from the menu; "ai" — a draft by the AI; "auto" — a neutral draft made by code. */
+  description_source?: "document" | "ai" | "auto" | null;
   source_line: string | null;
   source_confidence: number | null;
   /** The price was not readable: the field is empty and marked «Проверьте цену». */

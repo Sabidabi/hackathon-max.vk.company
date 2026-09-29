@@ -1,7 +1,7 @@
-// «Мой выбор»: what the guest picked, kept on the
+// «Мой выбор» (P1-DOC-6, P1-TASK-20, frontend part): what the guest picked, kept on the
 // device per point. Prices here are only the last server answers — the total shown to the
 // guest is always a sum of fresh server quotes (`/menu/quote` per line). A batch server quote
-// of the whole choice is backend task the spec.
+// of the whole choice is backend task P1-TASK-61 (after P1-PLAN-7 is merged).
 
 import type { GuestItem, GuestMenuTab } from "./api";
 

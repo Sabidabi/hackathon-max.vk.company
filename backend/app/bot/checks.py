@@ -2,7 +2,7 @@
 
 Each signal is keyed by venue and period in the outbox, so however often the check runs,
 a venue gets at most one А5 a day, one А6 and one А7 a week and one А4 per stale draft.
-Numbers only — the weekly summary has no AI conclusion.
+Numbers only — the weekly summary has no AI conclusion (P1-PLAN-13 scope).
 """
 
 import uuid

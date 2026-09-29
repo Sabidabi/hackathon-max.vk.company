@@ -1,4 +1,4 @@
-/* «Ещё → Сообщения»: cabinet tokens, the point answers in blue bubbles. */
+/* «Ещё → Сообщения» (P1-TASK-64): cabinet tokens, the point answers in blue bubbles. */
 .msg-row { align-items: center; }
 .msg-row__preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .msg-row__meta { display: grid; flex: none; gap: 4px; justify-items: end; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
