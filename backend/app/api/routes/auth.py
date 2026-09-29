@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.routes.bot_settings import bot_link
 from app.auth.dependencies import get_current_user
 from app.auth.max_init_data import MaxInitDataError, MaxUserData, validate_max_init_data
 from app.auth.service import create_auth_session, revoke_session, upsert_max_user
@@ -41,6 +42,7 @@ class AuthBootstrapResponse(BaseModel):
     max_auth_configured: bool
     development_auth: bool
     max_launch_url: str | None
+    support_link: str | None
 
 
 @router.get("/bootstrap", response_model=AuthBootstrapResponse)
@@ -52,6 +54,7 @@ async def get_auth_bootstrap(
         max_auth_configured=bool(settings.max_bot_token and settings.max_bot_username),
         development_auth=settings.app_env == "development" and settings.dev_auth_enabled,
         max_launch_url=build_max_deep_link(settings.max_bot_username),
+        support_link=bot_link(settings, "support"),
     )
 
 

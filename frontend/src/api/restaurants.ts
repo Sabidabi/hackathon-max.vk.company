@@ -4,8 +4,16 @@ export interface Restaurant {
   name: string;
   description: string | null;
   address: string | null;
-  role: "owner" | "manager" | "editor";
-  menu_id: string;
+  /** Every admin has the same rights; the server decides on each request. */
+  role: "admin";
+  /** The creator cannot be removed by other admins. */
+  is_creator: boolean;
+  /** Venue (brand) of this point; points of one venue share admins and menus. */
+  venue_id: string;
+  venue_name: string;
+  timezone: string;
+  /** Primary menu of the point: its first assigned menu, null when none is assigned. */
+  menu_id: string | null;
   draft_version_id: string | null;
   current_published_version_id: string | null;
   created_at: string;
@@ -16,6 +24,7 @@ export interface RestaurantPayload {
   name: string;
   description: string | null;
   address: string | null;
+  timezone?: string;
 }
 
 async function parseRestaurantResponse(response: Response): Promise<Restaurant> {

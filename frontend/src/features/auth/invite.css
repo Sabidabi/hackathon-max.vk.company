@@ -1,0 +1,96 @@
+/* Invitation screen. «Синица» tokens only. */
+.invite-screen {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: var(--sinitsa-space-6);
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding:
+    calc(var(--sinitsa-space-5) + var(--sinitsa-safe-top))
+    calc(var(--sinitsa-space-4) + var(--sinitsa-safe-right))
+    calc(var(--sinitsa-space-6) + var(--sinitsa-safe-bottom))
+    calc(var(--sinitsa-space-4) + var(--sinitsa-safe-left));
+  background: var(--sinitsa-canvas);
+  color: var(--sinitsa-ink);
+  font-family: var(--sinitsa-font);
+}
+.invite-screen__brand { justify-self: stretch; max-width: 440px; width: 100%; margin: 0 auto; }
+.invite-screen__brand img { border-radius: 22%; }
+
+.invite-card {
+  display: grid;
+  gap: var(--sinitsa-space-4);
+  width: 100%;
+  max-width: 440px;
+  padding: var(--sinitsa-space-5);
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-surface);
+}
+.invite-card__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-sky);
+  color: var(--sinitsa-blue);
+}
+.invite-card--danger .invite-card__icon { background: var(--sinitsa-danger-bg); color: var(--sinitsa-danger); }
+.invite-card--success .invite-card__icon { background: var(--sinitsa-success-bg); color: var(--sinitsa-success); }
+.invite-card__title {
+  margin: 0;
+  font-size: var(--sinitsa-text-heading);
+  font-weight: 700;
+  line-height: var(--sinitsa-line-tight);
+  overflow-wrap: anywhere;
+}
+.invite-card__text { margin: 0; color: var(--sinitsa-muted); }
+.invite-card__facts {
+  display: grid;
+  gap: var(--sinitsa-space-2);
+  margin: 0;
+  padding: var(--sinitsa-space-3) var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-canvas);
+}
+.invite-card__facts div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sinitsa-space-1) var(--sinitsa-space-3); }
+.invite-card__facts dt { color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.invite-card__facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.invite-card__error {
+  margin: 0;
+  padding: var(--sinitsa-space-3) var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-danger-bg);
+  color: var(--sinitsa-danger);
+  font-size: var(--sinitsa-text-caption);
+}
+.invite-card__actions { display: grid; gap: var(--sinitsa-space-2); margin-top: var(--sinitsa-space-2); }
+
+@media (min-width: 768px) {
+  .invite-screen { align-content: center; }
+  .invite-card { padding: var(--sinitsa-space-6); }
+}
+
+/* Motion: the card cross-fades from the skeleton
+   and its content assembles in a short cascade; buttons press to 0.97. Reduced motion: fade only. */
+@keyframes invite-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes invite-fade { from { opacity: 0; } to { opacity: 1; } }
+.invite-card--enter > * { animation: invite-rise var(--motion-base, 240ms) var(--ease-out, cubic-bezier(0.2, 0, 0, 1)) both; }
+.invite-card--enter > :nth-child(2) { animation-delay: calc(var(--stagger, 30ms) * 1); }
+.invite-card--enter > :nth-child(3) { animation-delay: calc(var(--stagger, 30ms) * 2); }
+.invite-card--enter > :nth-child(4) { animation-delay: calc(var(--stagger, 30ms) * 3); }
+.invite-card--enter > :nth-child(5) { animation-delay: calc(var(--stagger, 30ms) * 4); }
+.invite-card--enter > :nth-child(6) { animation-delay: calc(var(--stagger, 30ms) * 5); }
+.invite-card--enter > :nth-child(7) { animation-delay: calc(var(--stagger, 30ms) * 6); }
+.invite-card--enter > :nth-child(8) { animation-delay: calc(var(--stagger, 30ms) * 7); }
+.invite-card--enter > :nth-child(n + 9) { animation-delay: calc(var(--stagger, 30ms) * 7); }
+.invite-card__actions .s-button { transition: transform var(--motion-fast, 120ms) var(--ease-out, cubic-bezier(0.2, 0, 0, 1)); }
+.invite-card__actions .s-button:active:not(:disabled) { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .invite-card--enter > * { animation-name: invite-fade; }
+  .invite-card__actions .s-button:active:not(:disabled) { transform: none; }
+}

@@ -1,12 +1,56 @@
 export type MaxPlatform = "ios" | "android" | "desktop" | "web" | "unknown";
 
-interface MaxWebApp {
+export type HapticImpactStyle = "soft" | "light" | "medium" | "heavy" | "rigid";
+export type HapticNotificationType = "success" | "warning" | "error";
+
+// Optional MAX Bridge surface (dev.max.ru/docs/webapps/bridge). Every member is optional:
+// older clients and the desktop/web client lack some methods, and outside MAX the script
+// may define `window.WebApp` without a host to talk to. Call through `max/platform.ts`.
+export interface MaxBackButton {
+  isVisible?: boolean;
+  show?: () => unknown;
+  hide?: () => unknown;
+  onClick?: (handler: () => void) => unknown;
+  offClick?: (handler: () => void) => unknown;
+}
+
+export interface MaxHapticFeedback {
+  impactOccurred?: (style: HapticImpactStyle, disableVibrationFallback?: boolean) => unknown;
+  notificationOccurred?: (type: HapticNotificationType, disableVibrationFallback?: boolean) => unknown;
+  selectionChanged?: (disableVibrationFallback?: boolean) => unknown;
+}
+
+export interface MaxDeviceStorage {
+  setItem?: (key: string, value: string) => unknown;
+  getItem?: (key: string) => unknown;
+  removeItem?: (key: string) => unknown;
+}
+
+export interface MaxShareContent {
+  text?: string;
+  link?: string;
+}
+
+export interface MaxWebApp {
   initData?: string;
   initDataUnsafe?: { start_param?: string };
   platform?: Exclude<MaxPlatform, "unknown">;
   version?: string;
   ready?: () => void;
   expand?: () => void;
+  BackButton?: MaxBackButton;
+  HapticFeedback?: MaxHapticFeedback;
+  DeviceStorage?: MaxDeviceStorage;
+  openLink?: (url: string) => unknown;
+  openMaxLink?: (url: string) => unknown;
+  shareContent?: (content: MaxShareContent) => unknown;
+  shareMaxContent?: (content: MaxShareContent) => unknown;
+  downloadFile?: (url: string, fileName: string) => unknown;
+  openCodeReader?: (fileSelect?: boolean) => unknown;
+  requestScreenMaxBrightness?: () => unknown;
+  restoreScreenBrightness?: () => unknown;
+  enableClosingConfirmation?: () => unknown;
+  disableClosingConfirmation?: () => unknown;
 }
 
 declare global {
@@ -26,6 +70,7 @@ export interface MaxContext {
 const BRIDGE_WAIT_MS = 2_000;
 const BRIDGE_POLL_MS = 50;
 let preparedBridge: MaxWebApp | null = null;
+let launchedInMax = false;
 
 function readLaunchFragment(): { initData: string; platform: MaxPlatform; version: string | null } {
   const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -71,17 +116,31 @@ function prepareBridge(): void {
   if (!bridge || bridge === preparedBridge) return;
   preparedBridge = bridge;
   try {
-    bridge.ready?.();
     bridge.expand?.();
   } catch {
     // Display methods are optional; signed login still proceeds on the server.
   }
+  // `ready()` is sent by `max/platform.ts` after the first render.
 }
 
 export function initializeMaxBridge(): MaxContext {
   const context = readMaxContext();
-  if (context.available) prepareBridge();
+  if (context.available) {
+    launchedInMax = true;
+    prepareBridge();
+  }
   return context;
+}
+
+/**
+ * The Bridge object only when the app really runs inside MAX. Outside MAX the script can
+ * still define `window.WebApp`, but calls would go nowhere, so wrappers take their fallback.
+ * The launch flag survives client-side navigation, which drops the launch fragment.
+ */
+export function getMaxBridge(): MaxWebApp | null {
+  const bridge = window.WebApp;
+  if (!bridge) return null;
+  return launchedInMax || Boolean(bridge.initData?.trim()) ? bridge : null;
 }
 
 export function waitForMaxBridge(): Promise<MaxContext> {

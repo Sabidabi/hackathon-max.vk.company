@@ -1,12 +1,17 @@
 import asyncio
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select, text
 
+from app.analytics.rollup import purge_raw_events, rollup_days
+from app.bot.checks import run_scheduled_checks
+from app.bot.delivery import deliver_due, recover_interrupted
+from app.bot.events import on_import_finished
 from app.config import get_settings
 from app.database import SessionFactory, engine
+from app.imports.llm import structure_with_ai
 from app.imports.ocr import OcrResult, ocr_source
 from app.imports.processor import (
     extract_pdf_text,
@@ -178,27 +183,22 @@ async def process_notification(delivery_id: uuid.UUID) -> None:
 
 
 async def notify_import_owner(job_id: uuid.UUID, text: str) -> None:
-    settings = get_settings()
+    """А1 «импорт готов» to the admin who uploaded the file, through the bot outbox."""
     async with SessionFactory() as session:
-        row = (
-            await session.execute(
-                select(User.max_user_id, Restaurant.public_id)
-                .join(ImportJob, ImportJob.created_by_id == User.id)
-                .join(Restaurant, Restaurant.id == ImportJob.restaurant_id)
-                .where(ImportJob.id == job_id)
-            )
-        ).one_or_none()
-    if row is None:
-        return
-    max_user_id, public_id = row
-    deep_link = build_max_deep_link(settings.max_bot_username, f"manage_{public_id}")
-    await send_max_message(
-        settings,
-        user_id=max_user_id,
-        text=text,
-        button_text="Открыть кабинет" if deep_link else None,
-        button_url=deep_link,
-    )
+        await on_import_finished(session, job_id, text)
+        await session.commit()
+
+
+async def run_bot_checks(now: datetime) -> None:
+    """Daily admin signals (А4–А7); the outbox keys keep them to once per period."""
+    try:
+        async with SessionFactory() as session:
+            created = await run_scheduled_checks(session, now)
+            await session.commit()
+        if created:
+            logger.info("Bot checks queued %s admin notifications", created)
+    except Exception:
+        logger.exception("Bot checks failed")
 
 
 async def process_job(job_id: uuid.UUID) -> None:
@@ -211,6 +211,9 @@ async def process_job(job_id: uuid.UUID) -> None:
         mime_type = job.mime_type
         restaurant_id = job.restaurant_id
         existing_payload = dict(job.extracted_payload or {})
+        venue_id = await session.scalar(
+            select(Restaurant.venue_id).where(Restaurant.id == restaurant_id)
+        )
 
     try:
         source_path = resolve_data_path(settings.data_root, stored_path)
@@ -246,13 +249,21 @@ async def process_job(job_id: uuid.UUID) -> None:
             page_char_counts = [len(page.text) for page in ocr_result.pages]
 
         await update_job(job_id, status="structuring", progress=70)
-        structured_menu = await asyncio.to_thread(structure_menu_text, text_content)
+        # Optional LLM step: the text is data; any failure falls back to the heuristic parser.
+        structured_menu, fallback_reason = (
+            await structure_with_ai(settings, text_content, venue_id)
+            if venue_id is not None
+            else (None, "no_venue")
+        )
+        if structured_menu is None:
+            structured_menu = await asyncio.to_thread(structure_menu_text, text_content)
+            structured_menu["ai_fallback"] = fallback_reason
         if ocr_result is not None and ocr_result.confidence is not None:
             for section in structured_menu["sections"]:
                 assert isinstance(section, dict)
                 for item in section["items"]:
                     assert isinstance(item, dict)
-                    parser_confidence = float(item.get("source_confidence", 1))
+                    parser_confidence = float(item.get("source_confidence") or 0)
                     item["source_confidence"] = round(
                         min(parser_confidence, ocr_result.confidence), 4
                     )
@@ -324,11 +335,29 @@ async def process_job(job_id: uuid.UUID) -> None:
         )
 
 
+async def run_analytics_maintenance(now: datetime) -> None:
+    """Daily roll-up of closed local days and the 180-day retention of raw events."""
+    try:
+        async with SessionFactory() as session:
+            rolled = await rollup_days(session, now)
+            purged = await purge_raw_events(session, now)
+            await session.commit()
+        if rolled or purged:
+            logger.info("Analytics: %s days rolled up, %s raw events purged", rolled, purged)
+    except Exception:
+        logger.exception("Analytics maintenance failed")
+
+
 async def run() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
     await verify_dependencies()
     logger.info("Worker is ready to process menu imports")
+    async with SessionFactory() as session:
+        interrupted = await recover_interrupted(session, datetime.now(UTC))
+    if interrupted:
+        logger.warning("Bot messages interrupted by a restart, not resent: %s", interrupted)
+    next_checks_at = datetime.now(UTC)
 
     try:
         while True:
@@ -336,11 +365,19 @@ async def run() -> None:
             if job_id is not None:
                 await process_job(job_id)
                 continue
-            # Keep the outbox intact in local/test environments. A missing bot token is
+            now = datetime.now(UTC)
+            if now >= next_checks_at:
+                next_checks_at = now + timedelta(seconds=settings.bot_checks_interval_seconds)
+                await run_bot_checks(now)
+                await run_analytics_maintenance(now)
+            # Keep the outboxes intact in local/test environments. A missing bot token is
             # a configuration state, not a permanent delivery failure.
-            delivery_id = (
-                await claim_next_notification() if settings.max_bot_token else None
-            )
+            if not settings.max_bot_token:
+                await asyncio.sleep(settings.worker_poll_seconds)
+                continue
+            if await deliver_due(SessionFactory, settings, limit=20):
+                continue
+            delivery_id = await claim_next_notification()
             if delivery_id is None:
                 await asyncio.sleep(settings.worker_poll_seconds)
                 continue

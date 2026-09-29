@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Pencil, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { emptyConfiguration, quoteMenuItem, type MenuItem } from "../../api/menu";
 import { Modal } from "../../components/Modal";
 
@@ -8,7 +9,13 @@ function formatPrice(minor: number): string {
   return `${(minor / 100).toLocaleString("ru-RU")} ₽`;
 }
 
-export function GuestItemDialog({ item, publicId, onClose }: { item: MenuItem; publicId?: string; onClose: () => void }) {
+export function GuestItemDialog({ item, publicId, onClose, editPath }: {
+  item: MenuItem;
+  publicId?: string;
+  onClose: () => void;
+  /** Cabinet link for an admin of this venue. */
+  editPath?: string;
+}) {
   const config = item.configuration ?? emptyConfiguration();
   const [variantId, setVariantId] = useState(
     config.variants.find((variant) => variant.id === config.default_variant_id && variant.is_available)?.id
@@ -134,6 +141,7 @@ export function GuestItemDialog({ item, publicId, onClose }: { item: MenuItem; p
       <div><small>Цена за порцию</small><strong className="quoted-price" aria-live="polite">{amount !== undefined
         ? formatPrice(amount)
         : publicId && quote.isPending ? "Считаем…" : "Выберите добавки"}</strong></div>
+      {editPath && <Link className="guest-edit-link" to={editPath}><Pencil size={17} aria-hidden="true" />Редактировать</Link>}
       <button type="button" onClick={onClose}>Готово</button>
     </footer>
   </Modal>;

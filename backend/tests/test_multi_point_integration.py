@@ -10,7 +10,7 @@ from sqlalchemy import delete
 from app.auth.service import create_auth_session
 from app.database import SessionFactory
 from app.main import app
-from app.models import Restaurant, User
+from app.models import User, Venue
 
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_DB_INTEGRATION") != "1",
@@ -115,14 +115,17 @@ async def test_multiple_points_copy_and_targeted_invite() -> None:
             assert (await other.post(accept_path, json={"token": token})).status_code == 403
             accepted = await invited.post(accept_path, json={"token": token})
             assert accepted.status_code == 200, accepted.text
-            assert accepted.json()["role"] == "editor"
-            assert (await invited.post(accept_path, json={"token": token})).status_code == 404
+            assert accepted.json()["role"] == "admin"
+            assert accepted.json()["is_creator"] is False
+            assert (await invited.post(accept_path, json={"token": token})).status_code == 410
             invited_points = (await invited.get("/api/v1/restaurants")).json()
             assert [point["id"] for point in invited_points] == [second]
             assert (await invited.get(first_draft)).status_code == 404
+            # Admin of the target point, but not of the source point: the snapshot stays hidden.
+            invited_target = (await invited.get(f"/api/v1/restaurants/{second}/menu/draft")).json()
             assert (await invited.post(copy_url, json={
                 "source_version_id": library[0]["version_id"],
-                "expected_revision": copied.json()["revision"],
+                "expected_revision": invited_target["revision"],
             })).status_code == 404
             assert (await owner.delete(
                 f"/api/v1/restaurants/{second}/members/{invited_id}"
@@ -132,7 +135,7 @@ async def test_multiple_points_copy_and_targeted_invite() -> None:
     finally:
         async with SessionFactory() as session:
             if owner_id is not None:
-                await session.execute(delete(Restaurant).where(Restaurant.owner_id == owner_id))
+                await session.execute(delete(Venue).where(Venue.created_by_id == owner_id))
             for user_id in (owner_id, invited_id, other_id):
                 if user_id is not None:
                     user = await session.get(User, user_id)

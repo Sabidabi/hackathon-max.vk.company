@@ -42,7 +42,7 @@ def test_actor_identity_comes_from_verified_token_claims():
     user_id = uuid.uuid4()
     token = AccessToken(
         token="verified",
-        client_id="gigachat-agent",
+        client_id="ai-agent",
         scopes=["menu:read", "menu:propose"],
         claims={
             "access_token_id": str(token_id),

@@ -1,0 +1,128 @@
+/*
+ * «Синица» design tokens. The first block is a verbatim copy of
+ * brandbook-sinitsa/tokens/sinitsa.css v1.0.1 — change it only together with the brandbook.
+ * Everything below «Производные» is derived for the product UI; contrast is WCAG 2.x,
+ * measured against --sinitsa-surface (#FFFFFF) unless stated otherwise.
+ */
+:root {
+  --sinitsa-blue: #2450FF;
+  --sinitsa-ink: #151821;
+  --sinitsa-canvas: #F6F7FB;
+  --sinitsa-surface: #FFFFFF;
+  --sinitsa-muted: #5C6678;
+  --sinitsa-font: Arial, Helvetica, sans-serif;
+  --sinitsa-radius-control: 12px;
+  --sinitsa-radius-card: 20px;
+  --sinitsa-duration-fast: 140ms;
+  --sinitsa-duration-standard: 240ms;
+  --sinitsa-easing: cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --sinitsa-duration-fast: 0ms; --sinitsa-duration-standard: 0ms; }
+}
+
+/* Производные. */
+:root {
+  /* Pressed/hover primary. White text on it: 7.61:1. */
+  --sinitsa-blue-press: #1B3FD9;
+  /* Light selection background. Blue on sky 5.03:1, ink on sky 15.57:1, muted on sky 5.08:1. */
+  --sinitsa-sky: #EBF0FF;
+  /* Decorative dividers only (1.31:1) — never the only boundary of a control. */
+  --sinitsa-line: #DDE1EA;
+  /* Boundaries of inputs, switches and chips: 3.76:1 (WCAG 1.4.11 needs ≥ 3:1). */
+  --sinitsa-line-strong: #7A8499;
+  /* On-primary text/icons. */
+  --sinitsa-on-blue: #FFFFFF;
+
+  /* Statuses — only for statuses, never as decoration. Text on its own bg ≥ 4.5:1. */
+  --sinitsa-success: #1E7A46;      /* on white 5.35, on success-bg 4.77 */
+  --sinitsa-success-bg: #E8F5EE;
+  --sinitsa-danger: #B42318;       /* on white 6.5, on danger-bg 5.76, white on it 6.57 */
+  --sinitsa-danger-bg: #FEECEB;
+  --sinitsa-warning: #8A5300;      /* on white 6.33, on warning-bg 5.81 */
+  --sinitsa-warning-bg: #FFF4E0;
+
+  /* Overlay behind sheets and dialogs (ink at 48%). */
+  --sinitsa-scrim: rgb(21 24 33 / 48%);
+  /* Skeleton placeholder: line → sky blend, purely decorative. */
+  --sinitsa-skeleton: #E9ECF3;
+  --sinitsa-skeleton-shine: #F4F6FA;
+
+  /* Spacing scale from the brandbook: 4, 8, 12, 16, 24, 32, 48, 64. */
+  --sinitsa-space-1: 4px;
+  --sinitsa-space-2: 8px;
+  --sinitsa-space-3: 12px;
+  --sinitsa-space-4: 16px;
+  --sinitsa-space-5: 24px;
+  --sinitsa-space-6: 32px;
+  --sinitsa-space-7: 48px;
+  --sinitsa-space-8: 64px;
+
+  /* Type scale: headings Bold 32–48, body 16/150%, captions 14. */
+  --sinitsa-text-micro: 12px; /* minimum: tab labels and counters only */
+  --sinitsa-text-caption: 14px;
+  --sinitsa-text-body: 16px;
+  --sinitsa-text-title: 20px;
+  --sinitsa-text-heading: clamp(28px, 6vw, 32px);
+  --sinitsa-text-display: clamp(32px, 7vw, 48px);
+  --sinitsa-line-body: 1.5;
+  --sinitsa-line-tight: 1.2;
+
+  --sinitsa-radius-pill: 999px;
+  --sinitsa-radius-sheet: 24px;
+  --sinitsa-touch: 44px;
+  --sinitsa-control-height: 48px;
+  --sinitsa-focus-ring: 0 0 0 2px var(--sinitsa-surface), 0 0 0 4px var(--sinitsa-blue);
+  --sinitsa-shadow-raised: 0 8px 24px rgb(21 24 33 / 12%);
+  --sinitsa-shadow-sheet: 0 -8px 32px rgb(21 24 33 / 16%);
+
+  --sinitsa-safe-top: env(safe-area-inset-top, 0px);
+  --sinitsa-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --sinitsa-safe-left: env(safe-area-inset-left, 0px);
+  --sinitsa-safe-right: env(safe-area-inset-right, 0px);
+
+  --sinitsa-z-tabbar: 20;
+  --sinitsa-z-sheet: 40;
+  --sinitsa-z-toast: 60;
+}
+
+/*
+ * Движение. Components use only these tokens — no literal durations or curves.
+ * Only transform/opacity are animated (clip-path only for the shared element of a sheet).
+ * `--ease-spring` is a sampled spring (stiffness 380, damping 32, mass 1: ~1.1 % overshoot,
+ * settles in ~440 ms of physical time) squeezed into the token duration; browsers without
+ * `linear()` fall back to `--ease-out`.
+ */
+:root {
+  --motion-instant: 80ms;   /* press, checkbox, switch */
+  --motion-fast: 140ms;     /* hover, state change, toast leaving */
+  --motion-base: 240ms;     /* sheets appearing, transitions inside a screen */
+  --motion-slow: 360ms;     /* shared element, first assembly of a list */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: var(--ease-out);
+  --stagger: 30ms;
+  /* Pressed controls shrink to this scale in --motion-instant. */
+  --press-scale: 0.97;
+  /* Error shake amplitude (two cycles). */
+  --shake-distance: 6px;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(0, 0.053, 0.174, 0.321, 0.468, 0.601, 0.713, 0.803, 0.872, 0.922, 0.958,
+      0.982, 0.997, 1.005, 1.009, 1.011, 1.011, 1.009, 1.008, 1.006, 1.005, 1.003, 1.002, 1.002, 1);
+  }
+}
+/* Reduced motion: nothing moves or scales; what is left is an instant change or a short fade. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-instant: 0ms;
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+    --stagger: 0ms;
+    --press-scale: 1;
+    --shake-distance: 0px;
+    --ease-spring: var(--ease-out);
+  }
+}

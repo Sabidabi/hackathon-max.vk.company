@@ -1,0 +1,15 @@
+{
+  "name": "Синица",
+  "short_name": "Синица",
+  "description": "Меню кофейни в MAX",
+  "lang": "ru",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F7FB",
+  "theme_color": "#2450FF",
+  "icons": [
+    { "src": "/brand/sinitsa-app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/sinitsa-app-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/sinitsa-app-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

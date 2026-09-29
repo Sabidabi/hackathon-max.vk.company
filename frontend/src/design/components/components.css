@@ -1,0 +1,557 @@
+/*
+ * «Синица» base components. Only tokens from ../tokens.css — no literal colours.
+ * Class prefix `s-` keeps them apart from legacy surface styles.
+ */
+
+/* --- Button ---------------------------------------------------------------------------- */
+.s-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sinitsa-space-2);
+  min-height: var(--sinitsa-control-height);
+  min-width: var(--sinitsa-touch);
+  padding: 0 var(--sinitsa-space-5);
+  border: 1px solid transparent;
+  border-radius: var(--sinitsa-radius-control);
+  font: inherit;
+  font-size: var(--sinitsa-text-body);
+  font-weight: 700;
+  line-height: var(--sinitsa-line-tight);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--sinitsa-duration-fast) var(--sinitsa-easing),
+    border-color var(--sinitsa-duration-fast) var(--sinitsa-easing),
+    transform var(--motion-instant) var(--ease-out);
+}
+.s-button { position: relative; }
+.s-button:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+/* Press: shrink to --press-scale in --motion-instant. */
+.s-button:active:not(:disabled) { transform: scale(var(--press-scale)); }
+/* Morph «кнопка → прогресс → галочка»: the label keeps the width, the status sits on top. */
+.s-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sinitsa-space-2);
+  min-width: 0;
+  transition:
+    opacity var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+.s-button--morph .s-button__content { opacity: 0; transform: scale(0.9); }
+.s-button__status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.s-button__status > * { animation: s-pop-in var(--motion-base) var(--ease-spring) both; }
+.s-button.s-button--success,
+.s-button.s-button--success:hover { background: var(--sinitsa-success); border-color: var(--sinitsa-success); color: var(--sinitsa-on-blue); }
+/* In progress the button keeps its colour (the legacy `button:disabled` fades everything). */
+.s-button--loading:disabled { opacity: 1; }
+@keyframes s-pop-in { from { opacity: 0; transform: scale(0.4); } }
+.s-button:disabled { cursor: not-allowed; }
+.s-button--full { width: 100%; }
+.s-button__icon { display: inline-flex; flex: none; }
+.s-button__label { min-width: 0; overflow-wrap: break-word; }
+
+.s-button--primary { background: var(--sinitsa-blue); color: var(--sinitsa-on-blue); }
+.s-button--primary:hover:not(:disabled),
+.s-button--primary:active:not(:disabled) { background: var(--sinitsa-blue-press); }
+
+.s-button--secondary {
+  background: var(--sinitsa-surface);
+  border-color: var(--sinitsa-line-strong);
+  color: var(--sinitsa-ink);
+}
+.s-button--secondary:hover:not(:disabled) { background: var(--sinitsa-sky); }
+
+.s-button--ghost { background: transparent; color: var(--sinitsa-blue); }
+.s-button--ghost:hover:not(:disabled) { background: var(--sinitsa-sky); }
+
+.s-button--danger { background: var(--sinitsa-danger); color: var(--sinitsa-on-blue); }
+.s-button--danger:hover:not(:disabled) { background: var(--sinitsa-ink); }
+
+/* Disabled keeps AA text: muted on canvas instead of a faded brand colour. */
+.s-button:disabled:not(.s-button--loading) {
+  background: var(--sinitsa-canvas);
+  border-color: var(--sinitsa-line);
+  color: var(--sinitsa-muted);
+}
+
+/* --- IconButton ------------------------------------------------------------------------ */
+.s-icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--sinitsa-touch);
+  height: var(--sinitsa-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--sinitsa-radius-control);
+  background: transparent;
+  color: var(--sinitsa-ink);
+  cursor: pointer;
+  transition: background-color var(--sinitsa-duration-fast) var(--sinitsa-easing);
+}
+.s-icon-button > span { display: inline-flex; }
+.s-icon-button:hover:not(:disabled) { background: var(--sinitsa-sky); }
+.s-icon-button:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.s-icon-button:disabled { color: var(--sinitsa-muted); cursor: not-allowed; }
+.s-icon-button--tonal { background: var(--sinitsa-sky); color: var(--sinitsa-blue); }
+
+/* --- Chip ------------------------------------------------------------------------------ */
+.s-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sinitsa-space-2);
+  flex: none;
+  min-height: var(--sinitsa-touch);
+  padding: 0 var(--sinitsa-space-4);
+  border: 1px solid var(--sinitsa-line-strong);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-surface);
+  color: var(--sinitsa-ink);
+  font: inherit;
+  font-size: var(--sinitsa-text-caption);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--sinitsa-duration-fast) var(--sinitsa-easing),
+    color var(--sinitsa-duration-fast) var(--sinitsa-easing);
+}
+.s-chip__icon { display: inline-flex; }
+.s-chip:hover:not(:disabled):not(.s-chip--selected) { background: var(--sinitsa-sky); }
+.s-chip:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.s-chip--selected { background: var(--sinitsa-blue); border-color: var(--sinitsa-blue); color: var(--sinitsa-on-blue); }
+.s-chip:disabled { color: var(--sinitsa-muted); border-color: var(--sinitsa-line); cursor: not-allowed; }
+
+/* --- Switch ---------------------------------------------------------------------------- */
+.s-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sinitsa-space-4);
+  width: 100%;
+  min-height: var(--sinitsa-touch);
+  padding: var(--sinitsa-space-2) 0;
+  border: 0;
+  background: transparent;
+  color: var(--sinitsa-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.s-switch:focus-visible { outline: none; }
+.s-switch:focus-visible .s-switch__track { box-shadow: var(--sinitsa-focus-ring); }
+.s-switch:disabled { cursor: not-allowed; color: var(--sinitsa-muted); }
+.s-switch__text { display: grid; gap: 2px; min-width: 0; }
+.s-switch__label { font-size: var(--sinitsa-text-body); }
+.s-switch__description { color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+/* Row control without visible text (menu rows): the 52 px track inside a 44 px target. */
+.s-switch--compact { width: auto; flex: none; padding: 0; }
+.s-switch__track {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 32px;
+  border: 2px solid var(--sinitsa-line-strong);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-surface);
+  transition:
+    background-color var(--sinitsa-duration-fast) var(--sinitsa-easing),
+    border-color var(--sinitsa-duration-fast) var(--sinitsa-easing);
+}
+.s-switch__thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--sinitsa-line-strong);
+  transition:
+    transform var(--motion-base) var(--ease-spring),
+    scale var(--motion-instant) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+/* Pressed thumb stretches a little, then springs to the other side. */
+.s-switch:active:not(:disabled) .s-switch__thumb { scale: 1.15 1; }
+.s-switch[aria-checked="true"] .s-switch__track { background: var(--sinitsa-blue); border-color: var(--sinitsa-blue); }
+.s-switch[aria-checked="true"] .s-switch__thumb { background: var(--sinitsa-on-blue); transform: translateX(20px); }
+
+/* --- Field ----------------------------------------------------------------------------- */
+.s-field { display: grid; align-content: start; gap: var(--sinitsa-space-2); min-width: 0; }
+.s-field__label { font-size: var(--sinitsa-text-caption); font-weight: 700; color: var(--sinitsa-ink); }
+.s-field__required { font-weight: 400; color: var(--sinitsa-muted); }
+.s-field__hint { margin: 0; font-size: var(--sinitsa-text-caption); color: var(--sinitsa-muted); }
+.s-field__error {
+  margin: 0;
+  padding: var(--sinitsa-space-2) var(--sinitsa-space-3);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-danger-bg);
+  color: var(--sinitsa-danger);
+  font-size: var(--sinitsa-text-caption);
+  font-weight: 700;
+}
+.s-input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--sinitsa-control-height);
+  padding: var(--sinitsa-space-3) var(--sinitsa-space-4);
+  border: 1px solid var(--sinitsa-line-strong);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-surface);
+  color: var(--sinitsa-ink);
+  font: inherit;
+  font-size: var(--sinitsa-text-body);
+  line-height: var(--sinitsa-line-body);
+  transition: border-color var(--sinitsa-duration-fast) var(--sinitsa-easing);
+}
+.s-input::placeholder { color: var(--sinitsa-muted); }
+.s-input:hover:not(:disabled) { border-color: var(--sinitsa-ink); }
+.s-input:focus-visible { outline: none; border-color: var(--sinitsa-blue); box-shadow: 0 0 0 1px var(--sinitsa-blue); }
+.s-input[aria-invalid="true"] { border-color: var(--sinitsa-danger); }
+/* A new error shakes the control twice; reduced motion: --shake-distance is 0. */
+.s-field--invalid .s-input,
+.s-field--invalid .s-select { animation: s-shake var(--motion-slow) var(--ease-out); }
+@keyframes s-shake {
+  20% { transform: translateX(calc(var(--shake-distance) * -1)); }
+  40% { transform: translateX(var(--shake-distance)); }
+  60% { transform: translateX(calc(var(--shake-distance) * -1)); }
+  80% { transform: translateX(var(--shake-distance)); }
+}
+.s-input:disabled { background: var(--sinitsa-canvas); color: var(--sinitsa-muted); }
+.s-input--multiline { resize: vertical; }
+.s-select { position: relative; display: block; }
+.s-select__control { appearance: none; padding-right: var(--sinitsa-space-7); cursor: pointer; }
+.s-select__chevron {
+  position: absolute;
+  top: 50%;
+  right: var(--sinitsa-space-4);
+  translate: 0 -50%;
+  color: var(--sinitsa-muted);
+  pointer-events: none;
+}
+
+/* --- Sheet ----------------------------------------------------------------------------- */
+.s-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sinitsa-z-sheet);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.s-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--sinitsa-scrim);
+}
+/* While it leaves, taps go to the page underneath: the animation never blocks the next action. */
+.s-sheet--closing { pointer-events: none; }
+.s-sheet__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100dvh - var(--sinitsa-space-7) - var(--sinitsa-safe-top));
+  border-radius: var(--sinitsa-radius-sheet) var(--sinitsa-radius-sheet) 0 0;
+  background: var(--sinitsa-surface);
+  color: var(--sinitsa-ink);
+  box-shadow: var(--sinitsa-shadow-sheet);
+  will-change: transform;
+}
+.s-sheet__handle { display: flex; flex-direction: column; flex: none; touch-action: none; }
+.s-sheet__toolbar { flex: none; padding: var(--sinitsa-space-3) var(--sinitsa-space-5) 0; }
+.s-sheet__panel:focus-visible { outline: none; }
+.s-sheet__grip {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-top: var(--sinitsa-space-2);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-line);
+}
+.s-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sinitsa-space-3);
+  padding: var(--sinitsa-space-2) var(--sinitsa-space-2) 0 var(--sinitsa-space-5);
+}
+.s-sheet__title { margin: 0; font-size: var(--sinitsa-text-title); line-height: var(--sinitsa-line-tight); overflow-wrap: anywhere; }
+.s-sheet__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sinitsa-space-4) var(--sinitsa-space-5) var(--sinitsa-space-5);
+}
+.s-sheet__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sinitsa-space-3);
+  padding: var(--sinitsa-space-3) var(--sinitsa-space-5) calc(var(--sinitsa-space-4) + var(--sinitsa-safe-bottom));
+  border-top: 1px solid var(--sinitsa-line);
+}
+.s-sheet__footer > * { flex: 1 1 160px; }
+.s-sheet__body:last-child { padding-bottom: calc(var(--sinitsa-space-5) + var(--sinitsa-safe-bottom)); }
+
+@media (min-width: 768px) {
+  .s-sheet { align-items: center; padding: var(--sinitsa-space-6); }
+  .s-sheet__panel {
+    width: min(560px, 100%);
+    max-height: calc(100dvh - var(--sinitsa-space-8));
+    border-radius: var(--sinitsa-radius-card);
+    box-shadow: var(--sinitsa-shadow-raised);
+  }
+  .s-sheet__panel--wide { width: min(720px, 100%); }
+  .s-sheet__handle { touch-action: auto; }
+  .s-sheet__grip { display: none; }
+  .s-sheet__header { padding-top: var(--sinitsa-space-4); }
+  .s-sheet__footer { padding-bottom: var(--sinitsa-space-4); }
+}
+
+
+/* --- TabBar ---------------------------------------------------------------------------- */
+.s-tabbar {
+  /* Columns start from their label width and share the rest equally, so «Оформление» fits
+     in one line at 320 px; on narrower bars labels wrap to two lines instead of an ellipsis. */
+  position: relative;
+  display: flex;
+  padding: var(--sinitsa-space-1) var(--sinitsa-space-2);
+  border-top: 1px solid var(--sinitsa-line);
+  background: var(--sinitsa-surface);
+}
+.s-tabbar--fixed {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--sinitsa-z-tabbar);
+  padding-bottom: calc(var(--sinitsa-space-1) + var(--sinitsa-safe-bottom));
+  padding-left: calc(var(--sinitsa-space-2) + var(--sinitsa-safe-left));
+  padding-right: calc(var(--sinitsa-space-2) + var(--sinitsa-safe-right));
+}
+.s-tabbar__item {
+  display: grid;
+  flex: 1 1 auto;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-width: var(--sinitsa-touch);
+  min-height: 56px;
+  padding: var(--sinitsa-space-1);
+  border: 0;
+  border-radius: var(--sinitsa-radius-control);
+  background: transparent;
+  color: var(--sinitsa-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.s-tabbar__item {
+  position: relative;
+  z-index: 1;
+  transition: color var(--motion-fast) var(--ease-out), transform var(--motion-instant) var(--ease-out);
+}
+.s-tabbar__item:active { transform: scale(var(--press-scale)); }
+.s-tabbar__item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--sinitsa-blue); }
+/* Sliding indicator (FLIP-free: only its transform changes when the tab changes). */
+.s-tabbar__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-sky);
+  pointer-events: none;
+  opacity: 0;
+}
+.s-tabbar__indicator[data-ready] {
+  opacity: 1;
+  transition: transform var(--motion-base) var(--ease-spring);
+}
+.s-tabbar--vertical {
+  flex-direction: column;
+  gap: var(--sinitsa-space-1);
+  padding: 0;
+  border-top: 0;
+  background: transparent;
+}
+.s-tabbar--vertical .s-tabbar__item {
+  display: flex;
+  flex: none;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--sinitsa-space-3);
+  min-height: var(--sinitsa-touch);
+  padding: 0 var(--sinitsa-space-3);
+  font-size: var(--sinitsa-text-body);
+}
+.s-tabbar--vertical .s-tabbar__label { font-size: var(--sinitsa-text-body); text-align: left; -webkit-line-clamp: 1; }
+.s-tabbar--vertical .s-tabbar__indicator { border-radius: var(--sinitsa-radius-control); }
+.s-tabbar--vertical .s-tabbar__item--active { color: var(--sinitsa-blue); }
+.s-tabbar__item--active { color: var(--sinitsa-blue); }
+.s-tabbar__icon { position: relative; display: inline-flex; }
+.s-tabbar__label {
+  /* Wraps to two lines instead of an ellipsis: «Оформление» must stay readable at 320 px. */
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--sinitsa-text-micro);
+  font-weight: 700;
+  line-height: var(--sinitsa-line-tight);
+  text-align: center;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.s-tabbar__badge {
+  position: absolute;
+  top: -6px;
+  left: 14px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--sinitsa-surface);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-blue);
+  color: var(--sinitsa-on-blue);
+  font-size: var(--sinitsa-text-micro);
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* --- Toast ----------------------------------------------------------------------------- */
+.s-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sinitsa-space-3);
+  max-width: min(480px, calc(100vw - var(--sinitsa-space-6)));
+  min-height: var(--sinitsa-touch);
+  padding: var(--sinitsa-space-3) var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-ink);
+  color: var(--sinitsa-surface);
+  font-size: var(--sinitsa-text-caption);
+  line-height: 1.35;
+  box-shadow: var(--sinitsa-shadow-raised);
+}
+.s-toast > svg { flex: none; }
+.s-toast__text { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
+/* Action inside a toast («Повторить»): never shrinks or wraps, compact but still ≥ 44 px tall. */
+.s-toast .s-button {
+  flex: none;
+  min-height: var(--sinitsa-touch);
+  padding: 0 var(--sinitsa-space-3);
+  white-space: nowrap;
+}
+.s-toast--danger { background: var(--sinitsa-danger); color: var(--sinitsa-on-blue); }
+/* Stack of floating toasts (design/toast.ts): at most two, newest at the bottom, above the
+   cabinet tab bar (`--toast-offset`). Enters on a spring from below, leaves down and fades. */
+.s-toast-region {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--toast-offset, 0px) + var(--sinitsa-space-4) + var(--sinitsa-safe-bottom));
+  left: 0;
+  z-index: var(--sinitsa-z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sinitsa-space-2);
+  padding: 0 var(--sinitsa-space-4);
+  pointer-events: none;
+}
+.s-toast--floating {
+  pointer-events: auto;
+  animation: s-toast-in var(--motion-base) var(--ease-spring) both;
+}
+.s-toast--floating[hidden] { display: none; }
+.s-toast__action.s-button {
+  margin: calc(var(--sinitsa-space-2) * -1) calc(var(--sinitsa-space-2) * -1) calc(var(--sinitsa-space-2) * -1) 0;
+  background: transparent;
+  color: var(--sinitsa-sky);
+}
+.s-toast__action.s-button:hover:not(:disabled) { background: rgb(255 255 255 / 12%); }
+@keyframes s-toast-in { from { opacity: 0; transform: translateY(100%); } }
+
+/* --- Skeleton -------------------------------------------------------------------------- */
+.s-skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--sinitsa-skeleton);
+}
+/* Soft shimmer (1.2 s cycle) moved by transform only; static with reduced motion. */
+.s-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--sinitsa-skeleton-shine) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: s-skeleton 1.2s var(--ease-in) infinite;
+}
+.s-skeleton--control { border-radius: var(--sinitsa-radius-control); }
+.s-skeleton--card { border-radius: var(--sinitsa-radius-card); }
+.s-skeleton--pill { border-radius: var(--sinitsa-radius-pill); }
+@keyframes s-skeleton { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .s-skeleton::after { animation: none; display: none; }
+}
+
+/* --- RollingNumber --------------------------------------------------------------------- */
+.s-roll { position: relative; display: inline-grid; overflow: hidden; vertical-align: bottom; }
+.s-roll > span { grid-area: 1 / 1; white-space: nowrap; }
+.s-roll__in--up { animation: s-roll-in-up var(--motion-base) var(--ease-out) both; }
+.s-roll__in--down { animation: s-roll-in-down var(--motion-base) var(--ease-out) both; }
+.s-roll__out--up { animation: s-roll-out-up var(--motion-base) var(--ease-out) both; }
+.s-roll__out--down { animation: s-roll-out-down var(--motion-base) var(--ease-out) both; }
+@keyframes s-roll-in-up { from { transform: translateY(100%); opacity: 0; } }
+@keyframes s-roll-in-down { from { transform: translateY(-100%); opacity: 0; } }
+@keyframes s-roll-out-up { to { transform: translateY(-100%); opacity: 0; } }
+@keyframes s-roll-out-down { to { transform: translateY(100%); opacity: 0; } }
+
+/* --- EmptyState ------------------------------------------------------------------------ */
+.s-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--sinitsa-space-3);
+  padding: var(--sinitsa-space-7) var(--sinitsa-space-5);
+  text-align: center;
+}
+.s-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-sky);
+  color: var(--sinitsa-blue);
+}
+.s-empty--danger .s-empty__icon { background: var(--sinitsa-danger-bg); color: var(--sinitsa-danger); }
+.s-empty__title { margin: 0; font-size: var(--sinitsa-text-title); line-height: var(--sinitsa-line-tight); }
+.s-empty__text { max-width: 36ch; margin: 0; color: var(--sinitsa-muted); }
+.s-empty__action { margin-top: var(--sinitsa-space-2); }
+
+/* --- Spinner --------------------------------------------------------------------------- */
+.s-spinner { display: inline-flex; flex: none; color: currentColor; }
+.s-spinner > svg { animation: s-spin 0.8s linear infinite; }
+@keyframes s-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  /* A static ring still reads as «busy» next to the label. */
+  .s-spinner > svg { animation: none; }
+}
+
+/* --- QrCode ---------------------------------------------------------------------------- */
+.s-qr { display: block; max-width: 100%; height: auto; }
+.s-qr__background { fill: var(--sinitsa-surface); }
+.s-qr__modules { fill: var(--sinitsa-ink); }

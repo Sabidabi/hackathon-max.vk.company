@@ -13,7 +13,7 @@ from app.api.routes.menus import (
     read_version_sections,
     write_version_sections,
 )
-from app.auth.permissions import has_restaurant_role
+from app.auth.permissions import is_venue_admin
 from app.config import get_settings
 from app.database import SessionFactory
 from app.mcp_server.security import McpActor, hash_secret
@@ -33,12 +33,7 @@ def _argument_hash(value: object) -> str:
 
 
 async def _authorize(session, actor: McpActor) -> Restaurant:
-    allowed = await has_restaurant_role(
-        session,
-        actor.user_id,
-        actor.restaurant_id,
-        {"owner", "manager", "editor"},
-    )
+    allowed = await is_venue_admin(session, actor.user_id, actor.restaurant_id)
     if not allowed:
         raise PermissionError("Точка недоступна этому токену")
     restaurant = await session.get(Restaurant, actor.restaurant_id)

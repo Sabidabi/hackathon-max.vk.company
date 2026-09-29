@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from PIL import Image
 from pydantic import ValidationError
 
+from app import menu_diff
 from app.api.routes import menus, sites
 from app.api.routes.imports import ApplyReviewPayload, MenuReviewPayload
 from app.config import Settings
@@ -50,15 +51,28 @@ async def test_stale_revision_rejected_before_write(monkeypatch):
     monkeypatch.setattr(menus, "read_version_sections", AsyncMock(return_value=[]))
     writer = AsyncMock()
     monkeypatch.setattr(menus, "write_version_sections", writer)
+    # The conflict summary reads the database; its content is covered by integration tests.
+    conflict = AsyncMock(side_effect=lambda session, **kwargs: menu_diff.RevisionConflict(
+        message=kwargs["message"],
+        menu_id=uuid.uuid4(),
+        current_revision=kwargs["current_revision"],
+        last_publication=None,
+        seen_version=kwargs["seen_version"],
+        changes=None,
+    ))
+    monkeypatch.setattr(menu_diff, "revision_conflict", conflict)
     session = AsyncMock()
     with pytest.raises(HTTPException) as error:
         await menus.save_draft_menu(
             uuid.uuid4(),
-            menus.DraftMenuPayload(expected_revision="0" * 64),
+            menus.DraftMenuPayload(expected_revision="0" * 64, seen_version=3),
             session,
             SimpleNamespace(id=uuid.uuid4()),
         )
     assert error.value.status_code == 409
+    assert error.value.detail["code"] == "revision_conflict"
+    assert error.value.detail["current_revision"] == menus.menu_revision([])
+    assert error.value.detail["seen_version"] == 3
     writer.assert_not_awaited()
     session.commit.assert_not_awaited()
 
@@ -81,12 +95,12 @@ async def test_qr_encodes_guest_link_and_requires_publication(monkeypatch):
             return_value=menus.MenuLinksResponse(public_menu_url=guest_url, max_deep_link=None)
         ),
     )
-    menu = SimpleNamespace(current_published_version_id=None)
-    monkeypatch.setattr(menus, "get_menu_and_draft", AsyncMock(return_value=(menu, None)))
+    published = AsyncMock(return_value=False)
+    monkeypatch.setattr(menus, "point_has_published_menu", published)
     with pytest.raises(HTTPException) as error:
         await menus.get_menu_qr(restaurant_id, AsyncMock(), SimpleNamespace(), Settings())
     assert error.value.status_code == 409
-    menu.current_published_version_id = uuid.uuid4()
+    published.return_value = True
     captured = []
     original = menus.qrcode.QRCode.add_data
 
@@ -113,10 +127,9 @@ def test_site_revision_rejects_stale_configuration():
     assert error.value.status_code == 409
 
 
-async def test_editor_cannot_publish(monkeypatch):
-    monkeypatch.setattr(menus, "require_menu_access", AsyncMock())
-    monkeypatch.setattr(menus, "has_restaurant_role", AsyncMock(return_value=False))
+async def test_non_admin_cannot_publish():
     session = AsyncMock()
+    session.scalar.return_value = None  # no restaurant_members row for this user
     with pytest.raises(HTTPException) as error:
         await menus.publish_menu(
             uuid.uuid4(),
@@ -124,7 +137,7 @@ async def test_editor_cannot_publish(monkeypatch):
             session,
             SimpleNamespace(id=uuid.uuid4()),
         )
-    assert error.value.status_code == 403
+    assert error.value.status_code == 404
     session.commit.assert_not_awaited()
 
 
@@ -141,7 +154,6 @@ async def test_cannot_publish_menu_with_every_item_unavailable(monkeypatch):
         )
     ]
     monkeypatch.setattr(menus, "require_menu_access", AsyncMock())
-    monkeypatch.setattr(menus, "has_restaurant_role", AsyncMock(return_value=True))
     monkeypatch.setattr(
         menus,
         "get_menu_and_draft",

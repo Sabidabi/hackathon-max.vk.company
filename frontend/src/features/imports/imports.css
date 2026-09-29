@@ -1,0 +1,97 @@
+/* Import of a PDF / photo and its review on the design tokens of src/design. */
+.import { display: grid; gap: var(--sinitsa-space-4); max-width: 720px; }
+.import-intro { display: flex; align-items: flex-start; gap: var(--sinitsa-space-3); margin: 0; }
+.import-intro p { margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); line-height: 1.45; }
+.import-intro__icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-sky);
+  color: var(--sinitsa-blue);
+}
+.import-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sinitsa-space-4);
+  min-height: 96px;
+  padding: var(--sinitsa-space-4) var(--sinitsa-space-5);
+  border: 2px dashed var(--sinitsa-line-strong);
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-surface);
+  color: var(--sinitsa-blue);
+  cursor: pointer;
+  transition: border-color var(--motion-fast, 140ms) var(--ease-out, ease-out), background-color var(--motion-fast, 140ms) var(--ease-out, ease-out);
+}
+.import-drop:hover, .import-drop--chosen { border-color: var(--sinitsa-blue); background: var(--sinitsa-sky); }
+.import-drop input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.import-drop:has(input:focus-visible) { box-shadow: var(--sinitsa-focus-ring); }
+.import-drop__text { display: grid; gap: 2px; min-width: 0; }
+.import-drop__text strong { color: var(--sinitsa-ink); overflow-wrap: anywhere; }
+.import-drop__text small { color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.import > .s-button { justify-self: start; }
+.import-history { display: grid; gap: var(--sinitsa-space-3); }
+.import-history h2 { margin: 0; font-size: var(--sinitsa-text-body); }
+.import-jobs { display: grid; margin: 0; padding: 0; list-style: none; border: 1px solid var(--sinitsa-line); border-radius: var(--sinitsa-radius-control); background: var(--sinitsa-surface); overflow: hidden; }
+.import-job { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sinitsa-space-2) var(--sinitsa-space-3); padding: var(--sinitsa-space-3) var(--sinitsa-space-4); }
+.import-job + .import-job { border-top: 1px solid var(--sinitsa-line); }
+.import-job__text { display: grid; flex: 1 1 200px; gap: 2px; min-width: 0; }
+.import-job__text strong { overflow-wrap: anywhere; }
+.import-job__text small { color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.import-job__note { color: var(--sinitsa-warning) !important; }
+.import-job__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sinitsa-space-2); }
+.import-status {
+  padding: 2px var(--sinitsa-space-2);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-canvas);
+  color: var(--sinitsa-muted);
+  font-size: var(--sinitsa-text-micro);
+  font-weight: 700;
+  line-height: 18px;
+}
+.import-status--needs_review { background: var(--sinitsa-warning-bg); color: var(--sinitsa-warning); }
+.import-status--completed { background: var(--sinitsa-success-bg); color: var(--sinitsa-success); }
+.import-status--failed { background: var(--sinitsa-danger-bg); color: var(--sinitsa-danger); }
+.import-progress { display: block; height: 4px; margin-top: var(--sinitsa-space-1); border-radius: 2px; background: var(--sinitsa-line); overflow: hidden; }
+.import-progress span { display: block; height: 100%; background: var(--sinitsa-blue); transform-origin: left; transition: transform var(--motion-base, 240ms) var(--ease-out, ease-out); }
+
+.review, .review-loading { display: grid; gap: var(--sinitsa-space-4); }
+.review-summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sinitsa-space-2); margin: 0; font-weight: 700; }
+.review-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--sinitsa-space-2);
+  border: 1px solid var(--sinitsa-line-strong);
+  border-radius: var(--sinitsa-radius-pill);
+  color: var(--sinitsa-muted);
+  font-size: var(--sinitsa-text-micro);
+  line-height: 18px;
+}
+.review-badge--ai { border-color: var(--sinitsa-blue); color: var(--sinitsa-blue); }
+.review-unparsed summary { cursor: pointer; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); min-height: var(--sinitsa-touch); display: flex; align-items: center; }
+.review-unparsed ul { margin: 0; padding-left: var(--sinitsa-space-5); color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.review-section { display: grid; gap: var(--sinitsa-space-3); padding-top: var(--sinitsa-space-3); border-top: 1px solid var(--sinitsa-line); }
+.review-section > .s-button { justify-self: start; }
+.review-items { display: grid; gap: var(--sinitsa-space-2); margin: 0; padding: 0; list-style: none; }
+.review-item {
+  display: grid;
+  gap: var(--sinitsa-space-2);
+  padding: var(--sinitsa-space-3);
+  border: 1px solid var(--sinitsa-line);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-surface);
+}
+.review-item--doubt { border-color: color-mix(in srgb, var(--sinitsa-warning) 45%, var(--sinitsa-line)); }
+.review-item__head { display: flex; align-items: flex-start; gap: var(--sinitsa-space-2); }
+.review-item__head > .review-field { flex: 1 1 auto; min-width: 0; }
+.review-item__head > .s-icon-button { margin-top: 26px; }
+.review-item__row, .review-sizes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sinitsa-space-2) var(--sinitsa-space-3); }
+.review-item__desc { margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.review-field--doubt .s-input { border-color: var(--sinitsa-warning); background: var(--sinitsa-warning-bg); }
+.review-field--doubt .s-field__hint { color: var(--sinitsa-warning); font-weight: 700; }
+@media (max-width: 359px) { .review-item__row, .review-sizes { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .import-drop, .import-progress span { transition: none; } }

@@ -37,6 +37,8 @@ export interface SiteDraft {
   config: SiteConfig;
   published_version: number;
   published_at: string | null;
+  /** Unreadable colour pairs; the server refuses to publish until they are fixed. */
+  contrast_issues?: { pair: string; label: string; ratio: number; required: number }[];
 }
 
 export interface SitePublishResult {

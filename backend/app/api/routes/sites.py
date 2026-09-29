@@ -9,13 +9,15 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.routes.menus import point_has_published_menu_clause
 from app.auth.dependencies import get_current_user
-from app.auth.permissions import has_restaurant_role
+from app.auth.permissions import require_venue_admin
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.imports.storage import UploadValidationError
 from app.media.images import media_url_restaurant_id
-from app.models import Menu, Restaurant, RestaurantSite, User
+from app.models import Restaurant, RestaurantSite, User
+from app.sites.contrast import ContrastIssue, contrast_issues
 from app.sites.media import SiteImageKind, store_site_image
 from app.sites.schemas import SiteConfig, default_site_config
 
@@ -50,6 +52,8 @@ class SiteDraftResponse(BaseModel):
     config: SiteConfig
     published_version: int
     published_at: datetime | None
+    # Unreadable colour pairs: the draft is saved, publication is refused until fixed.
+    contrast_issues: list[ContrastIssue] = Field(default_factory=list)
 
 
 class SitePublishResponse(BaseModel):
@@ -70,10 +74,7 @@ async def require_site_access(
     user: User,
     restaurant_id: uuid.UUID,
 ) -> None:
-    if not await has_restaurant_role(
-        session, user.id, restaurant_id, {"owner", "manager", "editor"}
-    ):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+    await require_venue_admin(session, user.id, restaurant_id)
 
 
 async def get_site(session: AsyncSession, restaurant_id: uuid.UUID) -> RestaurantSite | None:
@@ -128,9 +129,12 @@ async def get_site_draft(
     return SiteDraftResponse(
         revision=site_revision(site.draft_config if site else default_site_config()),
         restaurant_id=restaurant_id,
-        config=SiteConfig.model_validate(site.draft_config if site else default_site_config()),
+        config=(config := SiteConfig.model_validate(
+            site.draft_config if site else default_site_config()
+        )),
         published_version=site.published_version if site else 0,
         published_at=site.published_at if site else None,
+        contrast_issues=contrast_issues(config),
     )
 
 
@@ -168,9 +172,10 @@ async def save_site_draft(
     return SiteDraftResponse(
         revision=site_revision(site.draft_config if site else default_site_config()),
         restaurant_id=restaurant_id,
-        config=SiteConfig.model_validate(site.draft_config),
+        config=(config := SiteConfig.model_validate(site.draft_config)),
         published_version=site.published_version,
         published_at=site.published_at,
+        contrast_issues=contrast_issues(config),
     )
 
 
@@ -182,20 +187,18 @@ async def publish_site(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> SitePublishResponse:
     await require_site_access(session, current_user, restaurant_id)
-    if not await has_restaurant_role(session, current_user.id, restaurant_id, {"owner", "manager"}):
-        raise HTTPException(
-            status_code=403, detail="Публиковать оформление может владелец или управляющий"
-        )
-    menu = await session.scalar(
-        select(Menu).where(Menu.restaurant_id == restaurant_id).with_for_update()
-    )
-    if menu is None or menu.current_published_version_id is None:
-        raise HTTPException(status_code=409, detail="Сначала опубликуйте меню")
     restaurant = await session.scalar(
         select(Restaurant).where(Restaurant.id == restaurant_id).with_for_update()
     )
     if restaurant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+    has_menu = await session.scalar(
+        select(Restaurant.id).where(
+            Restaurant.id == restaurant_id, point_has_published_menu_clause(Restaurant.id)
+        )
+    )
+    if has_menu is None:
+        raise HTTPException(status_code=409, detail="Сначала опубликуйте меню")
     site = await get_site(session, restaurant_id)
     if site is None:
         site = RestaurantSite(
@@ -208,6 +211,12 @@ async def publish_site(
 
     check_site_revision(site, payload.expected_revision)
     config = SiteConfig.model_validate(site.draft_config)
+    issues = contrast_issues(config)
+    if issues:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Исправьте контраст: {issues[0].label.lower()} плохо читается",
+        )
     published_at = datetime.now().astimezone()
     site.published_config = config.model_dump(mode="json")
     site.published_version += 1

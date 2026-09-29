@@ -2,14 +2,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
 
+import { trackAdmin } from "../../analytics";
 import type { DraftMenu } from "../../api/menu";
-import {
-  applyMenuChange,
-  fetchMenuAiStatus,
-  planMenuChange,
-  type MenuAiProposal,
-} from "../../api/menuAi";
-import { Modal } from "../../components/Modal";
+import { applyMenuChange, fetchMenuAiStatus, planMenuChange, type MenuAiProposal } from "../../api/menuAi";
+import { Button, Sheet, Skeleton, Textarea } from "../../design";
+import { haptics } from "../../max";
+import "./ai-composer.css";
 
 interface AiMenuComposerProps {
   restaurantId: string;
@@ -30,6 +28,11 @@ function rubles(value: number) {
   }).format(value / 100);
 }
 
+/**
+ * «Описать словами»: the admin describes positions, the server returns a typed
+ * plan, the admin sees exactly what will be added and applies it to the draft. Without the
+ * AI key the sheet says so and the menu stays editable by hand.
+ */
 export function AiMenuComposer({ restaurantId, revision, onApplied, onClose }: AiMenuComposerProps) {
   const [prompt, setPrompt] = useState(EXAMPLE);
   const [proposal, setProposal] = useState<MenuAiProposal | null>(null);
@@ -39,48 +42,75 @@ export function AiMenuComposer({ restaurantId, revision, onApplied, onClose }: A
   });
   const planning = useMutation({
     mutationFn: () => planMenuChange(restaurantId, prompt.trim(), revision),
-    onSuccess: setProposal,
+    onSuccess: (result) => {
+      haptics.notify("success");
+      setProposal(result);
+    },
+    onError: () => haptics.notify("error"),
   });
   const applying = useMutation({
     mutationFn: () => applyMenuChange(restaurantId, proposal!.proposal_id, revision),
     onSuccess: (menu) => {
+      haptics.notify("success");
+      trackAdmin("ai_plan_applied");
       onApplied(menu);
       onClose();
     },
   });
+  const unavailable = status.isSuccess && !status.data.configured;
 
   return (
-    <Modal title="Добавить с ИИ" onClose={onClose}>
-      <div className="dialog-body ai-composer">
-        <p className="muted">Опишите карточки обычными словами. Перед добавлением покажем точный план.</p>
-        <label>
-          <span>Что создать</span>
-          <textarea
-            rows={5}
-            maxLength={4000}
-            value={prompt}
-            onChange={(event) => {
-              setPrompt(event.target.value);
-              setProposal(null);
-              planning.reset();
-            }}
-          />
-        </label>
-        {status.isSuccess && !status.data.configured && (
-          <p className="inline-notice"><AlertTriangle size={16} />Добавьте GIGACHAT_AUTH_KEY на сервере.</p>
+    <Sheet
+      open
+      onClose={onClose}
+      title="Добавить с ИИ"
+      footer={(
+        <>
+          <Button variant="ghost" onClick={onClose}>Отмена</Button>
+          {!proposal ? (
+            <Button
+              icon={<Sparkles size={20} />}
+              loading={planning.isPending}
+              disabled={!prompt.trim() || status.isPending || unavailable}
+              onClick={() => planning.mutate()}
+            >
+              Показать план
+            </Button>
+          ) : (
+            <Button icon={<Check size={20} />} loading={applying.isPending} onClick={() => applying.mutate()}>Добавить в черновик</Button>
+          )}
+        </>
+      )}
+    >
+      <div className="ai-composer">
+        <p className="cabinet-muted">Опишите позиции обычными словами. Перед добавлением покажем точный план — цены, размеры и добавки.</p>
+        <Textarea
+          label="Что добавить"
+          rows={5}
+          maxLength={4000}
+          value={prompt}
+          onChange={(event) => {
+            setPrompt(event.target.value);
+            setProposal(null);
+            planning.reset();
+          }}
+        />
+        {unavailable && (
+          <p className="ai-composer__notice" role="status"><AlertTriangle size={18} aria-hidden="true" />ИИ сейчас недоступен — добавьте позицию вручную.</p>
         )}
-        {planning.isError && <p className="form-error" role="alert">{planning.error.message}</p>}
+        {planning.isError && <p className="cabinet-error" role="alert">{planning.error.message}</p>}
+        {planning.isPending && <Skeleton height={96} radius="card" />}
         {proposal && (
-          <div className="ai-plan" aria-label="Предпросмотр изменений">
-            <div className="ai-plan-title"><Check size={16} /><strong>{proposal.plan.summary}</strong></div>
+          <section className="ai-plan" aria-label="Предпросмотр изменений">
+            <p className="ai-plan__title"><Check size={18} aria-hidden="true" /><strong>{proposal.plan.summary}</strong></p>
             {proposal.plan.warnings.map((warning) => (
-              <p className="inline-notice" key={warning}><AlertTriangle size={15} />{warning}</p>
+              <p className="ai-composer__notice" key={warning}><AlertTriangle size={16} aria-hidden="true" />{warning}</p>
             ))}
             {proposal.plan.operations.map((operation, index) => (
-              <article className="ai-plan-card" key={`${operation.section_name}-${operation.item.name}-${index}`}>
+              <article className="ai-plan__card" key={`${operation.section_name}-${operation.item.name}-${index}`}>
                 <small>{operation.section_name}</small>
                 <strong>{operation.item.name}</strong>
-                <span>{rubles(operation.item.base_price_minor)}</span>
+                <span className="ai-plan__price">{rubles(operation.item.base_price_minor)}</span>
                 {operation.item.variants.length > 0 && (
                   <p>{operation.item.variants.map((item) => `${item.name} · ${rubles(item.price_minor)}`).join("  /  ")}</p>
                 )}
@@ -91,26 +121,10 @@ export function AiMenuComposer({ restaurantId, revision, onApplied, onClose }: A
                 ))}
               </article>
             ))}
-          </div>
+          </section>
         )}
-        {applying.isError && <p className="form-error" role="alert">{applying.error.message}</p>}
+        {applying.isError && <p className="cabinet-error" role="alert">{applying.error.message}</p>}
       </div>
-      <footer className="dialog-footer">
-        <button type="button" className="button-quiet" onClick={onClose}>Отмена</button>
-        {!proposal ? (
-          <button
-            type="button"
-            disabled={!prompt.trim() || planning.isPending || status.isPending || !status.data?.configured}
-            onClick={() => planning.mutate()}
-          >
-            <Sparkles size={16} />{planning.isPending ? "Собираем…" : "Показать план"}
-          </button>
-        ) : (
-          <button type="button" disabled={applying.isPending} onClick={() => applying.mutate()}>
-            <Check size={16} />{applying.isPending ? "Добавляем…" : "Добавить в черновик"}
-          </button>
-        )}
-      </footer>
-    </Modal>
+    </Sheet>
   );
 }

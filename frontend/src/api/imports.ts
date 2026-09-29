@@ -1,3 +1,4 @@
+import { errorDetail } from "./errors";
 export interface ImportJob {
   id: string;
   restaurant_id: string;
@@ -21,6 +22,8 @@ export interface ImportJob {
   error_code: string | null;
   extraction_method: string | null;
   ocr_confidence: number | null;
+  /** "llm-v1" — structured by the AI and checked by the server; "heuristic-v1" — parser. */
+  parser?: string | null;
   created_at: string;
 }
 
@@ -32,6 +35,11 @@ export interface ReviewItem {
   description: string | null;
   source_line: string | null;
   source_confidence: number | null;
+  /** The price was not readable: the field is empty and marked «Проверьте цену». */
+  price_missing?: boolean;
+  field_confidence?: { name: number | null; price: number | null } | null;
+  /** Sizes with their own prices (0 — not recognised). */
+  variants?: { name: string; price_minor: number }[];
 }
 
 export interface ReviewSection {
@@ -45,6 +53,8 @@ export interface ImportReview {
   status: string;
   sections: ReviewSection[];
   unparsed_lines: string[];
+  parser?: string;
+  provider?: string | null;
 }
 
 export interface ApplyReviewResult {
@@ -123,8 +133,8 @@ export async function applyImportReview(
     },
   );
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? `Не удалось сохранить черновик: ${response.status}`);
+    const payload: unknown = await response.json().catch(() => null);
+    throw new Error(errorDetail(payload) ?? `Не удалось сохранить черновик: ${response.status}`);
   }
   return response.json() as Promise<ApplyReviewResult>;
 }

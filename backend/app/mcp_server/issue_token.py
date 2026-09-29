@@ -3,7 +3,7 @@ import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from app.auth.permissions import has_restaurant_role
+from app.auth.permissions import is_venue_admin
 from app.database import SessionFactory
 from app.mcp_server.security import ALLOWED_SCOPES, create_secret, hash_secret
 from app.models import McpAccessToken
@@ -16,12 +16,7 @@ async def issue(args) -> str:
     if not scopes or any(scope not in ALLOWED_SCOPES for scope in scopes):
         raise ValueError("Scopes: menu:read,menu:propose,menu:write")
     async with SessionFactory() as session:
-        if not await has_restaurant_role(
-            session,
-            user_id,
-            restaurant_id,
-            {"owner", "manager", "editor"},
-        ):
+        if not await is_venue_admin(session, user_id, restaurant_id):
             raise ValueError("User has no access to the restaurant")
         secret = create_secret()
         session.add(

@@ -9,16 +9,19 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.menus import (
+    _existing_keys,
     check_revision,
     get_menu_and_draft,
     menu_revision,
+    name_key,
     read_version_sections,
 )
 from app.auth.dependencies import get_current_user
-from app.auth.permissions import has_restaurant_role
+from app.auth.permissions import require_venue_admin
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.imports.storage import UploadValidationError, remove_stored_upload, store_upload
+from app.menu_configuration import ItemConfiguration, Variant
 from app.models import ImportJob, MenuItem, MenuSection, User
 
 router = APIRouter(prefix="/restaurants/{restaurant_id}/imports", tags=["imports"])
@@ -39,6 +42,8 @@ class ImportJobResponse(BaseModel):
     error_code: str | None
     extraction_method: str | None
     ocr_confidence: float | None
+    # How the review was structured: "llm-v1" (AI, checked by code) or "heuristic-v1".
+    parser: str | None = None
     created_at: datetime
 
     @classmethod
@@ -72,8 +77,32 @@ class ImportJobResponse(BaseModel):
                 if isinstance(payload.get("ocr_confidence"), int | float)
                 else None
             ),
+            parser=(
+                structured_menu.get("parser")
+                if isinstance(structured_menu, dict)
+                and isinstance(structured_menu.get("parser"), str)
+                else None
+            ),
             created_at=job.created_at,
         )
+
+
+class ReviewVariant(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    # 0 = not recognised: the size is saved unavailable until the admin enters a price.
+    price_minor: int = Field(ge=0, le=100_000_000)
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Укажите размер")
+        return value.strip()
+
+
+class FieldConfidence(BaseModel):
+    name: float | None = Field(default=None, ge=0, le=1)
+    price: float | None = Field(default=None, ge=0, le=1)
 
 
 class ReviewItem(BaseModel):
@@ -84,6 +113,11 @@ class ReviewItem(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     source_line: str | None = Field(default=None, max_length=2000)
     source_confidence: float | None = Field(default=None, ge=0, le=1)
+    # The price was not readable in the source: shown as «Проверьте цену»; with price 0 the
+    # position lands in the draft and publication stays blocked until a price is entered.
+    price_missing: bool = False
+    field_confidence: FieldConfidence | None = None
+    variants: list[ReviewVariant] = Field(default_factory=list, max_length=10)
 
     @field_validator("name")
     @classmethod
@@ -114,6 +148,9 @@ class ImportReviewResponse(MenuReviewPayload):
     import_id: uuid.UUID
     status: str
     unparsed_lines: list[str]
+    # "llm-v1" — structured by the AI (checked by code), "heuristic-v1" — by the parser.
+    parser: str
+    provider: str | None = None
 
 
 class ApplyReviewPayload(MenuReviewPayload):
@@ -133,13 +170,7 @@ async def require_import_access(
     user: User,
     restaurant_id: uuid.UUID,
 ) -> None:
-    if not await has_restaurant_role(
-        session,
-        user.id,
-        restaurant_id,
-        {"owner", "manager", "editor"},
-    ):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+    await require_venue_admin(session, user.id, restaurant_id)
 
 
 async def get_import_job(
@@ -254,6 +285,11 @@ async def get_import_review(
         status=job.status,
         sections=review.sections,
         unparsed_lines=unparsed_lines,
+        parser=str(structured_menu.get("parser") or "heuristic-v1"),
+        provider=(
+            structured_menu["provider"] if isinstance(structured_menu.get("provider"), str)
+            else None
+        ),
     )
 
 
@@ -315,6 +351,11 @@ async def apply_import_review(
     await check_revision(session, draft.id, payload.expected_revision)
     menu.updated_at = datetime.now().astimezone()
 
+    # Positions that keep their «section + name» keep their item_key, so the point
+    # stop-lists stay attached after a re-import.
+    _, keys_by_name = await _existing_keys(session, draft.id)
+    used_keys: set[uuid.UUID] = set()
+    seen: dict[tuple[str, str], int] = {}
     await session.execute(delete(MenuSection).where(MenuSection.menu_version_id == draft.id))
     await session.flush()
     for section_index, review_section in enumerate(payload.sections):
@@ -326,12 +367,37 @@ async def apply_import_review(
         session.add(menu_section)
         await session.flush()
         for item_index, review_item in enumerate(review_section.items):
+            base = name_key(review_section.name, review_item.name)
+            occurrence = seen.get(base, 0)
+            seen[base] = occurrence + 1
+            key = keys_by_name.get((*base, occurrence))
+            if key is None or key in used_keys:
+                key = uuid.uuid4()
+            used_keys.add(key)
+            configuration = ItemConfiguration()
+            price_minor = review_item.price_minor
+            if len(review_item.variants) >= 2:
+                variants = [
+                    Variant(
+                        id=uuid.uuid4(), name=variant.name, price_minor=variant.price_minor,
+                        is_available=variant.price_minor > 0,
+                    )
+                    for variant in review_item.variants
+                ]
+                default = next((v for v in variants if v.is_available), variants[0])
+                configuration = ItemConfiguration(
+                    variants=variants, default_variant_id=default.id
+                )
+                priced = [v.price_minor for v in variants if v.price_minor > 0]
+                price_minor = min(priced) if priced else 0
             session.add(
                 MenuItem(
                     section_id=menu_section.id,
+                    item_key=key,
                     name=review_item.name.strip(),
+                    configuration=configuration.model_dump(mode="json"),
                     description=review_item.description,
-                    price_minor=review_item.price_minor,
+                    price_minor=price_minor,
                     currency=review_item.currency,
                     weight_text=review_item.weight_text,
                     ingredients=None,

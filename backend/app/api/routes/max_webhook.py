@@ -3,13 +3,12 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.bot.commands import handle_update, parse_update, split_command
 from app.config import Settings, get_settings
 from app.database import get_session
-from app.max_api.client import build_max_deep_link, send_max_message
-from app.models import Menu, Restaurant
+from app.max_api.client import answer_callback, send_bot_message, send_max_message
 
 router = APIRouter(prefix="/webhooks/max", tags=["MAX webhook"])
 
@@ -39,25 +38,6 @@ def extract_message_text(update: MaxWebhookUpdate) -> str | None:
     return text.strip() if isinstance(text, str) else None
 
 
-async def resolve_restaurant(
-    session: AsyncSession,
-    payload: str | None,
-) -> Restaurant | None:
-    if not payload or not payload.startswith("r_"):
-        return None
-    public_id = payload[2:]
-    if not public_id:
-        return None
-    return await session.scalar(
-        select(Restaurant)
-        .join(Menu, Menu.restaurant_id == Restaurant.id)
-        .where(
-            Restaurant.public_id == public_id,
-            Menu.current_published_version_id.is_not(None),
-        )
-    )
-
-
 @router.post("", response_model=WebhookAccepted)
 async def receive_max_webhook(
     update: MaxWebhookUpdate,
@@ -83,44 +63,37 @@ async def receive_max_webhook(
             detail="Invalid webhook secret",
         )
 
-    message_text = extract_message_text(update)
+    raw = update.model_dump(mode="json")
+    incoming = parse_update(raw)
     if (
-        update.update_type == "message_created"
-        and message_text is not None
-        and message_text.lower().split(maxsplit=1)[0] == "/id"
-        and update.chat_id is not None
-        and isinstance(update.user, dict)
-        and isinstance(update.user.get("user_id"), int)
+        incoming.kind == "message"
+        and split_command(incoming.text)[0] == "id"
+        and incoming.chat_id is not None
+        and incoming.max_user_id is not None
     ):
+        # Service command kept from the MVP: the admin passes this ID when inviting.
         background_tasks.add_task(
             send_max_message,
             settings,
-            text=f"Ваш MAX ID: {update.user['user_id']}. Передайте его владельцу точки.",
-            chat_id=update.chat_id,
+            text=f"Ваш MAX ID: {incoming.max_user_id}. Передайте его владельцу точки.",
+            chat_id=incoming.chat_id,
         )
         return WebhookAccepted()
 
-    should_greet = update.update_type == "bot_started" or (
-        update.update_type == "message_created"
-        and message_text is not None
-        and message_text.lower().split(maxsplit=1)[0] in {"/start", "/menu"}
-    )
-    if should_greet and update.chat_id is not None:
-        restaurant = await resolve_restaurant(session, update.payload)
-        payload = f"r_{restaurant.public_id}" if restaurant is not None else None
-        deep_link = build_max_deep_link(settings.max_bot_username, payload)
-        text = (
-            f"Открывайте актуальное меню ресторана «{restaurant.name}»."
-            if restaurant is not None
-            else "Открывайте меню ресторана в мини-приложении MAX."
-        )
+    outcome = await handle_update(session, settings, raw)
+    await session.commit()
+    for reply in outcome.replies:
         background_tasks.add_task(
-            send_max_message,
+            send_bot_message,
             settings,
-            text=text,
-            chat_id=update.chat_id,
-            button_text="Открыть меню" if deep_link else None,
-            button_url=deep_link,
+            text=reply.text,
+            buttons=reply.buttons,
+            chat_id=reply.chat_id,
+            user_id=None if reply.chat_id is not None else reply.user_id,
+        )
+    if outcome.callback_id:
+        background_tasks.add_task(
+            answer_callback, settings, outcome.callback_id, outcome.callback_notice or "Готово"
         )
 
     return WebhookAccepted()

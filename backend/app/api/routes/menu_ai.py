@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.gigachat import GigaChatError, GigaChatMenuPlanner
+from app.ai.openai_compat import OpenAICompatError, OpenAICompatMenuPlanner
+from app.ai.provider import configured_provider_name
+from app.ai.service import AILimitExceeded, consume_quota
 from app.api.routes.menus import (
     DraftMenuResponse,
     check_revision,
@@ -24,13 +26,19 @@ from app.config import Settings, get_settings
 from app.database import get_session
 from app.menu_commands.schemas import MenuChangePlan
 from app.menu_commands.service import apply_menu_change_plan
-from app.models import MenuChangeProposal, User
+from app.models import MenuChangeProposal, Restaurant, User
 
 router = APIRouter(tags=["menu-ai"])
 
 
+def composer_available(settings: Settings) -> bool:
+    """The composer needs a real model: off by ``AI_PROVIDER=off``, without a key, and
+    under the demo mock (it has no menu planner)."""
+    return configured_provider_name(settings) == "openai"
+
+
 class MenuAiStatusResponse(BaseModel):
-    provider: Literal["gigachat"] = "gigachat"
+    provider: Literal["openai"] = "openai"
     configured: bool
     capabilities: list[str] = ["create_item", "variants", "modifier_groups"]
 
@@ -88,7 +96,7 @@ async def menu_ai_status(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> MenuAiStatusResponse:
     await require_menu_access(session, current_user, restaurant_id)
-    return MenuAiStatusResponse(configured=bool(settings.gigachat_auth_key.strip()))
+    return MenuAiStatusResponse(configured=composer_available(settings))
 
 
 @router.post(
@@ -106,12 +114,26 @@ async def plan_menu_change(
     _, draft = await get_menu_and_draft(session, restaurant_id)
     await check_revision(session, draft.id, payload.expected_revision)
     sections = await read_version_sections(session, draft.id)
+    if not composer_available(settings):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ИИ сейчас недоступен — добавьте позицию вручную",
+        )
+    restaurant = await session.get(Restaurant, restaurant_id)
+    assert restaurant is not None  # require_menu_access found it
     try:
-        plan = await GigaChatMenuPlanner(settings).generate(
+        await consume_quota(
+            settings, venue_id=restaurant.venue_id, feature="menu_plan",
+            subject=f"user:{current_user.id}",
+        )
+    except AILimitExceeded as limit:
+        raise HTTPException(status_code=429, detail=limit.detail()) from limit
+    try:
+        plan = await OpenAICompatMenuPlanner(settings).generate(
             payload.prompt.strip(),
             _menu_context(sections),
         )
-    except (GigaChatError, httpx.HTTPError) as error:
+    except (OpenAICompatError, httpx.HTTPError) as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(error) or "ИИ-сервис временно недоступен",

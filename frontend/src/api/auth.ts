@@ -10,11 +10,25 @@ export interface AuthBootstrap {
   max_auth_configured: boolean;
   development_auth: boolean;
   max_launch_url: string | null;
+  support_link: string | null;
+}
+
+/** A failed auth request with its HTTP status (0 — no answer: network error). */
+export class AuthRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "AuthRequestError";
+  }
+}
+
+/** True when the server rejected the launch itself (401/403) — a retry will not help. */
+export function isAuthRejected(error: unknown): boolean {
+  return error instanceof AuthRequestError && (error.status === 401 || error.status === 403);
 }
 
 async function parseAuthResponse(response: Response): Promise<AuthUser> {
   if (!response.ok) {
-    throw new Error(`Authentication request returned ${response.status}`);
+    throw new AuthRequestError(`Authentication request returned ${response.status}`, response.status);
   }
 
   return response.json() as Promise<AuthUser>;
@@ -46,11 +60,11 @@ export async function loginWithMax(initData: string): Promise<AuthUser> {
     body: JSON.stringify({ init_data: initData }),
   });
 
-  if (response.status === 401) {
-    throw new Error("MAX не подтвердил запуск. Закройте мини-приложение и откройте его снова из бота.");
+  if (response.status === 401 || response.status === 403) {
+    throw new AuthRequestError("MAX не подтвердил запуск. Закройте мини-приложение и откройте его снова из бота.", response.status);
   }
   if (response.status === 503) {
-    throw new Error("Вход через MAX пока не настроен на сервере.");
+    throw new AuthRequestError("Вход через MAX пока не настроен на сервере.", response.status);
   }
   return parseAuthResponse(response);
 }

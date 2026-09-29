@@ -1,3 +1,4 @@
+import { errorDetail } from "./errors";
 import type { DraftMenu } from "./menu";
 
 export interface ProposedVariant {
@@ -50,14 +51,14 @@ export interface MenuAiProposal {
 
 async function parseJson<T>(response: Response, fallback: string): Promise<T> {
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? fallback);
+    const payload: unknown = await response.json().catch(() => null);
+    throw new Error(errorDetail(payload) ?? fallback);
   }
   return response.json() as Promise<T>;
 }
 
 export async function fetchMenuAiStatus(restaurantId: string) {
-  return parseJson<{ provider: "gigachat"; configured: boolean; capabilities: string[] }>(
+  return parseJson<{ provider: "openai"; configured: boolean; capabilities: string[] }>(
     await fetch(`/api/v1/restaurants/${restaurantId}/menu/ai/status`, {
       credentials: "include",
     }),

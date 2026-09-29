@@ -1,0 +1,334 @@
+/*
+ * First-launch intro «Что умеет Синица». Brand zone: «Синица» tokens only.
+ * Motion: transform/opacity on the motion tokens; with reduced motion the tokens
+ * are 0 ms, so every transition below becomes an instant change.
+ */
+.intro {
+  display: grid;
+  grid-template-rows: auto minmax(300px, 1fr) auto;
+  gap: var(--sinitsa-space-5);
+  width: 100%;
+  max-width: 560px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding:
+    calc(var(--sinitsa-space-3) + var(--sinitsa-safe-top))
+    calc(var(--sinitsa-space-4) + var(--sinitsa-safe-right))
+    calc(var(--sinitsa-space-5) + var(--sinitsa-safe-bottom))
+    calc(var(--sinitsa-space-4) + var(--sinitsa-safe-left));
+  color: var(--sinitsa-ink);
+  font-family: var(--sinitsa-font);
+  touch-action: pan-y;
+}
+
+/* --- Top bar: progress + «Пропустить» ------------------------------------------------ */
+.intro-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sinitsa-space-2);
+  min-height: var(--sinitsa-touch);
+}
+.intro-bar > .s-icon-button { margin-left: calc(-1 * var(--sinitsa-space-2)); }
+.intro-bar__spacer { width: calc(var(--sinitsa-touch) - var(--sinitsa-space-2)); flex: none; }
+.intro-progress { display: flex; gap: 6px; flex: 1 1 auto; }
+.intro-progress__seg {
+  position: relative;
+  overflow: hidden;
+  width: 32px;
+  height: 4px;
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-line);
+}
+.intro-progress__seg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--sinitsa-blue);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-slow) var(--ease-out);
+}
+.intro-progress__seg--on::after { transform: scaleX(1); }
+.intro-skip.s-button {
+  min-height: var(--sinitsa-touch);
+  margin-right: calc(-1 * var(--sinitsa-space-3));
+  padding: 0 var(--sinitsa-space-3);
+}
+
+/* --- Stage: the persistent brand surface whose content morphs between steps ---------- */
+.intro-stage {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  isolation: isolate;
+  padding: var(--sinitsa-space-5) var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-sheet);
+  background: var(--sinitsa-blue);
+  color: var(--sinitsa-on-blue);
+}
+/* Static depth: two soft discs, never moving. */
+.intro-stage::before,
+.intro-stage::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.intro-stage::before {
+  top: -38%;
+  right: -30%;
+  width: 90%;
+  aspect-ratio: 1;
+  background: rgb(255 255 255 / 8%);
+}
+.intro-stage::after {
+  bottom: -46%;
+  left: -34%;
+  width: 80%;
+  aspect-ratio: 1;
+  background: rgb(21 24 33 / 10%);
+}
+.intro-stage__content,
+.intro-stage__ghosts > * { grid-area: 1 / 1; }
+.intro-stage__ghosts { display: contents; }
+.intro-stage__ghosts > * { pointer-events: none; }
+.intro-stage__content {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+
+/* Brand step */
+.intro-brand { display: grid; justify-items: center; gap: var(--sinitsa-space-6); }
+.intro-brand__lockup { display: block; width: min(240px, 70vw); }
+.intro-brand__lockup img { width: 100%; height: auto; }
+.intro-brand__values {
+  display: grid;
+  gap: var(--sinitsa-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.intro-brand__values li {
+  display: flex;
+  align-items: center;
+  gap: var(--sinitsa-space-2);
+  min-height: 40px;
+  padding: 0 var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-pill);
+  background: rgb(21 24 33 / 22%);
+  font-size: var(--sinitsa-text-caption);
+  font-weight: 700;
+}
+.intro-brand__values li > span { display: inline-flex; }
+
+/* Shared demo card */
+.intro-card {
+  display: grid;
+  gap: var(--sinitsa-space-3);
+  padding: var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-surface);
+  color: var(--sinitsa-ink);
+  box-shadow: 0 16px 40px rgb(21 24 33 / 24%);
+}
+
+/* Guest step: latte → «Мой выбор» */
+.intro-guest,
+.intro-owner { display: grid; gap: var(--sinitsa-space-3); width: min(100%, 340px); }
+.intro-card__head {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sinitsa-space-3);
+}
+.intro-card__photo {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--sinitsa-sky);
+  color: var(--sinitsa-blue);
+}
+.intro-card__title { display: grid; min-width: 0; line-height: var(--sinitsa-line-tight); }
+.intro-card__title strong { font-size: var(--sinitsa-text-title); }
+.intro-card__title span { margin-top: 2px; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.intro-card__price { font-size: var(--sinitsa-text-title); font-weight: 700; }
+
+.intro-sizes {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 4px;
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-canvas);
+}
+/* The radio indicator flows between options (spring), not a jump. */
+.intro-sizes__thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 9px;
+  background: var(--sinitsa-surface);
+  box-shadow: 0 1px 4px rgb(21 24 33 / 16%);
+  transform: translateX(calc(var(--size-index, 0) * 100%));
+  transition: transform var(--motion-base) var(--ease-spring);
+}
+.intro-sizes__option {
+  position: relative;
+  min-height: var(--sinitsa-touch);
+  padding: 0 var(--sinitsa-space-1);
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sinitsa-muted);
+  font: inherit;
+  font-size: var(--sinitsa-text-caption);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.intro-sizes__option[aria-checked="true"] { color: var(--sinitsa-ink); }
+.intro-sizes__option:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.intro-card .s-button { gap: 6px; white-space: nowrap; }
+.intro-card .s-button .s-roll { font-variant-numeric: tabular-nums; }
+.intro-press.s-button { transform: scale(var(--press-scale)); background: var(--sinitsa-blue-press); }
+
+.intro-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sinitsa-space-3);
+  min-height: 52px;
+  padding: 0 var(--sinitsa-space-4) 0 var(--sinitsa-space-2);
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-ink);
+  color: var(--sinitsa-on-blue);
+  font-weight: 700;
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  transition:
+    transform var(--motion-base) var(--ease-spring),
+    opacity var(--motion-fast) var(--ease-out);
+}
+.intro-choice--shown { opacity: 1; transform: none; }
+.intro-choice__label { display: flex; align-items: center; gap: var(--sinitsa-space-3); }
+.intro-choice__count {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--sinitsa-space-2);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-blue);
+}
+
+/* Owner step: stop list in one tap */
+.intro-owner__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sinitsa-space-3);
+  font-size: var(--sinitsa-text-title);
+}
+.intro-owner__qr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 var(--sinitsa-space-3);
+  border-radius: var(--sinitsa-radius-pill);
+  background: var(--sinitsa-success-bg);
+  color: var(--sinitsa-success);
+  font-size: var(--sinitsa-text-caption);
+  font-weight: 700;
+}
+.intro-owner__rows { margin: 0; padding: 0; list-style: none; }
+.intro-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sinitsa-space-3);
+  min-height: 56px;
+  border-top: 1px solid var(--sinitsa-line);
+}
+.intro-row__text { display: grid; min-width: 0; line-height: var(--sinitsa-line-tight); }
+.intro-row__name { font-weight: 700; transition: opacity var(--motion-base) var(--ease-out); }
+.intro-row__meta { margin-top: 2px; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+/* Ink at 60 % on white stays ≥ 4.5:1; the status line keeps full contrast. */
+.intro-row--off .intro-row__name { opacity: 0.6; }
+.intro-row--off .intro-row__meta { color: var(--sinitsa-danger); font-weight: 700; }
+.intro-owner__toast { min-height: 56px; }
+.intro-owner__toast .s-toast { width: 100%; animation: s-toast-in var(--motion-base) var(--ease-spring) both; }
+
+/* --- Copy and the one main action ---------------------------------------------------- */
+.intro-copy { display: grid; gap: var(--sinitsa-space-5); align-content: end; }
+.intro-copy__text-block { display: grid; gap: var(--sinitsa-space-3); min-height: 7.5em; align-content: start; }
+.intro-copy__title {
+  margin: 0;
+  font-size: var(--sinitsa-text-display);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  overflow-wrap: break-word;
+}
+.intro-copy__title:focus { outline: none; }
+.intro-copy__text { margin: 0; max-width: 34ch; color: var(--sinitsa-muted); font-size: 18px; line-height: 1.45; }
+.intro-copy__actions {
+  display: grid;
+  gap: var(--sinitsa-space-3);
+  min-height: calc(var(--sinitsa-control-height) * 2 + var(--sinitsa-space-3));
+  align-content: end;
+}
+
+/* Narrow phones (320): the stage and the card give their padding to the content. */
+@media (max-width: 359px) {
+  .intro-stage { padding-inline: var(--sinitsa-space-3); }
+  .intro-card { padding: var(--sinitsa-space-3); }
+  .intro-card .s-button { padding-inline: var(--sinitsa-space-3); }
+}
+
+/* Short screens (MAX on small phones): tighter rhythm so the demo and the main action fit
+   without scrolling from 640 px of height; below that the page scrolls, never sideways. */
+@media (max-height: 700px) and (max-width: 899px) {
+  .intro { grid-template-rows: auto minmax(260px, 1fr) auto; gap: var(--sinitsa-space-3); padding-bottom: calc(var(--sinitsa-space-4) + var(--sinitsa-safe-bottom)); }
+  .intro-stage { padding-block: var(--sinitsa-space-3); }
+  .intro-brand { gap: var(--sinitsa-space-5); }
+  .intro-copy { gap: var(--sinitsa-space-3); }
+  .intro-copy__text-block { gap: var(--sinitsa-space-2); min-height: 0; }
+  .intro-copy__title { font-size: 26px; }
+  .intro-copy__text { font-size: var(--sinitsa-text-caption); }
+  .intro-copy__actions { gap: var(--sinitsa-space-2); min-height: 0; }
+  .intro-row { min-height: 52px; }
+  .intro-owner__toast { min-height: 52px; }
+}
+
+/* Desktop and tablets in landscape: copy on the left, the stage as a tall panel on the right. */
+@media (min-width: 900px) {
+  .intro {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+    grid-template-rows: auto 1fr;
+    column-gap: var(--sinitsa-space-8);
+    row-gap: var(--sinitsa-space-6);
+    max-width: 1120px;
+    padding: var(--sinitsa-space-6) var(--sinitsa-space-7);
+  }
+  .intro-bar { grid-column: 1 / -1; }
+  .intro-progress { order: 0; }
+  .intro-stage {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    height: min(640px, calc(100dvh - 160px));
+    min-height: 480px;
+  }
+  .intro-copy { grid-column: 1; grid-row: 2; align-self: center; align-content: center; max-width: 480px; }
+  .intro-copy__title { font-size: 48px; }
+  .intro-copy__text-block { min-height: 0; }
+  .intro-copy__actions { max-width: 360px; min-height: 0; }
+}

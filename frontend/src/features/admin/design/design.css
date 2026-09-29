@@ -1,0 +1,70 @@
+/* «Оформление»: cabinet in the «Синица» palette, the preview in the venue theme. */
+.design-page { display: grid; gap: var(--sinitsa-space-4); padding-bottom: var(--sinitsa-space-4); }
+.design-layout { display: grid; gap: var(--sinitsa-space-5); min-width: 0; }
+.design-controls { display: grid; gap: var(--sinitsa-space-5); align-content: start; min-width: 0; }
+.design-header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sinitsa-space-3); flex-wrap: wrap; }
+.design-status { color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.design-status--error { color: var(--sinitsa-danger); font-weight: 700; }
+.design-block { display: grid; gap: var(--sinitsa-space-3); padding: var(--sinitsa-space-4); border-radius: var(--sinitsa-radius-card); background: var(--sinitsa-surface); }
+.design-block h2 { margin: 0; font-size: var(--sinitsa-text-body); }
+
+.design-themes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sinitsa-space-2); }
+.design-theme { display: grid; gap: var(--sinitsa-space-1); justify-items: center; min-width: 0; padding: var(--sinitsa-space-1); border: 2px solid transparent; border-radius: var(--sinitsa-radius-control); background: none; color: var(--sinitsa-ink); font: inherit; cursor: pointer; transition: border-color var(--motion-fast) var(--ease-out), transform var(--motion-instant) var(--ease-out); }
+.design-theme:active { transform: scale(var(--press-scale, 0.97)); }
+.design-theme[aria-checked="true"] { border-color: var(--sinitsa-blue); }
+.design-theme:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+.design-theme__thumb { position: relative; display: grid; gap: 4px; align-content: end; width: 100%; aspect-ratio: 3 / 4; max-height: 96px; padding: 8px; border: 1px solid var(--sinitsa-line); border-radius: 10px; background: var(--t-bg); box-sizing: border-box; }
+.design-theme__thumb i { display: block; height: 10px; border-radius: 4px; background: var(--t-surface); box-shadow: inset 12px 0 0 -8px var(--t-text); }
+.design-theme__thumb b { position: absolute; top: 8px; left: 8px; width: 40%; height: 8px; border-radius: 4px; background: var(--t-accent); }
+.design-theme__name { max-width: 100%; overflow: hidden; font-size: 13px; font-weight: 700; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+
+.design-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--sinitsa-radius-control); background: var(--sinitsa-canvas); }
+.design-mode button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: var(--sinitsa-space-2); border: 0; border-radius: 10px; background: none; color: var(--sinitsa-muted); font: inherit; font-weight: 700; cursor: pointer; }
+.design-mode button[aria-pressed="true"] { background: var(--sinitsa-surface); color: var(--sinitsa-ink); box-shadow: 0 1px 2px rgb(21 24 33 / 12%); }
+.design-mode button:focus-visible { outline: none; box-shadow: var(--sinitsa-focus-ring); }
+
+.design-colors { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: var(--sinitsa-space-2); }
+.design-color { display: flex; min-height: 52px; align-items: center; gap: var(--sinitsa-space-2); padding: var(--sinitsa-space-2); border: 1px solid var(--sinitsa-line); border-radius: var(--sinitsa-radius-control); cursor: pointer; }
+.design-color:focus-within { box-shadow: var(--sinitsa-focus-ring); }
+.design-color input { flex: none; width: 36px; height: 36px; padding: 0; border: 1px solid var(--sinitsa-line-strong); border-radius: 50%; background: none; cursor: pointer; }
+.design-color input::-webkit-color-swatch-wrapper { padding: 0; }
+.design-color input::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.design-color span { display: grid; min-width: 0; }
+.design-color small { color: var(--sinitsa-muted); font-size: 12px; }
+
+.design-contrast { display: grid; gap: var(--sinitsa-space-2); padding: var(--sinitsa-space-3); border-radius: var(--sinitsa-radius-control); background: var(--sinitsa-warning-bg); color: var(--sinitsa-ink); }
+.design-contrast p { display: flex; align-items: center; gap: var(--sinitsa-space-2); margin: 0; color: var(--sinitsa-warning); }
+.design-contrast ul { display: grid; gap: var(--sinitsa-space-1); margin: 0; padding: 0; list-style: none; }
+.design-contrast li { display: flex; align-items: center; justify-content: space-between; gap: var(--sinitsa-space-2); min-height: 44px; }
+.design-contrast li > span { min-width: 0; font-size: var(--sinitsa-text-caption); }
+.design-contrast .s-button { flex: none; }
+
+.design-media-row { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sinitsa-space-2); }
+.design-media { position: relative; }
+.design-media__pick { display: grid; min-height: 96px; place-items: center; align-content: center; gap: var(--sinitsa-space-1); padding: var(--sinitsa-space-2); border: 1px dashed var(--sinitsa-line-strong); border-radius: var(--sinitsa-radius-control); color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); text-align: center; cursor: pointer; overflow: hidden; }
+.design-media__pick:focus-within { box-shadow: var(--sinitsa-focus-ring); }
+.design-media__pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.design-media__pick img { width: 100%; max-height: 72px; object-fit: cover; border-radius: 8px; }
+.design-media--logo .design-media__pick img { width: 48px; height: 48px; border-radius: 50%; }
+.design-media__remove { position: absolute; top: 6px; right: 6px; display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 50%; background: var(--sinitsa-surface); color: var(--sinitsa-ink); box-shadow: 0 1px 3px rgb(21 24 33 / 20%); cursor: pointer; }
+.design-media__remove::before { content: ""; position: absolute; inset: -6px; }
+.design-scale { display: grid; gap: var(--sinitsa-space-2); font-weight: 700; }
+.design-scale input { width: 100%; accent-color: var(--sinitsa-blue); min-height: 44px; }
+
+/* Preview: a phone frame; on phones it comes first, height-limited, scrolls inside. */
+.design-preview { display: grid; gap: var(--sinitsa-space-2); order: -1; min-width: 0; }
+.design-preview .menu-phone__label { display: inline-flex; align-items: center; gap: var(--sinitsa-space-2); margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); font-weight: 700; }
+.design-phone { height: 300px; overflow: hidden auto; border: 6px solid var(--sinitsa-ink); border-radius: 28px; overscroll-behavior: contain; }
+.design-phone__screen.g-root { min-height: 100%; }
+@media (min-width: 1024px) {
+  .design-layout { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--sinitsa-space-6); align-items: start; }
+  .design-preview { order: 0; position: sticky; top: var(--sinitsa-space-5); }
+  .design-phone { height: min(720px, calc(100dvh - 160px)); border-width: 8px; border-radius: 36px; }
+}
+/* The frame is a phone at any viewport: undo the guest menu's wide-screen columns inside it. */
+.design-phone .g-rows { grid-template-columns: 1fr; }
+.design-phone .g-rows .g-card--row:nth-child(odd) { box-shadow: inset 0 -1px 0 var(--sinitsa-line); }
+.design-phone .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sinitsa-space-3); }
+.design-page > .design-header { padding: 0; }
+.design-phone .g-card__open { display: block; width: 100%; box-sizing: border-box; }
+@media (max-width: 359px) { .design-theme__name { font-size: 12px; } .design-themes { gap: var(--sinitsa-space-1); } }

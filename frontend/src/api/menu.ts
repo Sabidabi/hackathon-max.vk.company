@@ -1,3 +1,4 @@
+import { errorDetail } from "./errors";
 export interface ItemVariant { id: string; name: string; price_minor: number; weight_text: string | null; is_available: boolean }
 export interface ModifierOption { id: string; name: string; price_minor: number; min_quantity: number; max_quantity: number; default_quantity: number; is_available: boolean; price_by_variant: Record<string, number> }
 export interface ModifierGroup { id: string; name: string; min_quantity: number; max_quantity: number; options: ModifierOption[] }
@@ -7,6 +8,8 @@ export const emptyConfiguration = (): ItemConfiguration => ({ variants: [], defa
 export interface MenuItem {
   configuration: ItemConfiguration;
   id: string;
+  /** Stable identity of a position across versions; absent for new ones. */
+  item_key?: string | null;
   name: string;
   description: string | null;
   image_url: string | null;
@@ -111,8 +114,8 @@ type SaveMenuSection = { name: string; items: SaveMenuItem[] };
 
 async function parseJson<T>(response: Response, fallback: string): Promise<T> {
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? `${fallback}: ${response.status}`);
+    const payload: unknown = await response.json().catch(() => null);
+    throw new Error(errorDetail(payload) ?? `${fallback}: ${response.status}`);
   }
   return response.json() as Promise<T>;
 }

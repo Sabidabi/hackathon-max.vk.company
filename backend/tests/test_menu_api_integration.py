@@ -11,7 +11,7 @@ from app.auth.service import create_auth_session
 from app.config import get_settings
 from app.database import SessionFactory
 from app.main import app
-from app.models import Menu, MenuVersion, Restaurant, RestaurantMember, User
+from app.models import Menu, MenuVersion, PointMenu, Restaurant, User, Venue, VenueMember
 
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_DB_INTEGRATION") != "1",
@@ -42,8 +42,12 @@ async def test_draft_publish_and_public_snapshot_flow() -> None:
             await session.flush()
             user_id = user.id
 
+            venue = Venue(name="Тестовое кафе", created_by_id=user.id)
+            session.add(venue)
+            await session.flush()
             restaurant = Restaurant(
                 public_id=marker[:12],
+                venue_id=venue.id,
                 owner_id=user.id,
                 name="Тестовое кафе",
                 address="Тестовая улица, 1",
@@ -52,15 +56,19 @@ async def test_draft_publish_and_public_snapshot_flow() -> None:
             await session.flush()
             restaurant_id = restaurant.id
             session.add(
-                RestaurantMember(
-                    restaurant_id=restaurant.id,
+                VenueMember(
+                    venue_id=venue.id,
                     user_id=user.id,
-                    role="owner",
+                    role="admin",
+                    is_creator=True,
                 )
             )
-            menu = Menu(restaurant_id=restaurant.id)
+            menu = Menu(venue_id=venue.id, title="Основное")
             session.add(menu)
             await session.flush()
+            session.add(PointMenu(
+                point_id=restaurant.id, menu_id=menu.id, venue_id=venue.id, sort_order=0
+            ))
             session.add(
                 MenuVersion(
                     menu_id=menu.id,
@@ -201,6 +209,7 @@ async def test_draft_publish_and_public_snapshot_flow() -> None:
             response = await client.get(public_url)
             assert response.status_code == 200
             assert response.json()["version"] == 2
+            assert response.json()["restaurant"]["is_demo"] is False
             assert response.json()["site"]["template"] == "classic"
             published_item_id = response.json()["sections"][0]["items"][0]["id"]
 
@@ -256,7 +265,7 @@ async def test_draft_publish_and_public_snapshot_flow() -> None:
             stored_image_path.unlink(missing_ok=True)
         async with SessionFactory() as session:
             if restaurant_id is not None:
-                await session.execute(delete(Restaurant).where(Restaurant.id == restaurant_id))
+                await session.execute(delete(Venue).where(Venue.created_by_id == user_id))
                 await session.commit()
             if user_id is not None:
                 await session.execute(delete(User).where(User.id == user_id))

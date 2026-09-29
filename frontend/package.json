@@ -8,8 +8,11 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "test:browser": "node tests/editor.smoke.cjs && node tests/demo.smoke.cjs",
-    "demo": "npm run build && node tests/demo-server.cjs"
+    "test:unit": "node tests/max-layer.unit.mjs && node tests/design.unit.mjs && node tests/bot-links.unit.mjs",
+    "test:browser": "node tests/editor.smoke.cjs && node tests/demo.smoke.cjs && node tests/service-screens.smoke.cjs && node tests/launch.smoke.cjs && node tests/intro.smoke.cjs && node tests/notifications.smoke.cjs && node tests/analytics.smoke.cjs",
+    "demo": "npm run build && node tests/demo-server.cjs",
+    "test:ui": "node tests/ui-showcase.visual.mjs",
+    "test:live": "node tests/live.e2e.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.1",

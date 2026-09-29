@@ -1,0 +1,16 @@
+:root {
+  --sinitsa-blue: #2450FF;
+  --sinitsa-ink: #151821;
+  --sinitsa-canvas: #F6F7FB;
+  --sinitsa-surface: #FFFFFF;
+  --sinitsa-muted: #5C6678;
+  --sinitsa-font: Arial, Helvetica, sans-serif;
+  --sinitsa-radius-control: 12px;
+  --sinitsa-radius-card: 20px;
+  --sinitsa-duration-fast: 140ms;
+  --sinitsa-duration-standard: 240ms;
+  --sinitsa-easing: cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --sinitsa-duration-fast: 0ms; --sinitsa-duration-standard: 0ms; }
+}

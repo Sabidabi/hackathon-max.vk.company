@@ -1,0 +1,109 @@
+/* Service screens «Синицы»: splash, errors, «Откройте в MAX», 404. Tokens only. */
+.s-service {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding:
+    calc(var(--sinitsa-space-5) + var(--sinitsa-safe-top))
+    calc(var(--sinitsa-space-4) + var(--sinitsa-safe-right))
+    calc(var(--sinitsa-space-5) + var(--sinitsa-safe-bottom))
+    calc(var(--sinitsa-space-4) + var(--sinitsa-safe-left));
+  background: var(--sinitsa-canvas);
+  color: var(--sinitsa-ink);
+  font-family: var(--sinitsa-font);
+}
+
+.s-service__message {
+  display: grid;
+  justify-items: center;
+  gap: var(--sinitsa-space-3);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+.s-service__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--sinitsa-space-2);
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-sky);
+  color: var(--sinitsa-blue);
+}
+.s-service__message--danger .s-service__icon { background: var(--sinitsa-danger-bg); color: var(--sinitsa-danger); }
+.s-service__title {
+  margin: 0;
+  font-size: var(--sinitsa-text-heading);
+  font-weight: 700;
+  line-height: var(--sinitsa-line-tight);
+  overflow-wrap: anywhere;
+}
+.s-service__text { max-width: 38ch; margin: 0; color: var(--sinitsa-muted); }
+.s-service__actions {
+  display: grid;
+  gap: var(--sinitsa-space-3);
+  width: 100%;
+  max-width: 320px;
+  margin-top: var(--sinitsa-space-3);
+}
+
+/* Splash: the icon alone; one short entrance, no looping motion. */
+.s-splash__mark {
+  border-radius: 22%;
+  animation: s-splash-in var(--sinitsa-duration-standard) var(--sinitsa-easing);
+}
+@keyframes s-splash-in { from { opacity: 0; transform: scale(0.96); } }
+
+/* «Откройте в MAX» */
+.s-open {
+  display: grid;
+  gap: var(--sinitsa-space-6);
+  width: 100%;
+  max-width: 400px;
+}
+.s-open__brand { justify-self: start; }
+.s-open__main { display: grid; gap: var(--sinitsa-space-3); }
+.s-open__main .s-service__actions { max-width: none; }
+.s-open__notice {
+  margin: 0;
+  padding: var(--sinitsa-space-3) var(--sinitsa-space-4);
+  border-radius: var(--sinitsa-radius-control);
+  background: var(--sinitsa-warning-bg);
+  color: var(--sinitsa-warning);
+  font-size: var(--sinitsa-text-caption);
+}
+.s-open__qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--sinitsa-space-3);
+  margin: 0;
+  padding: var(--sinitsa-space-5);
+  border-radius: var(--sinitsa-radius-card);
+  background: var(--sinitsa-surface);
+}
+.s-open__qr figcaption {
+  max-width: 28ch;
+  color: var(--sinitsa-muted);
+  font-size: var(--sinitsa-text-caption);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .s-open {
+    grid-template-columns: minmax(0, 1fr) 264px;
+    align-items: center;
+    column-gap: var(--sinitsa-space-7);
+    max-width: 800px;
+  }
+  .s-open__brand { grid-column: 1 / -1; }
+  .s-open__main .s-service__actions { grid-template-columns: repeat(2, max-content); }
+}
+
+/* Cabinet header during the migration to the design system (E2 replaces it). */
+.app-brand-mark { display: none; }
+@media (max-width: 479px) {
+  .app-brand-lockup { display: none; }
+  .app-brand-mark { display: block; border-radius: 22%; }
+}

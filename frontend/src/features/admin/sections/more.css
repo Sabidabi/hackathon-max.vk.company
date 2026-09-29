@@ -1,0 +1,21 @@
+/* «Ещё» pages on the cabinet components. */
+.more-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sinitsa-space-4); max-width: 640px; min-width: 0; }
+.more-page > * { min-width: 0; }
+.more-block { display: grid; gap: var(--sinitsa-space-3); }
+.more-block h2 { margin: 0; font-size: var(--sinitsa-text-body); }
+.more-skeleton { display: grid; gap: var(--sinitsa-space-2); }
+.more-status { flex: none; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.cabinet-list__row[aria-current] { cursor: default; }
+.team-fresh { display: flex; align-items: center; gap: var(--sinitsa-space-2); padding: var(--sinitsa-space-2) var(--sinitsa-space-3); border-radius: var(--sinitsa-radius-control); background: var(--sinitsa-sky); }
+.team-fresh__link { flex: 1 1 auto; min-width: 0; overflow: hidden; font-size: var(--sinitsa-text-caption); text-overflow: ellipsis; white-space: nowrap; }
+.team-fresh .s-button { flex: none; }
+.qr-page { display: grid; gap: var(--sinitsa-space-3); max-width: 480px; }
+.qr-page__card { display: grid; gap: var(--sinitsa-space-3); justify-items: center; padding: var(--sinitsa-space-5) var(--sinitsa-space-4); border-radius: var(--sinitsa-radius-card); background: var(--sinitsa-surface); }
+.qr-page__code { padding: var(--sinitsa-space-2); border-radius: var(--sinitsa-radius-control); background: #FFFFFF; }
+.qr-page__code .s-qr { display: block; max-width: 100%; height: auto; }
+.qr-page__target { display: flex; gap: var(--sinitsa-space-2); }
+.qr-page__link { max-width: 100%; margin: 0; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); overflow-wrap: anywhere; text-align: center; }
+.qr-page__actions { display: grid; gap: var(--sinitsa-space-2); justify-items: center; width: 100%; }
+.qr-page__secondary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sinitsa-space-2); width: 100%; }
+.team-fresh > svg { flex: none; }
+@media (max-width: 359px) { .qr-page__secondary { grid-template-columns: 1fr; } }

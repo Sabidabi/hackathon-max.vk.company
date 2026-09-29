@@ -1,104 +1,116 @@
-# MAX Menu
+# Синица
 
-Мини-приложение для кофеен и пекарен: владелец создаёт точку, собирает меню, оформляет публичную страницу и открывает её гостям по ссылке или QR-коду внутри MAX.
+«Синица» — мини-приложение MAX для кофеен и пекарен. Гость открывает меню заведения по QR, собирает «Мой выбор» и показывает его на кассе. Администратор ведёт точки, меню, стоп-лист, оформление и QR прямо в MAX. Онлайн-оплаты нет: заказ оформляется на кассе.
 
-## Что уже работает
+## Возможности
 
-- автоматический вход через MAX `initData` и изолированный dev-вход для локальной разработки;
-- создание нескольких точек, переключение между ними и отдельные черновики меню;
-- библиотека опубликованных версий для копирования и восстановления, массовый стоп-лист по выбранным точкам;
-- уникальная ссылка кабинета и доступ сотрудников к выбранной точке по одноразовому приглашению MAX;
-- категории, товары, фото, стоп-лист, размеры и обязательные/необязательные группы добавок;
-- импорт PDF/JPG/PNG с OCR и обязательной ручной проверкой;
-- создание карточки товара через GigaChat: запрос → план → подтверждение → черновик;
-- светлая/тёмная тема, четыре шаблона, цвета, фон и масштаб шрифта;
-- публикация версии меню, публичная ссылка и PNG QR-код;
-- избранное, согласие на уведомления и ограниченные рассылки через MAX;
-- защищённый MCP-контур для чтения контекста и изменения черновика без публикации.
+**Гость**
+- Меню точки по QR или ссылке `/r/<id>` в теме заведения: разделы, поиск с опечатками, карточка позиции с размерами и добавками.
+- «Мой выбор» → «Показать на кассе»; цену считает сервер.
+- «Синица, что взять?» — ИИ-подборка до трёх доступных позиций. Без ИИ показывается подборка по ключевым словам.
 
-Текущий этап ещё не включает заказы и реальные платежи. Фактический статус и следующий порядок работ находятся в [docs/implementation-status.md](docs/implementation-status.md).
+**Администратор**
+- Заведение с несколькими точками, библиотека меню, часы показа, стоп-лист точки.
+- Черновик и публикация раздельно, «Что изменится», история версий; конфликт ревизии даёт 409 без потери правок.
+- Оформление с контролем контраста, QR и тейбл-тент A6, приглашение администратора по ссылке.
+- Импорт PDF и фото в черновик (OCR), «Синица проверила меню», ИИ-описание позиции, создание позиций текстом.
 
-Чтобы пригласить сотрудника, попросите его отправить боту `/id`, затем в разделе «Команда» укажите полученный MAX ID и передайте созданную ссылку. Ссылка действует сутки. Копирование из «Библиотеки» и изменение наличия нескольких точек сохраняют черновики; каждую точку нужно опубликовать отдельно. Подробная спецификация — [docs/specs/multi-point-menu.md](docs/specs/multi-point-menu.md).
+**Бот MAX**: вход в мини-приложение, уведомления и рассылки по согласию через очередь (идемпотентно), обращения в поддержку.
 
-## Запуск
+**ИИ**: подборка для гостя, описания, проверка меню, структурирование импорта, недельная сводка. Подробности: [docs/ai-and-mcp.md](docs/ai-and-mcp.md).
+
+**Аналитика**: продуктовые события гостей и недельная сводка для администратора.
+
+## Стек
+
+- Backend: Python, FastAPI, SQLAlchemy, Alembic, PostgreSQL (`backend/`).
+- Frontend: React 19, TypeScript, Vite, TanStack Query, `@maxhub/max-ui` (`frontend/`).
+- Worker: OCR и фоновые задачи (`python -m app.worker`), Tesseract для изображений.
+- MCP-сервер меню (опционально), Docker Compose.
+- Бренд и токены дизайна: `brandbook-sinitsa/`.
+
+## Запуск локально
+
+Docker:
 
 ```bash
 cp .env.example .env
-docker compose up --build
+docker compose up -d --build
+docker compose exec backend python -m app.demo_seed   # демо-заведение «Кофейня Север»
 ```
 
-Откройте `http://localhost:8080`. В development-режиме фронтенд входит автоматически. При запуске из MAX он берёт подписанные данные из `window.WebApp.initData` или параметра `WebAppData` в fragment ссылки, дожидается поздней загрузки моста и передаёт данные на сервер для проверки подписи. Открытая вне MAX публичная ссылка показывает меню без входа; кабинет требует подтверждённый вход.
+Приложение: http://localhost:8080, API: http://localhost:8000. Сценарий демо: [docs/DEMO.md](docs/DEMO.md). В браузере вход для разработки — dev-вход (`APP_ENV=development`, `DEV_AUTH_ENABLED=true`).
 
-Если после развёртывания вход не работает внутри MAX, откройте мини-приложение заново через бота и проверьте HTTPS-адрес mini app и `MAX_BOT_TOKEN` на сервере. Не передавайте `WebAppData` или токен бота в логи и обращения в поддержку: эти данные позволяют установить сессию. Браузерный smoke-тест проверяет только синтетический запуск; окончательная проверка требует запуска в настоящем клиенте MAX.
-
-Полезные адреса:
-
-- `http://localhost:8000/api/v1/health/live`
-- `http://localhost:8000/api/v1/health/ready`
-- `http://localhost:8000/docs`
-
-Демо-точка создаётся идемпотентной командой:
+Без Docker (нужна PostgreSQL, `DATABASE_URL` в `.env`):
 
 ```bash
-docker compose exec backend python -m app.demo_seed
+# backend
+cd backend
+pip install -r requirements-dev.txt
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+python -m app.worker            # отдельным процессом
+
+# frontend
+cd frontend
+npm ci
+npm run dev
 ```
 
-## MAX, GigaChat и MCP
+## Переменные окружения
 
-Секреты задаются только в локальном `.env`; он исключён из Git. Переменные и безопасные пустые значения перечислены в `.env.example`.
+Полный список со значениями по умолчанию — `.env.example`. Секреты задаются только в `.env` или окружении, не в коде и не в Git.
 
-Для регистрации MAX webhook после развёртывания на HTTPS:
+| Группа | Переменные |
+| --- | --- |
+| Приложение | `APP_ENV`, `LOG_LEVEL`, `PUBLIC_APP_URL`, `DEV_AUTH_ENABLED`, `DEV_MAX_USER_ID` |
+| База | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL` |
+| Сессии | `SESSION_TTL_SECONDS`, `SESSION_COOKIE_NAME`, `MAX_INIT_DATA_MAX_AGE_SECONDS` |
+| Бот MAX | `MAX_BOT_TOKEN`, `MAX_BOT_USERNAME`, `MAX_WEBHOOK_SECRET`, `MAX_WEBHOOK_URL`, `MAX_API_BASE_URL`, `SUPPORT_CHAT_ID` |
+| Файлы и OCR | `DATA_ROOT`, `MAX_UPLOAD_BYTES`, `MAX_PDF_PAGES`, `OCR_*`, `WORKER_POLL_SECONDS` |
+| ИИ | `AI_PROVIDER`, `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, лимиты `AI_*` |
+| MCP | `MCP_ENABLED`, `MCP_RESOURCE_URL`, `MCP_ISSUER_URL`, `MCP_CONFIRMATION_TTL_SECONDS` |
 
-```bash
-docker compose exec backend python -m app.max_api.setup_webhook
-```
+## Продакшн-развёртывание
 
-MCP запускается отдельным профилем:
+1. Публичный HTTPS-адрес для приложения; тот же адрес укажите в настройках бота на платформе MAX и в `PUBLIC_APP_URL`.
+2. В `.env`: `APP_ENV=production`, `DEV_AUTH_ENABLED=false`, боевые `MAX_BOT_TOKEN` и `MAX_BOT_USERNAME`, свои значения `POSTGRES_PASSWORD` и `DATABASE_URL`.
+3. Webhook MAX: HTTPS-адрес на порту 443 (`MAX_WEBHOOK_URL`, путь `/api/v1/webhooks/max`) и случайный `MAX_WEBHOOK_SECRET`.
+4. Миграции: `alembic upgrade head` (в Compose выполняются при старте backend).
+5. Запустите worker (сервис `worker` в Compose): OCR, уведомления, аналитика.
+6. `docker compose up -d --build`, затем проверьте `/api/v1/health/ready` и `/api/v1/auth/bootstrap` (`max_auth_configured: true`, `development_auth: false`).
+7. Не заменяйте рабочий `.env` примером из репозитория.
 
-```bash
-docker compose --profile mcp up --build
-```
-
-Устройство MCP, выдача локального токена и модель подтверждений описаны в [MCP_README.md](MCP_README.md).
+Порядок обновления и ручная проверка в MAX: [docs/max-production-check.md](docs/max-production-check.md).
 
 ## Проверки
 
-Для проверки интерфейса без Docker и базы запустите `cd frontend`, затем `npm run demo`.
-Готовое демоменю: `http://127.0.0.1:5173/r/test-point`, кабинет: `http://127.0.0.1:5173/`.
-Это локальная in-memory демонстрация: начальное меню уже опубликовано, изменения исчезают при перезапуске. MAX, ИИ и уведомления имитируются; реальных платежей нет.
-Прямой запуск `tests/fixture-server.cjs` нужен для тестов редактора: он намеренно начинает с неопубликованного черновика.
-
 ```bash
-cd backend
-ruff check app tests migrations
-pytest -q
+# backend
+cd backend && ruff check app tests migrations && pytest -q
 
-cd ../frontend
-npm run build
-npm run test:browser
+# frontend
+cd frontend && npm run build && npm run test:unit && npm run test:browser
+
+# compose
+docker compose config --quiet
 ```
 
-Browser smoke использует отдельный in-memory fixture server и не совершает реальные вызовы MAX, GigaChat или платежей. Он проверяет редактор и отдельный чистый запуск демо: прямую гостевую ссылку до входа в кабинет, выбор добавок, перезагрузку и восстановление после ошибки API на ширинах 320/390/1280 px.
+Интеграционные тесты с БД запускайте только на отдельной тестовой PostgreSQL: `RUN_DB_INTEGRATION=1 pytest -q`. Не указывайте рабочую базу. Браузерные тесты используют фикстуры и не доказывают работу внутри MAX.
 
-Порядок обновления Docker-сервера и проверки входа в реальном MAX описан в [docs/max-production-check.md](docs/max-production-check.md). Сверка с официальным API — в [docs/max-api-audit.md](docs/max-api-audit.md).
+## Безопасность и инварианты
 
-## Документы команды
+- Авторизация и изоляция заведений — на сервере. Роль вычисляет сервер; ссылка, `startapp` и `/manage` — только навигация.
+- Деньги — целые копейки, цену считает сервер.
+- Черновик и публикация раздельны; конфликт ревизии — 409 без потери правок.
+- ИИ, OCR и MCP пишут только в проверяемый черновик и не публикуют.
+- Недоверенный ввод (вопрос гостя, текст OCR) — данные, не инструкции.
+- Секреты только в `.env`; в логах нет промптов и текстов гостей.
+- Уведомления — через очередь, идемпотентно, по согласию.
 
-- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — краткий контекст продукта и границы этапа;
-- [docs/01-product-brief.md](docs/01-product-brief.md) — проблема, аудитория и цель;
-- [docs/02-mvp-specification.md](docs/02-mvp-specification.md) — требования и приёмка;
-- [docs/03-ai-constitution.md](docs/03-ai-constitution.md) — правила для ИИ-разработчика;
-- [docs/04-execution-backlog.md](docs/04-execution-backlog.md) — очередь реализации;
-- [docs/product-design-guide.md](docs/product-design-guide.md) — правила продуктового дизайна.
+## Ограничения
 
-## Сервисы
-
-| Сервис | Назначение |
-|---|---|
-| `frontend` | React-приложение, собранное и отданное через Nginx |
-| `backend` | FastAPI, авторизация, меню, публикация, MAX webhook и AI API |
-| `worker` | OCR/import jobs и очередь MAX-уведомлений |
-| `postgres` | данные приложения, сессии и очередь |
-| `mcp` | опциональный Streamable HTTP MCP server |
-
-Загруженные файлы и результаты OCR хранятся в Docker volume `menu_data`. `docker compose down` сохраняет данные; флаг `--volumes` удалит их.
+- Работу в реальном клиенте MAX (mobile и web) проверяйте по [docs/max-production-check.md](docs/max-production-check.md).
+- OCR изображений требует установленного Tesseract (в Docker-образе есть).
+- Без `AI_API_KEY` ИИ недоступен; режим `mock` помечается «Демо-ИИ».
+- Онлайн-оплаты и заказы не реализованы.

@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any
 
 import httpx
@@ -9,7 +10,12 @@ from app.api.routes import max_webhook
 from app.config import Settings, get_settings
 from app.main import app
 from app.max_api import client as max_client
-from app.max_api.client import build_max_deep_link, build_message_button, register_max_webhook
+from app.max_api.client import (
+    SendResult,
+    build_max_deep_link,
+    build_message_button,
+    register_max_webhook,
+)
 
 
 def webhook_settings() -> Settings:
@@ -66,17 +72,18 @@ def test_webhook_rejects_invalid_secret() -> None:
     assert response.status_code == 401
 
 
+@pytest.mark.skipif(
+    os.getenv("RUN_DB_INTEGRATION") != "1",
+    reason="bot_started records the dialog consent in PostgreSQL",
+)
 def test_bot_started_sends_welcome_message(monkeypatch: Any) -> None:
     calls: list[dict[str, object]] = []
 
-    async def fake_send_max_message(
-        settings: Settings,
-        **kwargs: object,
-    ) -> bool:
+    async def fake_send_bot_message(settings: Settings, **kwargs: object) -> SendResult:
         calls.append({"settings": settings, **kwargs})
-        return True
+        return SendResult(ok=True, message_id="m1")
 
-    monkeypatch.setattr(max_webhook, "send_max_message", fake_send_max_message)
+    monkeypatch.setattr(max_webhook, "send_bot_message", fake_send_bot_message)
     app.dependency_overrides[get_settings] = webhook_settings
     try:
         with TestClient(app) as client:
@@ -87,7 +94,7 @@ def test_bot_started_sends_welcome_message(monkeypatch: Any) -> None:
                     "update_type": "bot_started",
                     "timestamp": 1_700_000_000_000,
                     "chat_id": 123456,
-                    "user": {"user_id": 42, "name": "Тест"},
+                    "user": {"user_id": 7_000_000_000 + os.getpid(), "name": "Тест"},
                 },
             )
     finally:
@@ -97,7 +104,8 @@ def test_bot_started_sends_welcome_message(monkeypatch: Any) -> None:
     assert response.json() == {"ok": True}
     assert len(calls) == 1
     assert calls[0]["chat_id"] == 123456
-    assert calls[0]["button_url"] == "https://max.ru/MenuBot?startapp"
+    # Without a start payload: the welcome and «Открыть Синицу» without a startapp payload.
+    assert calls[0]["buttons"] == [[{"type": "open_app", "text": "Открыть Синицу"}]]
 
 
 def test_message_text_extraction() -> None:
@@ -172,7 +180,12 @@ async def test_webhook_registration_checks_max_success_field(monkeypatch: Any) -
     assert requests[0].headers["Authorization"] == "test-token"
     assert json.loads(requests[0].content) == {
         "url": "https://example.com/webhooks/max",
-        "update_types": ["bot_started", "message_created"],
+        "update_types": [
+            "bot_started",
+            "bot_stopped",
+            "message_created",
+            "message_callback",
+        ],
         "secret": "test-secret",
     }
 

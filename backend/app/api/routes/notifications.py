@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
-from app.auth.permissions import has_restaurant_role
+from app.auth.permissions import require_venue_admin
 from app.database import get_session
 from app.models import (
     NotificationCampaign,
@@ -84,13 +84,7 @@ async def _require_campaign_access(
     user: User,
     restaurant_id: uuid.UUID,
 ) -> None:
-    if not await has_restaurant_role(
-        session,
-        user.id,
-        restaurant_id,
-        {"owner", "manager"},
-    ):
-        raise HTTPException(status_code=404, detail="Restaurant not found")
+    await require_venue_admin(session, user.id, restaurant_id)
 
 
 def _recently_saturated_users(now: datetime):

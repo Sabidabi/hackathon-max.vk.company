@@ -1,0 +1,32 @@
+{
+  "brand": {
+    "primary": "#2450FF",
+    "ink": "#151821",
+    "canvas": "#F6F7FB",
+    "surface": "#FFFFFF",
+    "muted": "#5C6678"
+  },
+  "font": {
+    "body": "Arial, Helvetica, sans-serif"
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64
+  ],
+  "radius": {
+    "control": 12,
+    "card": 20,
+    "pill": 999
+  },
+  "motion": {
+    "fastMs": 140,
+    "standardMs": 240,
+    "easing": "cubic-bezier(0.2, 0, 0, 1)"
+  }
+}

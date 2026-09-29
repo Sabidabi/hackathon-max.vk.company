@@ -1,0 +1,24 @@
+/* «Ещё → Сообщения»: cabinet tokens, the point answers in blue bubbles. */
+.msg-row { align-items: center; }
+.msg-row__preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-row__meta { display: grid; flex: none; gap: 4px; justify-items: end; color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.msg-badge { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: var(--sinitsa-radius-pill); background: var(--sinitsa-blue); color: var(--sinitsa-on-blue); font-size: var(--sinitsa-text-micro); font-weight: 700; animation: msg-pop var(--motion-base, 240ms) var(--ease-spring, ease-out) both; }
+.msg-dialog { display: grid; gap: var(--sinitsa-space-3); min-width: 0; }
+.msg-dialog__head { display: flex; align-items: center; gap: var(--sinitsa-space-2); }
+.msg-dialog__who { display: grid; gap: 2px; min-width: 0; }
+.msg-dialog__who strong { overflow-wrap: anywhere; }
+.msg-dialog__who small { color: var(--sinitsa-muted); font-size: var(--sinitsa-text-caption); }
+.msg-thread { display: grid; gap: var(--sinitsa-space-2); margin: 0; padding: var(--sinitsa-space-3); border-radius: var(--sinitsa-radius-card); background: var(--sinitsa-surface); list-style: none; }
+.msg-bubble { display: grid; gap: 4px; max-width: min(85%, 480px); padding: var(--sinitsa-space-2) var(--sinitsa-space-3); border-radius: var(--sinitsa-radius-card); animation: msg-in var(--motion-fast, 140ms) var(--ease-out, ease-out) both; }
+.msg-bubble p { margin: 0; line-height: var(--sinitsa-line-body); overflow-wrap: anywhere; white-space: pre-wrap; }
+.msg-bubble time { font-size: var(--sinitsa-text-micro); opacity: 0.75; }
+.msg-bubble--in { justify-self: start; background: var(--sinitsa-canvas); color: var(--sinitsa-ink); border-bottom-left-radius: 6px; }
+.msg-bubble--out { justify-self: end; background: var(--sinitsa-blue); color: var(--sinitsa-on-blue); border-bottom-right-radius: 6px; }
+.msg-bubble__photo { display: flex; align-items: center; gap: var(--sinitsa-space-1); font-size: var(--sinitsa-text-caption); }
+.msg-reply { display: grid; gap: var(--sinitsa-space-2); }
+.msg-reply .s-button { justify-self: end; }
+.msg-actions { display: flex; flex-wrap: wrap; gap: var(--sinitsa-space-2); }
+.msg-confirm { display: flex; flex-wrap: wrap; gap: var(--sinitsa-space-2); }
+@keyframes msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes msg-pop { from { transform: scale(0.6); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .msg-bubble, .msg-badge { animation: none; } }

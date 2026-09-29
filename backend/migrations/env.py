@@ -18,6 +18,15 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+# Frozen snapshots kept by a migration only for an exact downgrade; not part of the model.
+UNMODELED_TABLES = {"restaurant_members_legacy"}
+
+
+def include_name(name, type_, parent_names) -> bool:
+    if type_ == "table":
+        return name not in UNMODELED_TABLES
+    return True
+
 
 def run_migrations_offline() -> None:
     context.configure(
@@ -26,6 +35,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_name=include_name,
     )
 
     with context.begin_transaction():
@@ -37,6 +47,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_name=include_name,
     )
 
     with context.begin_transaction():
