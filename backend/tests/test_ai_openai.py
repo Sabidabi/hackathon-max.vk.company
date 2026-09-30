@@ -68,6 +68,50 @@ def test_function_schema_forbids_unreviewed_shapes():
     assert menu_plan_function()["parameters"]["additionalProperties"] is False
 
 
+async def test_planner_repairs_one_invalid_answer(monkeypatch):
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json
+
+        body = json.loads(request.read())
+        seen.append(body)
+        arguments = '{"summary":"Без операций","operations":[]}' if len(seen) == 1 else PLAN
+        return httpx.Response(200, json=tool_payload("propose_menu_change", arguments))
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        openai_compat.httpx, "AsyncClient",
+        lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
+    )
+    plan = await OpenAICompatMenuPlanner(Settings(ai_api_key="test-key")).generate(
+        "Добавь раф 250 ₽", "[]"
+    )
+    assert plan.operations[0].item.base_price_minor == 25000
+    assert len(seen) == 2
+    assert "request" in seen[0]["messages"][1]["content"]
+    assert "Добавь раф 250 ₽" in seen[0]["messages"][1]["content"]
+    assert "не прошёл проверку" in seen[1]["messages"][-1]["content"]
+
+
+async def test_planner_does_not_retry_provider_error(monkeypatch):
+    calls = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(503)
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        openai_compat.httpx, "AsyncClient",
+        lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
+    )
+    with pytest.raises(OpenAICompatError):
+        await OpenAICompatMenuPlanner(Settings(ai_api_key="k")).generate("Раф", "[]")
+    assert calls == 1
+
+
 async def test_planner_sends_forced_tool_call(monkeypatch):
     seen = {}
 

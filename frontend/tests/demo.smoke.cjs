@@ -59,6 +59,10 @@ const output = path.resolve(process.env.TEST_OUTPUT || "test-results");
       await page.reload();
       await page.getByRole("button", { name: "Открыть Латте", exact: true }).waitFor();
       await page.screenshot({ path: path.join(output, `demo-start-${width}.png`), fullPage: true });
+      await page.getByRole("button", { name: "Назад", exact: true }).click();
+      await page.waitForURL(`${baseUrl}/`);
+      await page.goto(`${baseUrl}/r/test-point`);
+      await page.getByRole("button", { name: "Открыть Латте", exact: true }).waitFor();
 
       // Recovery must work without reloading the entire mini app.
       await page.route(`**${menuPath}`, (route) => route.fulfill({ status: 503, contentType: "application/json", body: '{"detail":"Сервис временно недоступен"}' }));

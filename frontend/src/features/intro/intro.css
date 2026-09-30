@@ -217,6 +217,9 @@
     opacity var(--motion-fast) var(--ease-out);
 }
 .intro-choice--shown { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-choice { transform: none; }
+}
 .intro-choice__label { display: flex; align-items: center; gap: var(--sinitsa-space-3); }
 .intro-choice__count {
   display: grid;

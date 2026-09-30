@@ -356,7 +356,7 @@ async function recordVideo(browser) {
     await verifyStartParamSkipsIntro(browser);
     await verifySkipAndConnect(browser);
     await verifyReducedMotion(browser);
-    await recordVideo(browser);
+    if (!process.env.SKIP_VIDEO) await recordVideo(browser);
     assert.equal(fixtureError, "");
     console.log("PASS: first-launch intro (first → intro, repeat → Home, startapp → menu without intro, skip, CTA, swipe, MAX «Назад», reduced motion) at 320/390/1280px (fixture, not a real MAX client)");
   } finally {

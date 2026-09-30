@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { useMaxLaunch } from "../../app/MaxLaunchProvider";
+import { useBackButton } from "../../max";
 import { GuestSurface } from "./GuestMenu";
 
 /**
@@ -12,6 +13,12 @@ export default function GuestMenuSurface() {
   const { publicId = "", itemId = null } = useParams();
   const { context } = useMaxLaunch();
   const navigate = useNavigate();
+  const goBack = useCallback(() => {
+    const index = window.history.state?.idx;
+    if (typeof index === "number" && index > 0) navigate(-1);
+    else navigate(context.available ? "/home" : "/");
+  }, [context.available, navigate]);
+  useBackButton(goBack);
   const closeLinkedItem = useCallback(
     () => navigate(`/r/${encodeURIComponent(publicId)}`, { replace: true }),
     [navigate, publicId],
@@ -22,6 +29,7 @@ export default function GuestMenuSurface() {
       publicId={publicId}
       itemId={itemId}
       maxContext={context}
+      onBack={goBack}
       onLinkedItemClose={itemId ? closeLinkedItem : undefined}
     />
   );

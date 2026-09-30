@@ -75,6 +75,7 @@ export function TabBar<K extends string>({ items, value, onChange, label, fixed,
       ref={navRef}
       className={["s-tabbar", fixed && "s-tabbar--fixed", vertical && "s-tabbar--vertical", className].filter(Boolean).join(" ")}
       aria-label={label}
+      data-active-tab={value}
     >
       <span ref={indicatorRef} className="s-tabbar__indicator" aria-hidden="true" />
       {items.map((item) => {
@@ -83,6 +84,8 @@ export function TabBar<K extends string>({ items, value, onChange, label, fixed,
           <button
             key={item.key}
             type="button"
+            aria-label={item.label}
+            data-tab-key={item.key}
             className={["s-tabbar__item", active && "s-tabbar__item--active"].filter(Boolean).join(" ")}
             aria-current={active ? "page" : undefined}
             onClick={() => onChange(item.key)}

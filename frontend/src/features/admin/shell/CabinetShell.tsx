@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { CircleAlert, Ellipsis, MapPin, Palette, Sparkles, SquareMenu } from "lucide-react";
+import { CircleAlert, Ellipsis, MapPin, Palette, SquareMenu } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { listRestaurants, type Restaurant } from "../../../api/restaurants";
-import { BrandLockup, Button, EmptyState, Skeleton, TabBar, type TabBarItem } from "../../../design";
+import { BrandLockup, BrandMark, Button, EmptyState, Skeleton, TabBar, type TabBarItem } from "../../../design";
 import { showToast } from "../../../design/toast";
 import { haptics } from "../../../max";
 import { AiHub } from "../ai/AiHub";
@@ -71,7 +71,7 @@ function ShellSkeleton() {
 const NAV: Array<TabBarItem<CabinetSection>> = [
   { key: "point", label: "Точка", icon: <MapPin size={24} /> },
   { key: "menu", label: "Меню", icon: <SquareMenu size={24} /> },
-  { key: "ai", label: "ИИ", icon: <Sparkles size={24} /> },
+  { key: "ai", label: "Помощь", icon: <BrandMark size={32} /> },
   { key: "design", label: "Оформление", icon: <Palette size={24} /> },
   { key: "more", label: "Ещё", icon: <Ellipsis size={24} /> },
 ];
@@ -174,7 +174,7 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
   } else if (section === "design") {
     content = <DesignSection context={context} />;
   } else if (section === "ai") {
-    content = <AiHub context={context} onOpenSection={openFromAi} />;
+    content = null;
   } else {
     content = <MoreSection context={context} page={page} onOpen={(next) => go(point, "more", next)} onPoint={(target, next) => go(target, "more", next)} />;
   }
@@ -199,6 +199,10 @@ export function CabinetShell({ publicId, path }: { publicId: string | null; path
       <main className="cabinet-main" id="cabinet-content">
         {/* Point switch: a short cross-fade of the section, not a full redraw (P1-DOC-18). */}
         <div className="cabinet-view" key={`${point.id}:${section}:${page ?? ""}`}>{content}</div>
+        {/* Keep the chat mounted while other sections are open so ongoing AI requests finish. */}
+        <div className="cabinet-view" key={`ai:${point.id}`} hidden={section !== "ai"}>
+          <AiHub context={context} onOpenSection={openFromAi} />
+        </div>
       </main>
       <TabBar<CabinetSection> label="Разделы кабинета" items={nav} value={section} onChange={onNavigate} fixed className="cabinet-tabbar" />
     </div>

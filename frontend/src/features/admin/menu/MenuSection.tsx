@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowDown,
   ArrowUp,
   Check,
@@ -493,7 +494,8 @@ export function MenuSection({ context, focusItem, onUnsavedChange, onChangesCoun
       <div className="menu-layout">
         <div className="menu-main">
           <div className="menu-toolbar">
-<div className="menu-toolbar__title">
+            <IconButton className="menu-toolbar__back" aria-label="Назад к точке" icon={<ArrowLeft size={22} />} onClick={() => navigate(`/manage/${point.public_id}/point`)} />
+            <div className="menu-toolbar__title">
                         <button type="button" className="menu-picker" aria-haspopup="dialog" aria-label={`Меню «${menu.title}». Библиотека меню`} onClick={() => setSheet("library")}>
               <span className="menu-picker__title">{menu.title}</span>
               <ChevronDown size={18} aria-hidden="true" />

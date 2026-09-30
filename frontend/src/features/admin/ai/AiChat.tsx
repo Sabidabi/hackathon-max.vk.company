@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Reac
 import { useNavigate } from "react-router-dom";
 
 import { checkMenu, type MenuCheck } from "../../../api/ai";
+import type { AuthUser } from "../../../api/auth";
 import { fetchImportReview, listImports, uploadMenuSource, type ImportJob } from "../../../api/imports";
 import { applyMenuChange, planMenuChange, type MenuAiProposal } from "../../../api/menuAi";
 import type { Restaurant } from "../../../api/restaurants";
@@ -33,6 +34,7 @@ export type AiToolKey = "design" | "fill" | "edit" | "check";
 interface Tool {
   key: AiToolKey;
   title: string;
+  accessibleLabel: string;
   hint: string;
   icon: LucideIcon;
   placeholder: string;
@@ -44,7 +46,8 @@ interface Tool {
 const TOOLS: Tool[] = [
   {
     key: "design",
-    title: "Оформление",
+    title: "Стиль",
+    accessibleLabel: "Оформление",
     hint: "Цвета и шрифты",
     icon: Palette,
     placeholder: "Что изменить в оформлении?",
@@ -52,16 +55,18 @@ const TOOLS: Tool[] = [
   },
   {
     key: "fill",
-    title: "Из фото или PDF",
-    hint: "Загрузить меню",
+    title: "Из файла",
+    accessibleLabel: "Из фото или PDF",
+    hint: "Фото или PDF",
     icon: ScanText,
     placeholder: "Прикрепите фото или PDF меню",
     examples: [],
   },
   {
     key: "edit",
-    title: "Поправить меню",
-    hint: "Добавить словами",
+    title: "Добавить",
+    accessibleLabel: "Поправить меню",
+    hint: "Позиции меню",
     icon: WandSparkles,
     placeholder: "Что добавить или поправить в меню?",
     examples: [
@@ -71,7 +76,8 @@ const TOOLS: Tool[] = [
   },
   {
     key: "check",
-    title: "Проверить меню",
+    title: "Проверка",
+    accessibleLabel: "Проверить меню",
     hint: "Цены и дубли",
     icon: ShieldCheck,
     placeholder: "",
@@ -118,18 +124,32 @@ export function AiChat({ point, initialTool = "edit", onOpenSection }: {
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [tool, setTool] = useState<AiToolKey>(initialTool);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [text, setText] = useState("");
+  const userId = queryClient.getQueryData<AuthUser>(["current-user"])?.id ?? "unknown";
+  const historyKey = ["ai-chat-history", userId, point.id] as const;
+  const draftKey = ["ai-chat-draft", userId, point.id] as const;
+  const [tool, setTool] = useState<AiToolKey>(() => queryClient.getQueryData<AiToolKey>([...draftKey, "tool"]) ?? initialTool);
+  const [messages, setMessages] = useState<Message[]>(() => queryClient.getQueryData<Message[]>(historyKey) ?? []);
+  const [text, setText] = useState(() => queryClient.getQueryData<string>(draftKey) ?? "");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
-  const nextId = useRef(1);
+  const nextId = useRef(Math.max(0, ...messages.map((message) => message.id)) + 1);
   const listRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const current = TOOLS.find((item) => item.key === tool) ?? TOOLS[0];
 
-  useEffect(() => () => abort.current?.abort(), []);
+  useEffect(() => { queryClient.setQueryData(historyKey, messages); }, [messages, point.id, queryClient, userId]);
+  useEffect(() => { queryClient.setQueryData(draftKey, text); }, [text, point.id, queryClient, userId]);
+  useEffect(() => { queryClient.setQueryData([...draftKey, "tool"], tool); }, [tool, point.id, queryClient, userId]);
+  useEffect(() => () => {
+    if (abort.current) {
+      abort.current.abort();
+      queryClient.setQueryData<Message[]>(historyKey, (list = []) => [
+        ...list,
+        { id: nextId.current++, role: "assistant", kind: "text", text: "Запрос прервался при смене точки. Отправьте его ещё раз.", tone: "info" },
+      ]);
+    }
+  }, [point.id, queryClient, userId]);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
@@ -253,12 +273,12 @@ export function AiChat({ point, initialTool = "edit", onOpenSection }: {
     await run("Применяю в черновик…", async (signal) => {
       try {
         if (kind === "design") {
-          await applyDesign(point.id, proposalId, revision, signal);
-          await queryClient.invalidateQueries({ queryKey: ["site-draft", point.id] });
+          const draft = await applyDesign(point.id, proposalId, revision, signal);
+          queryClient.setQueryData(["site-draft", point.id], draft);
           say("Готово: оформление изменено в черновике. Гости увидят его после публикации в разделе «Оформление».");
         } else {
-          await applyMenuChange(point.id, proposalId, revision, signal);
-          await queryClient.invalidateQueries({ queryKey: venueKeys.draft(point.menu_id ?? "none") });
+          const draft = await applyMenuChange(point.id, proposalId, revision, signal);
+          queryClient.setQueryData(venueKeys.draft(point.menu_id ?? "none"), draft);
           await queryClient.invalidateQueries({ queryKey: ["venue-menus"] });
           say("Готово: позиции добавлены в черновик меню. Опубликуйте меню, когда проверите.");
         }
@@ -287,7 +307,7 @@ export function AiChat({ point, initialTool = "edit", onOpenSection }: {
   const canSend = !busy && (files.length > 0 || (tool !== "check" && tool !== "fill" && text.trim().length >= 3) || tool === "check");
 
   return (
-    <section className="ai-chat" aria-label="ИИ-помощник">
+    <section className="ai-chat" aria-label="Помощь Синицы">
       <div className="ai-chat__tools" role="radiogroup" aria-label="Что сделать">
         {TOOLS.map((item) => {
           const Icon = item.icon;
@@ -296,6 +316,7 @@ export function AiChat({ point, initialTool = "edit", onOpenSection }: {
               key={item.key}
               type="button"
               role="radio"
+              aria-label={item.accessibleLabel}
               aria-checked={tool === item.key}
               className="ai-tool"
               disabled={Boolean(busy)}
@@ -363,7 +384,7 @@ export function AiChat({ point, initialTool = "edit", onOpenSection }: {
           <textarea
             className="ai-composer__input"
             rows={1}
-            maxLength={2000}
+            maxLength={800}
             value={text}
             placeholder={files.length ? "Подпись к файлам (необязательно)" : current.placeholder || "Нажмите стрелку, чтобы проверить меню"}
             aria-label="Сообщение для ИИ"
@@ -377,7 +398,6 @@ export function AiChat({ point, initialTool = "edit", onOpenSection }: {
             <button type="button" className="ai-composer__send" aria-label={tool === "check" ? "Проверить меню" : "Отправить"} disabled={!canSend} onClick={() => void send()}><ArrowUp size={22} strokeWidth={2.5} /></button>
           )}
         </div>
-        <p className="ai-composer__note">ИИ только предлагает. Публикуете вы.</p>
       </div>
     </section>
   );

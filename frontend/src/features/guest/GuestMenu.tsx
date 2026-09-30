@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BellOff, Check, Clock3, Heart, MapPin, Minus, Plus, Search, SearchX, Share2, X } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, Check, Clock3, Heart, MapPin, Minus, Plus, Search, SearchX, Share2, X } from "lucide-react";
 import { Fragment, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { ButtonLink, Chip, EmptyState, IconButton, showToast } from "../../design";
@@ -237,6 +237,7 @@ function useBodyTheme(variables: Record<string, string>) {
 
 export interface GuestSurfaceProps {
   publicId: string;
+  onBack?: () => void;
   /** `/r/:publicId/i/:itemId`: open this item's card once the menu is loaded. */
   itemId?: string | null;
   maxContext: MaxContext;
@@ -245,7 +246,7 @@ export interface GuestSurfaceProps {
 }
 
 /** Guest menu 2.0 (P1-PLAN-6): the whole `/r/:publicId` screen. */
-export function GuestSurface({ publicId, itemId = null, maxContext, onLinkedItemClose }: GuestSurfaceProps) {
+export function GuestSurface({ publicId, itemId = null, maxContext, onLinkedItemClose, onBack }: GuestSurfaceProps) {
   const menu = useQuery({
     queryKey: ["guest-menu", publicId],
     queryFn: ({ signal }) => fetchGuestMenu(publicId, signal),
@@ -256,10 +257,10 @@ export function GuestSurface({ publicId, itemId = null, maxContext, onLinkedItem
   if (menu.isError) {
     return <GuestStateScreen kind="error" error={menu.error} retrying={menu.isFetching} onRetry={() => void menu.refetch()} />;
   }
-  return <GuestMenuScreen key={publicId} data={menu.data} publicId={publicId} itemId={itemId} maxContext={maxContext} onLinkedItemClose={onLinkedItemClose} />;
+  return <GuestMenuScreen key={publicId} data={menu.data} publicId={publicId} itemId={itemId} maxContext={maxContext} onLinkedItemClose={onLinkedItemClose} onBack={onBack} />;
 }
 
-function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose }: GuestSurfaceProps & { data: GuestMenuData }) {
+function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose, onBack }: GuestSurfaceProps & { data: GuestMenuData }) {
   const { restaurant, site } = data;
   const tabs = useMemo(() => mergeTabs(data.tabs), [data.tabs]);
   // Analytics keep the menu each position really belongs to.
@@ -548,6 +549,7 @@ function GuestMenuScreen({ data, publicId, itemId, maxContext, onLinkedItemClose
   return (
     <div className={`g-root g-root--enter g-template--${site.template}`} style={rootStyle} {...tileAttributes(site)}>
       <header className={`g-cover${site.cover_url ? " g-cover--image" : ""}`} style={coverStyle}>
+        {onBack && <button type="button" className="g-cover__back" onClick={onBack}><ArrowLeft size={18} aria-hidden="true" />Назад</button>}
         <div className="g-cover__row">
           {site.logo_url && <img className="g-cover__logo" src={site.logo_url} alt="" width={48} height={48} />}
           <div className="g-cover__text">

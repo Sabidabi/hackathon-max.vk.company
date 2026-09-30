@@ -38,17 +38,25 @@ async function noOverflow(page, label) {
   await new Promise((resolve) => setTimeout(resolve, 1500));
   const browser = await launchChromium(chromium);
   try {
-    for (const width of [320, 390, 1280]) {
+    for (const width of [320, 390, 768, 1280]) {
       const { context, page, errors } = await newPage(browser, width);
       await page.goto(`${base}/manage/test-point/ai`);
-      await page.getByRole("heading", { name: "ИИ-помощник" }).waitFor();
+      await page.getByRole("heading", { name: "Помощь Синицы" }).waitFor();
       // The tab is in the toolbar (bottom bar on phones, the left column on desktop).
-      await page.getByRole("button", { name: "ИИ", exact: true }).first().waitFor();
+      await page.getByRole("button", { name: "Помощь", exact: true }).first().waitFor();
+      if (width < 1024) {
+        const middle = page.locator(".cabinet-tabbar .s-tabbar__item").nth(2);
+        assert.equal(await middle.locator('img[src="/brand/sinitsa-app-icon.svg"]').count(), 1, "The middle AI tab uses the Sinitsa mark");
+      }
       for (const name of ["Оформление", "Из фото или PDF", "Поправить меню", "Проверить меню"]) {
         await page.getByRole("radio", { name: new RegExp(name) }).waitFor();
       }
-      await page.getByText("ИИ только предлагает. Публикуете вы.").waitFor();
       await noOverflow(page, `chat ${width}`);
+      const longDraft = "Добавь позиции меню с обязательным выбором молока. ".repeat(8);
+      await page.getByLabel("Сообщение для ИИ").fill(longDraft);
+      const inputSize = await page.getByLabel("Сообщение для ИИ").evaluate((element) => [element.scrollHeight, element.clientHeight]);
+      assert.ok(inputSize[0] <= inputSize[1] + 1, `The composer must not scroll inside itself at ${width}px`);
+      await page.getByLabel("Сообщение для ИИ").fill("");
 
       // Design: plan → card with the demo label → apply to the draft only.
       await page.getByRole("radio", { name: /Оформление/ }).click();
@@ -57,12 +65,27 @@ async function noOverflow(page, label) {
       await page.getByText("Демо-ИИ", { exact: true }).waitFor();
       await page.getByText("тёмный", { exact: true }).waitFor();
       await page.getByText("список", { exact: true }).waitFor();
+      await page.locator(".ai-card").first().evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined))));
       await page.screenshot({ path: path.join(output, `aichat-plan-${width}.png`) });
       await page.getByRole("button", { name: "Применить в черновик" }).click();
       await page.getByText("Применено в черновик").waitFor();
       await page.getByText(/Гости увидят его после публикации/).waitFor();
       assert.equal(await page.getByRole("button", { name: "Применить в черновик" }).count(), 0, "A used plan cannot be applied twice");
       await noOverflow(page, `chat after apply ${width}`);
+
+      // A design proposed in the chat must be the design shown by the editor, even when its
+      // query had an older cached draft. The chat also survives the round trip.
+      await page.getByLabel("Сообщение для ИИ").fill("Сделай розовый фон");
+      await page.getByRole("button", { name: "Отправить" }).click();
+      await page.getByLabel("Помощь Синицы").getByText("#FDE7EF").waitFor();
+      await page.getByRole("button", { name: "Применить в черновик" }).click();
+      await page.getByRole("button", { name: "Открыть «Оформление»" }).last().click();
+      await page.getByRole("heading", { name: "Оформление", exact: true }).waitFor();
+      await page.getByLabel("Цвета").getByText("#FDE7EF").waitFor();
+      await noOverflow(page, `design after AI ${width}`);
+      await page.getByRole("button", { name: "Помощь", exact: true }).first().click();
+      await page.getByText("Сделай розовый фон").waitFor();
+      assert.equal(await page.getByRole("button", { name: "Применить в черновик" }).count(), 0, "Applied plans remain applied after navigation");
 
       // A request that is not understood is explained, nothing is applied.
       await page.getByLabel("Сообщение для ИИ").fill("Сделай красиво");
@@ -80,17 +103,31 @@ async function noOverflow(page, label) {
       // Check the menu: the findings come from the code.
       await page.getByRole("radio", { name: /Проверить меню/ }).click();
       await page.getByText(/Нашла замечаний|Замечаний нет/).waitFor();
+      await page.locator(".ai-card").last().evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined))));
       await page.screenshot({ path: path.join(output, `aichat-check-${width}.png`) });
       await noOverflow(page, `chat check ${width}`);
+
+      // The typed menu composer must return reviewable cards, and applying them changes the
+      // draft menu rather than publishing them.
+      await page.getByRole("radio", { name: /Поправить меню/ }).click();
+      await page.getByLabel("Сообщение для ИИ").fill("Добавь капучино 300 мл 190 ₽, 400 мл 230 ₽, молоко обязательно");
+      await page.getByRole("button", { name: "Отправить" }).click();
+      await page.locator(".ai-plan-items strong").getByText("Капучино с ИИ").waitFor();
+      await page.getByRole("button", { name: "Добавить в черновик" }).click();
+      await page.getByText("Применено в черновик").last().waitFor();
 
       // No floating AI button any more: the chat lives in the «ИИ» tab of the toolbar.
       await page.goto(`${base}/manage/test-point/menu`);
       await page.locator(".menu-row").first().waitFor();
+      await page.getByText("Капучино с ИИ").first().waitFor();
+      await page.getByRole("button", { name: "Назад к точке" }).click();
+      await page.getByRole("button", { name: "Меню", exact: true }).first().waitFor();
+      assert.match(page.url(), /\/manage\/test-point\/point$/);
       assert.equal(await page.getByRole("button", { name: "Открыть ИИ-помощника" }).count(), 0, "No floating AI button");
       assert.deepEqual(errors, [], `page errors at ${width}`);
       await context.close();
     }
-    console.log("PASS: AI chat (tab, tools, plan → apply to the draft, stop, check; no floating button) at 320/390/1280px (fixture with the demo AI)");
+    console.log("PASS: AI chat, design sync, menu cards, navigation and responsive layout at 320/390/768/1280px (fixture)");
   } finally {
     await browser.close();
     server.kill();

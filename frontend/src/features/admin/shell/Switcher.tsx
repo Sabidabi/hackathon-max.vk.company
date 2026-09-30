@@ -44,6 +44,9 @@ export function PointSwitcher({ context, onSelect, onCreated, layout }: {
   const { point, venuePoints, allPoints } = context;
   const venues = groupVenues(allPoints);
   const venueName = point.venue_name ?? point.name;
+  const pointLabel = point.name === venueName
+    ? point.address?.trim() || (venuePoints.length === 1 ? "Единственная точка" : `Точка ${venuePoints.findIndex((item) => item.id === point.id) + 1} из ${venuePoints.length}`)
+    : point.name;
   const close = () => setMode(null);
   const open = (next: Mode) => (event: { currentTarget: Element }) => {
     setOrigin(event.currentTarget);
@@ -64,7 +67,7 @@ export function PointSwitcher({ context, onSelect, onCreated, layout }: {
       </button>
       <button type="button" className="cabinet-switcher__button cabinet-switcher__button--point" aria-haspopup="dialog" aria-label={`Точка: ${point.name}. Сменить`} onClick={open("point")}>
         <MapPin size={18} aria-hidden="true" />
-        <span className="cabinet-switcher__text">{point.name}</span>
+        <span className="cabinet-switcher__text">{pointLabel}</span>
         <ChevronDown size={16} aria-hidden="true" />
       </button>
 

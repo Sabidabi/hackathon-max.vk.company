@@ -251,6 +251,11 @@
 .menu-publish .s-button { flex: 1 1 auto; }
 @media (min-width: 480px) { .menu-publish .s-button { flex: 0 0 auto; } }
 .menu-publish__error { flex-basis: 100%; }
+@media (max-width: 479px) {
+  .menu-publish { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .menu-publish__text { max-width: 100%; overflow-wrap: anywhere; }
+  .menu-publish .s-button { width: 100%; min-width: 0; white-space: normal; }
+}
 .menu-publish-points { display: grid; gap: var(--sinitsa-space-2); margin: var(--sinitsa-space-3) 0 0; padding: 0; list-style: none; }
 .menu-publish-points li { display: flex; align-items: center; gap: var(--sinitsa-space-2); font-weight: 700; }
 

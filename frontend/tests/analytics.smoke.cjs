@@ -134,7 +134,10 @@ async function cabinet(browser) {
       page.on("pageerror", (error) => errors.push(error.message));
       try {
         await page.goto(`${baseUrl}/manage/test-point/analytics`);
-        await page.getByRole("heading", { name: "Аналитика" }).waitFor();
+        await page.getByRole("heading", { name: "Аналитика" }).waitFor().catch(async (error) => {
+          console.error(`Analytics screen at ${page.url()}:`, (await page.locator("body").innerText()).slice(0, 600));
+          throw error;
+        });
         if (label.startsWith("full")) {
           await page.getByText("Воронка по сессиям").waitFor();
           if (label === "full") {

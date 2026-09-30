@@ -62,7 +62,7 @@ async function verifyMaxLaunch(browser, baseUrl, bridgeScript, hash = "") {
     await page.getByRole("list", { name: "Разделы точки" }).waitFor();
     await page.getByRole("button", { name: /^Меню Позиции/ }).click();
     await page.getByRole("button", { name: "Действия с меню" }).waitFor();
-    assert.match(new URL(page.url()).pathname, /^\/manage\/test-point$/);
+    assert.match(new URL(page.url()).pathname, /^\/manage\/test-point\/menu$/);
     assert.deepEqual(received, [initData], "MAX signed payload must be sent exactly once");
     if (bridgeScript) {
       assert.equal(await page.evaluate(() => window.__maxReadyCalls), 1, "WebApp.ready() must be sent once after the first render");
@@ -107,12 +107,16 @@ async function verifyMaxGuestBackButton(browser, baseUrl) {
     await page.goto(baseUrl);
     await page.getByLabel("Поиск по меню").waitFor({ timeout: 5_000 });
     assert.equal(new URL(page.url()).pathname, "/r/test-point");
-    assert.equal(await page.evaluate(() => window.__back.visible), false, "Back button hidden on the menu");
+    assert.equal(await page.evaluate(() => window.__back.visible), true, "Back button returns from the menu to Home");
     await page.locator("article").filter({ hasText: "Латте" }).getByRole("button", { name: "Открыть Латте" }).click();
     await page.locator(".guest-item-dialog").waitFor();
     assert.equal(await page.evaluate(() => window.__back.visible), true, "Back button shown on the item card");
     await page.evaluate(() => window.__back.handlers.forEach((handler) => handler()));
     await page.locator(".guest-item-dialog").waitFor({ state: "detached" });
+    assert.deepEqual(await page.evaluate(() => [window.__back.visible, window.__back.handlers.length]), [true, 1]);
+    await page.evaluate(() => window.__back.handlers.forEach((handler) => handler()));
+    await page.waitForURL(`${baseUrl}/home`);
+    await page.waitForFunction(() => !window.__back.visible && window.__back.handlers.length === 0);
     assert.deepEqual(await page.evaluate(() => [window.__back.visible, window.__back.handlers.length]), [false, 0]);
   } finally {
     await context.close();
@@ -661,7 +665,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
     assert.equal(await team.getByLabel("MAX ID сотрудника").count(), 0, "No MAX ID in the main invite flow");
     await team.getByRole("button", { name: "Пригласить администратора" }).click();
     assert.match(await team.locator(".team-fresh__link").textContent(), /^https:\/\/max\.ru\/test_bot\?startapp=inv_fixture-/);
-    await team.getByText("Ссылка-приглашение", { exact: true }).waitFor();
+    assert.equal(await team.getByText("Ссылка-приглашение", { exact: true }).count(), 0, "Fresh invite is shown once, as a shareable link above the list");
     // Creator is marked and cannot be removed; there is no role selector any more.
     const creatorRow = team.locator("li").filter({ hasText: "Демо · вы" });
     await creatorRow.getByText("Создатель — удалить нельзя").waitFor();
@@ -684,7 +688,7 @@ async function verifyPublicStartParam(browser, baseUrl) {
 
     // Video of the cabinet motion (P1-DOC-18 «Проверка моушна на ревью»): tab indicator, row → card
     // shared element, stop-list switch with the undo toast, quick add growing a row, publish morph.
-    {
+    if (!process.env.SKIP_VIDEO) {
       const videoDir = path.join(output, "cabinet-video");
       fs.rmSync(videoDir, { recursive: true, force: true });
       const videoContext = await browser.newContext({ viewport: { width: 390, height: 844 }, recordVideo: { dir: videoDir, size: { width: 390, height: 844 } } });

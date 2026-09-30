@@ -10,6 +10,7 @@ from app.api.routes import max_webhook
 from app.config import Settings, get_settings
 from app.main import app
 from app.max_api import client as max_client
+from app.max_api.check_webhook import subscription_report
 from app.max_api.client import (
     SendResult,
     build_max_deep_link,
@@ -24,6 +25,17 @@ def webhook_settings() -> Settings:
         max_bot_username="@MenuBot",
         max_webhook_secret="test-secret",
     )
+
+
+def test_webhook_subscription_report_requires_start_events() -> None:
+    url = "https://example.test/webhooks/max"
+    assert subscription_report({"subscriptions": []}, url)["ready"] is False
+    report = subscription_report({"subscriptions": [
+        {"url": url, "update_types": ["bot_started", "message_created"]},
+    ]}, url)
+    assert report["ready"] is True
+    assert report["subscription_found"] is True
+    assert report["bot_started"] is True
 
 
 def test_build_max_deep_link() -> None:

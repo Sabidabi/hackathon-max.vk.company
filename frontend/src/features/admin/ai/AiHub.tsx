@@ -9,7 +9,7 @@ export function AiHub({ context, onOpenSection }: {
 }) {
   return (
     <div className="ai-page">
-      <h1 className="cabinet-title">ИИ-помощник</h1>
+      <h1 className="cabinet-title">Помощь Синицы</h1>
       <AiChat point={context.point} onOpenSection={onOpenSection} />
     </div>
   );

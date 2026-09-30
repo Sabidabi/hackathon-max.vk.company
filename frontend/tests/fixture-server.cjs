@@ -295,6 +295,7 @@ const server = http.createServer(async (req,res)=>{
         if(q.includes("списк"))changes.menu_layout="list";
         if(q.includes("засечк"))changes.heading_font="serif";
         if(q.includes("круглы"))changes.card_radius="round";
+        if(q.includes("розов"))changes.background_color="#FDE7EF";
         if(!Object.keys(changes).length)return json({detail:"Демо-ИИ не понял, что менять: назовите тему, раскладку, шрифт или углы."},422);
         aiDesign={proposal_id:randomUUID(),changes};
         return json({proposal_id:aiDesign.proposal_id,summary:"Демо-план: "+Object.keys(changes).length+" изменения оформления.",changes,warnings:[],provider:"mock",expires_at:new Date(Date.now()+900000).toISOString()});

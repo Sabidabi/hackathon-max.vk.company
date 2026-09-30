@@ -40,6 +40,22 @@
     var(--g-cover) center / cover no-repeat;
 }
 .g-cover--image > * { width: min(100%, calc(var(--g-max) - 2 * var(--g-gutter))); margin-inline: auto; }
+.g-cover__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--sinitsa-radius-control);
+  background: color-mix(in srgb, var(--sinitsa-surface) 82%, transparent);
+  color: var(--sinitsa-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.g-cover__back:focus-visible { outline: 2px solid var(--sinitsa-blue); outline-offset: 2px; }
 .g-cover__row {
   display: flex;
   align-items: center;

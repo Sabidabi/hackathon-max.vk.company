@@ -105,12 +105,12 @@ export function DesignSection({ context }: { context: CabinetContext }) {
   const [publishState, setPublishState] = useState<"idle" | "progress" | "success">("idle");
 
   useEffect(() => {
-    if (site.data && config === null) {
+    if (site.data && (config === null || (JSON.stringify(config) === saved && site.data.revision !== revision.current))) {
       setConfig(site.data.config);
       setSaved(JSON.stringify(site.data.config));
       revision.current = site.data.revision;
     }
-  }, [config, site.data]);
+  }, [config, saved, site.data]);
 
   const dirty = config !== null && JSON.stringify(config) !== saved;
   const save = useMutation({
